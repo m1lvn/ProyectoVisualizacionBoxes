@@ -1,10 +1,15 @@
 /* Estilos para la Visualización General de Boxes */
 
+/*
+ * NOTA: Los colores para tipos de agenda y leyenda están definidos
+ * en el archivo leyendaBoxes.css para mantener la organización modular.
+ */
+
 /* Contenedor principal con layout de la imagen */
 .contenedor-principal {
     display: flex;
     gap: 20px;
-    padding: 20px;
+    padding: 10px 20px 20px 20px; /* Menos padding arriba */
     min-height: 70vh;
 }
 
@@ -56,127 +61,8 @@
     border: 2px solid #ffffff;
 }
 
-/* Estado disponible */
-.disponible {
-    background-color: #8BC34A !important;
-    color: white;
-}
-
-/* Box libre (disponible) - alias para compatibilidad */
-.box-libre {
-    background-color: #8BC34A !important;
-    color: white;
-}
-
-/* Colores para diferentes tipos de agenda - Exactos a los de la leyenda */
-.tipo-agenda-1 {
-    background-color: #FF5722 !important; /* Hora médica */
-    color: white;
-}
-
-.tipo-agenda-2 {
-    background-color: #FF9800 !important; /* Hora no médica */
-    color: white;
-}
-
-.tipo-agenda-3 {
-    background-color: #E91E63 !important; /* Limpieza */
-    color: white;
-}
-
-.tipo-agenda-4 {
-    background-color: #9E9E9E !important; /* Deshabilitado */
-    color: white;
-}
-
-.tipo-agenda-5 {
-    background-color: #00BCD4 !important; /* Mantención técnica */
-    color: white;
-}
-
-.tipo-agenda-6 {
-    background-color: #3F51B5 !important; /* Capacitación */
-    color: white;
-}
-
-.tipo-agenda-7 {
-    background-color: #9C27B0 !important; /* Reunión clínica */
-    color: white;
-}
-
-.tipo-agenda-8 {
-    background-color: #607D8B !important; /* Bloqueado por gestión */
-    color: white;
-}
-
-.tipo-agenda-9 {
-    background-color: #795548 !important; /* Bloqueo administrativo */
-    color: white;
-}
-
-.tipo-agenda-10 {
-    background-color: #FFC107 !important; /* Reservado para urgencias */
-    color: #333;
-}
-
 .tipo-agenda-8 {
     background: linear-gradient(135deg, #6c757d, #5a6268);
-}
-
-/* Colores específicos para los 10 tipos de agenda */
-.disponible {
-    background-color: #8BC34A !important; /* Verde - Disponible */
-    color: white;
-}
-
-.tipo-agenda-1 {
-    background-color: #FF5722 !important; /* Rojo - Hora médica */
-    color: white;
-}
-
-.tipo-agenda-2 {
-    background-color: #FF9800 !important; /* Naranja - Hora no médica */
-    color: white;
-}
-
-.tipo-agenda-3 {
-    background-color: #E91E63 !important; /* Rosa/Magenta - Limpieza */
-    color: white;
-}
-
-.tipo-agenda-4 {
-    background-color: #9E9E9E !important; /* Gris - Deshabilitado */
-    color: white;
-}
-
-.tipo-agenda-5 {
-    background-color: #00BCD4 !important; /* Cyan - Mantención técnica */
-    color: white;
-}
-
-.tipo-agenda-6 {
-    background-color: #3F51B5 !important; /* Azul índigo - Capacitación */
-    color: white;
-}
-
-.tipo-agenda-7 {
-    background-color: #9C27B0 !important; /* Púrpura - Reunión clínica */
-    color: white;
-}
-
-.tipo-agenda-8 {
-    background-color: #607D8B !important; /* Azul gris - Bloqueado por gestión */
-    color: white;
-}
-
-.tipo-agenda-9 {
-    background-color: #795548 !important; /* Marrón - Bloqueo administrativo */
-    color: white;
-}
-
-.tipo-agenda-10 {
-    background-color: #FFC107 !important; /* Amarillo - Reservado para urgencias */
-    color: #333;
 }
 
 /* Estilos para el modal */
@@ -208,6 +94,32 @@
 .alert-danger {
     background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
     color: #2c3e50;
+}
+
+/* ==================================================== */
+/* ESTILOS PARA PAGINACIÓN DE BOXES */
+/* ==================================================== */
+
+/* Transiciones suaves para la matriz de boxes */
+.boxes-grid {
+    transition: opacity 0.3s ease;
+}
+
+/* Ocultar boxes que no están en la página actual */
+.box-item[style*="display: none"] {
+    display: none !important;
+}
+
+/* Ajustar altura mínima de la matriz para evitar saltos */
+.contenedor-matriz {
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.boxes-grid {
+    flex: 1;
+    min-height: 300px;
 }
 
 /* Responsive design */
@@ -282,52 +194,6 @@
 
 .libre:hover {
     background-color: #218838;
-}
-
-/* Colores específicos para diferentes tipos de agenda */
-.tipo-agenda-1 {
-    background-color: #dc3545; /* Rojo - Consulta */
-    color: white;
-}
-
-.tipo-agenda-1:hover {
-    background-color: #c82333;
-}
-
-.tipo-agenda-2 {
-    background-color: #ffc107; /* Amarillo - Procedimiento */
-    color: #333;
-}
-
-.tipo-agenda-2:hover {
-    background-color: #e0a800;
-}
-
-.tipo-agenda-3 {
-    background-color: #17a2b8; /* Azul - Cirugía */
-    color: white;
-}
-
-.tipo-agenda-3:hover {
-    background-color: #138496;
-}
-
-.tipo-agenda-4 {
-    background-color: #6f42c1; /* Morado - Emergencia */
-    color: white;
-}
-
-.tipo-agenda-4:hover {
-    background-color: #5a32a3;
-}
-
-.tipo-agenda-5 {
-    background-color: #fd7e14; /* Naranja - Rehabilitación */
-    color: white;
-}
-
-.tipo-agenda-5:hover {
-    background-color: #e8690d;
 }
 
 /* Fallback para tipos de agenda no definidos */
@@ -421,6 +287,21 @@
 
 .alert .bi {
     font-size: 1.2rem;
+}
+
+/* Estilos para el indicador de resultados */
+.indicador-resultados {
+    margin-bottom: 15px;
+    padding: 8px 15px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.resultados-texto {
+    font-size: 14px;
+    color: #6c757d;
+    font-weight: 500;
 }
 
 /* Estilos para mejorar la carga */

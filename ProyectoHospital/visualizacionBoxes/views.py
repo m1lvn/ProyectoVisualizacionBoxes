@@ -20,7 +20,7 @@ def visualizacion_general(request):
     Vista principal para mostrar la visualización general de boxes.
     
     Muestra el estado actual de todos los boxes basado en la hora actual
-    y permite filtrar por fecha, pasillo y especialidad.
+    y permite filtrar por fecha, pasillo, especialidad, médico y box específico.
     
     Args:
         request: HttpRequest object
@@ -31,7 +31,8 @@ def visualizacion_general(request):
     # Obtener parámetros de filtros desde la URL
     fecha_str = request.GET.get('fecha', datetime.now().strftime('%Y-%m-%d'))
     pasillo_id = request.GET.get('pasillo', None)
-    especialidad_id = request.GET.get('especialidad', None)
+    codigo_medico = request.GET.get('medico', None)
+    codigo_box = request.GET.get('box', None)
     
     # Validar y parsear la fecha
     try:
@@ -46,6 +47,8 @@ def visualizacion_general(request):
     boxes = Box.objects.all().order_by('idbox')
     if pasillo_id:
         boxes = boxes.filter(idpasillo=pasillo_id)
+    if codigo_box:
+        boxes = boxes.filter(idbox__icontains=codigo_box)
     
     # Obtener datos para filtros
     pasillos = Pasillo.objects.all().order_by('pasillo')
@@ -54,8 +57,16 @@ def visualizacion_general(request):
     
     # Obtener agendas del día
     agendas = Agenda.objects.filter(fecha=fecha)
-    if especialidad_id:
-        agendas = agendas.filter(idprofesional__idespecialidad=especialidad_id)
+    if codigo_medico:
+        # Buscar por idprofesional en la tabla Agenda
+        agendas = agendas.filter(idprofesional=codigo_medico)
+        # Si hay código médico, filtrar boxes solo a aquellos que tienen agendas de ese médico
+        if agendas.exists():
+            boxes_con_medico = agendas.values_list('idbox', flat=True).distinct()
+            boxes = boxes.filter(idbox__in=boxes_con_medico)
+        else:
+            # Si no hay agendas para ese médico, no mostrar ningún box
+            boxes = Box.objects.none()
     
     # Crear estado actual de cada box
     estado_boxes = _crear_estado_actual_boxes(boxes, hora_actual, agendas)
@@ -68,7 +79,8 @@ def visualizacion_general(request):
         'especialidades': especialidades,
         'tipos_agenda': tipos_agenda,
         'pasillo_seleccionado': pasillo_id,
-        'especialidad_seleccionada': especialidad_id,
+        'codigo_medico': codigo_medico,
+        'codigo_box': codigo_box,
         'estado_boxes': estado_boxes,
     }
     

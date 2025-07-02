@@ -60,6 +60,9 @@ function aplicarFiltros() {
     const filtros = _obtenerFiltrosActivos();
     const url = _construirUrlConFiltros(filtros);
     
+    // Reiniciar paginación antes de aplicar filtros
+    paginaActual = 1;
+    
     window.location.href = url;
 }
 
@@ -161,9 +164,10 @@ function _generarContenidoModal(data, fecha) {
 function _obtenerFiltrosActivos() {
     const fecha = document.getElementById('fecha')?.value || '';
     const pasillo = document.getElementById('pasillo')?.value || '';
-    const especialidad = document.getElementById('especialidad')?.value || '';
+    const codigoMedico = document.getElementById('codigoMedico')?.value || '';
+    const codigoBox = document.getElementById('codigoBox')?.value || '';
     
-    return { fecha, pasillo, especialidad };
+    return { fecha, pasillo, medico: codigoMedico, box: codigoBox };
 }
 
 /**
@@ -178,7 +182,8 @@ function _construirUrlConFiltros(filtros) {
     
     if (filtros.fecha) params.set('fecha', filtros.fecha);
     if (filtros.pasillo) params.set('pasillo', filtros.pasillo);
-    if (filtros.especialidad) params.set('especialidad', filtros.especialidad);
+    if (filtros.medico) params.set('medico', filtros.medico);
+    if (filtros.box) params.set('box', filtros.box);
     
     const queryString = params.toString();
     return window.location.pathname + (queryString ? '?' + queryString : '');
@@ -315,6 +320,318 @@ function _crearModal() {
     return modal;
 }
 
+// ==================== FUNCIONES DE PAGINACIÓN ====================
+
+// Variables globales para paginación
+let paginaActual = 1;
+let boxesPorPagina = 48; // 8 columnas x 6 filas para coincidir con la imagen
+let totalPaginas = 1;
+
+/**
+ * Calcula el número total de páginas basado en los boxes disponibles
+ */
+function calcularPaginas() {
+    const totalBoxes = document.querySelectorAll('.box-item').length;
+    totalPaginas = Math.ceil(totalBoxes / boxesPorPagina);
+    return totalPaginas;
+}
+
+/**
+ * Muestra la página anterior de boxes
+ */
+function paginaAnterior() {
+    if (paginaActual > 1) {
+        paginaActual--;
+        mostrarPaginaMejorada(paginaActual);
+        actualizarIndicadoresPaginacion();
+    }
+}
+
+/**
+ * Muestra la página siguiente de boxes
+ */
+function paginaSiguiente() {
+    calcularPaginas();
+    if (paginaActual < totalPaginas) {
+        paginaActual++;
+        mostrarPaginaMejorada(paginaActual);
+        actualizarIndicadoresPaginacion();
+    }
+}
+
+/**
+ * Muestra los boxes correspondientes a una página específica
+ * @param {number} pagina - Número de página a mostrar
+ */
+function mostrarPagina(pagina) {
+    const boxes = document.querySelectorAll('.box-item');
+    const inicio = (pagina - 1) * boxesPorPagina;
+    const fin = inicio + boxesPorPagina;
+    
+    // Ocultar todos los boxes
+    boxes.forEach((box, index) => {
+        if (index >= inicio && index < fin) {
+            box.style.display = 'flex';
+        } else {
+            box.style.display = 'none';
+        }
+    });
+    
+    // Agregar efecto de transición
+    const grid = document.querySelector('.boxes-grid');
+    if (grid) {
+        grid.style.opacity = '0.5';
+        setTimeout(() => {
+            grid.style.opacity = '1';
+        }, 200);
+    }
+}
+
+/**
+ * Actualizar información de resultados
+ */
+function actualizarInfoResultados() {
+    const totalBoxes = document.querySelectorAll('.box-item').length;
+    const boxesPaginaActual = Math.min(boxesPorPagina, totalBoxes - (paginaActual - 1) * boxesPorPagina);
+    
+    // Crear o actualizar indicador de resultados
+    let indicadorResultados = document.querySelector('.indicador-resultados');
+    if (!indicadorResultados) {
+        indicadorResultados = document.createElement('div');
+        indicadorResultados.className = 'indicador-resultados';
+        const contenedorMatriz = document.querySelector('.contenedor-matriz');
+        if (contenedorMatriz) {
+            contenedorMatriz.insertBefore(indicadorResultados, contenedorMatriz.firstChild);
+        }
+    }
+    
+    indicadorResultados.innerHTML = `
+        <span class="resultados-texto">
+            Mostrando ${boxesPaginaActual} de ${totalBoxes} boxes
+            ${totalPaginas > 1 ? `(Página ${paginaActual} de ${totalPaginas})` : ''}
+        </span>
+    `;
+}
+
+/**
+ * Mejorar la función mostrarPagina para incluir actualización de resultados
+ */
+function mostrarPaginaMejorada(pagina) {
+    const boxes = document.querySelectorAll('.box-item');
+    const inicio = (pagina - 1) * boxesPorPagina;
+    const fin = inicio + boxesPorPagina;
+    
+    // Ocultar todos los boxes
+    boxes.forEach((box, index) => {
+        if (index >= inicio && index < fin) {
+            box.style.display = 'flex';
+        } else {
+            box.style.display = 'none';
+        }
+    });
+    
+    // Agregar efecto de transición
+    const grid = document.querySelector('.boxes-grid');
+    if (grid) {
+        grid.style.opacity = '0.5';
+        setTimeout(() => {
+            grid.style.opacity = '1';
+        }, 200);
+    }
+    
+    // Actualizar información de resultados
+    actualizarInfoResultados();
+}
+
+/**
+ * Actualiza los indicadores visuales de paginación
+ */
+function actualizarIndicadoresPaginacion() {
+    const btnAnterior = document.querySelector('.btn-nav:first-child');
+    const btnSiguiente = document.querySelector('.btn-nav:last-child');
+    const navegacion = document.querySelector('.navegacion-paginas');
+    
+    if (btnAnterior) {
+        btnAnterior.disabled = paginaActual <= 1;
+        btnAnterior.style.opacity = paginaActual <= 1 ? '0.5' : '1';
+    }
+    
+    if (btnSiguiente) {
+        btnSiguiente.disabled = paginaActual >= totalPaginas;
+        btnSiguiente.style.opacity = paginaActual >= totalPaginas ? '0.5' : '1';
+    }
+    
+    // Mostrar información de página actual
+    if (navegacion) {
+        navegacion.setAttribute('data-pagina', `Página ${paginaActual} de ${totalPaginas}`);
+    }
+}
+
+// ==================== FUNCIONES DE BÚSQUEDA ====================
+
+/**
+ * Buscar por código médico
+ */
+function buscarPorMedico() {
+    const codigoMedico = document.getElementById('codigoMedico').value.trim();
+    
+    if (!codigoMedico) {
+        _mostrarError('Por favor, ingrese un código médico válido');
+        return;
+    }
+    
+    _mostrarLoader();
+    
+    // Agregar parámetro de búsqueda médica a la URL
+    const url = new URL(window.location);
+    url.searchParams.set('medico', codigoMedico);
+    
+    // Recargar la página con el filtro de médico
+    window.location.href = url.toString();
+}
+
+/**
+ * Buscar por código de box
+ */
+function buscarPorBox() {
+    const codigoBox = document.getElementById('codigoBox').value.trim();
+    
+    if (!codigoBox) {
+        _mostrarError('Por favor, ingrese un código de box válido');
+        return;
+    }
+    
+    // Buscar el box en la página actual
+    const boxes = document.querySelectorAll('.box-item');
+    let boxEncontrado = false;
+    
+    boxes.forEach((box, index) => {
+        const textoBox = box.textContent.trim();
+        if (textoBox === codigoBox) {
+            // Calcular en qué página está el box
+            const paginaDelBox = Math.ceil((index + 1) / boxesPorPagina);
+            
+            // Ir a esa página
+            paginaActual = paginaDelBox;
+            mostrarPagina(paginaActual);
+            actualizarIndicadoresPaginacion();
+            
+            // Resaltar el box encontrado
+            setTimeout(() => {
+                box.style.animation = 'pulse 1s ease-in-out 3';
+                box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+            
+            boxEncontrado = true;
+        }
+    });
+    
+    if (!boxEncontrado) {
+        _mostrarError(`No se encontró el box con código: ${codigoBox}`);
+    }
+}
+
+/**
+ * Inicializa el estado de los filtros de búsqueda al cargar la página
+ */
+function inicializarFiltrosBusqueda() {
+    const codigoMedico = document.getElementById('codigoMedico')?.value;
+    const codigoBox = document.getElementById('codigoBox')?.value;
+    
+    // Mostrar búsqueda médica si hay valor
+    if (codigoMedico) {
+        const busquedaMedico = document.getElementById('busqueda-medico');
+        const btnMedico = document.querySelector('.btn-search:first-of-type');
+        if (busquedaMedico && btnMedico) {
+            busquedaMedico.style.display = 'block';
+            busquedaMedico.classList.add('show');
+            btnMedico.classList.add('active');
+        }
+    }
+    
+    // Mostrar búsqueda box si hay valor
+    if (codigoBox) {
+        const busquedaBox = document.getElementById('busqueda-box');
+        const btnBox = document.querySelector('.btn-search:last-of-type');
+        if (busquedaBox && btnBox) {
+            busquedaBox.style.display = 'block';
+            busquedaBox.classList.add('show');
+            btnBox.classList.add('active');
+        }
+    }
+}
+
+/**
+ * Limpiar filtro de búsqueda médica
+ */
+function limpiarBusquedaMedico() {
+    document.getElementById('codigoMedico').value = '';
+    aplicarFiltros();
+}
+
+/**
+ * Limpiar filtro de búsqueda de box
+ */
+function limpiarBusquedaBox() {
+    document.getElementById('codigoBox').value = '';
+    aplicarFiltros();
+}
+
+/**
+ * Mejorar la función de búsqueda por box para que también aplique filtros
+ */
+function buscarPorBoxMejorado() {
+    const codigoBox = document.getElementById('codigoBox').value.trim();
+    
+    if (!codigoBox) {
+        _mostrarError('Por favor, ingrese un código de box válido');
+        return;
+    }
+    
+    // Aplicar filtro por box
+    aplicarFiltros();
+}
+
+/**
+ * Remover un filtro específico
+ * @param {string} tipoFiltro - Tipo de filtro a remover ('pasillo', 'medico', 'box')
+ */
+function removerFiltro(tipoFiltro) {
+    const url = new URL(window.location);
+    
+    switch(tipoFiltro) {
+        case 'pasillo':
+            url.searchParams.delete('pasillo');
+            break;
+        case 'medico':
+            url.searchParams.delete('medico');
+            document.getElementById('codigoMedico').value = '';
+            break;
+        case 'box':
+            url.searchParams.delete('box');
+            document.getElementById('codigoBox').value = '';
+            break;
+    }
+    
+    window.location.href = url.toString();
+}
+
+/**
+ * Limpiar todos los filtros activos
+ */
+function limpiarTodosFiltros() {
+    const url = new URL(window.location);
+    const fecha = url.searchParams.get('fecha'); // Mantener la fecha
+    
+    // Limpiar todos los parámetros excepto la fecha
+    url.search = '';
+    if (fecha) {
+        url.searchParams.set('fecha', fecha);
+    }
+    
+    window.location.href = url.toString();
+}
+
 // ==================== INICIALIZACIÓN ====================
 
 /**
@@ -328,4 +645,58 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Agregar listeners a eventos específicos si es necesario
     console.log('Visualización General de Boxes inicializada');
+    
+    // Inicializar paginación
+    inicializarPaginacion();
+    inicializarFiltrosBusqueda();
+    agregarListenersEnter();
 });
+
+// ==================== INICIALIZACIÓN DE PAGINACIÓN ====================
+
+/**
+ * Inicializa la funcionalidad de paginación al cargar la página
+ */
+function inicializarPaginacion() {
+    calcularPaginas();
+    mostrarPaginaMejorada(1);
+    actualizarIndicadoresPaginacion();
+    
+    // Agregar estilos para la animación de pulse
+    if (!document.querySelector('#pulse-style')) {
+        const style = document.createElement('style');
+        style.id = 'pulse-style';
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
+                50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
+                100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
+/**
+ * Agregar listeners para presionar Enter en campos de búsqueda
+ */
+function agregarListenersEnter() {
+    const codigoMedicoInput = document.getElementById('codigoMedico');
+    const codigoBoxInput = document.getElementById('codigoBox');
+    
+    if (codigoMedicoInput) {
+        codigoMedicoInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                buscarPorMedico();
+            }
+        });
+    }
+    
+    if (codigoBoxInput) {
+        codigoBoxInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                buscarPorBoxMejorado();
+            }
+        });
+    }
+}

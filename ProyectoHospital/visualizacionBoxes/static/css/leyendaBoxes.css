@@ -1,0 +1,245 @@
+/* ==================================================== */
+/* ARCHIVO CSS PARA GESTIÓN DE COLORES DE TIPOS DE AGENDA */
+/* ==================================================== */
+/*
+ * Este archivo contiene todas las definiciones de colores para los diferentes
+ * tipos de agenda y estados de los boxes del hospital.
+ * 
+ * Propósito: Centralizar la gestión de colores para mantener consistencia
+ * entre la leyenda y la visualización de boxes.
+ * 
+ * Estructura:
+ * 1. Variables CSS con los colores base
+ * 2. Clases para la leyenda (legend-*)
+ * 3. Clases para boxes en la visualización (tipo-agenda-*, disponible)
+ * 4. Clases para slots de tiempo (time-slot)
+ */
+
+/* Variables CSS para mantener consistencia de colores */
+:root {
+    --color-disponible: #8BC34A;
+    --color-hora-medica: #FF5722;
+    --color-hora-no-medica: #FF9800;
+    --color-limpieza: #E91E63;
+    --color-deshabilitado: #9E9E9E;
+    --color-mantencion: #00BCD4;
+    --color-capacitacion: #3F51B5;
+    --color-reunion: #9C27B0;
+    --color-bloqueado-gestion: #607D8B;
+    --color-bloqueo-admin: #795548;
+    --color-urgencias: #FFC107;
+}
+
+/* Estilos para la leyenda */
+.legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* Clases para cada tipo de estado/agenda */
+.legend-disponible {
+    background-color: var(--color-disponible);
+}
+
+.legend-hora-medica {
+    background-color: var(--color-hora-medica);
+}
+
+.legend-hora-no-medica {
+    background-color: var(--color-hora-no-medica);
+}
+
+.legend-limpieza {
+    background-color: var(--color-limpieza);
+}
+
+.legend-deshabilitado {
+    background-color: var(--color-deshabilitado);
+}
+
+.legend-mantencion {
+    background-color: var(--color-mantencion);
+}
+
+.legend-capacitacion {
+    background-color: var(--color-capacitacion);
+}
+
+.legend-reunion {
+    background-color: var(--color-reunion);
+}
+
+.legend-bloqueado-gestion {
+    background-color: var(--color-bloqueado-gestion);
+}
+
+.legend-bloqueo-admin {
+    background-color: var(--color-bloqueo-admin);
+}
+
+.legend-urgencias {
+    background-color: var(--color-urgencias);
+}
+
+/* ==================================================== */
+/* CLASES PARA APLICAR A LOS BOXES EN LA VISUALIZACIÓN */
+/* ==================================================== */
+
+/* Estado disponible */
+.disponible, .box-libre {
+    background-color: var(--color-disponible) !important;
+    color: white;
+}
+
+/* Colores para diferentes tipos de agenda */
+.tipo-agenda-1 {
+    background-color: var(--color-hora-medica) !important;
+    color: white;
+}
+
+.tipo-agenda-2 {
+    background-color: var(--color-hora-no-medica) !important;
+    color: white;
+}
+
+.tipo-agenda-3 {
+    background-color: var(--color-limpieza) !important;
+    color: white;
+}
+
+.tipo-agenda-4 {
+    background-color: var(--color-deshabilitado) !important;
+    color: white;
+}
+
+.tipo-agenda-5 {
+    background-color: var(--color-mantencion) !important;
+    color: white;
+}
+
+.tipo-agenda-6 {
+    background-color: var(--color-capacitacion) !important;
+    color: white;
+}
+
+.tipo-agenda-7 {
+    background-color: var(--color-reunion) !important;
+    color: white;
+}
+
+.tipo-agenda-8 {
+    background-color: var(--color-bloqueado-gestion) !important;
+    color: white;
+}
+
+.tipo-agenda-9 {
+    background-color: var(--color-bloqueo-admin) !important;
+    color: white;
+}
+
+.tipo-agenda-10 {
+    background-color: var(--color-urgencias) !important;
+    color: #333;
+}
+
+/* Estilos para slots de tiempo */
+.time-slot.libre {
+    background-color: var(--color-disponible);
+    color: white;
+}
+
+.time-slot.libre:hover {
+    background-color: #6fa839; /* Versión más oscura del verde */
+}
+
+.time-slot.tipo-agenda-1 {
+    background-color: var(--color-hora-medica);
+    color: white;
+}
+
+.time-slot.tipo-agenda-1:hover {
+    background-color: #e64a19; /* Versión más oscura */
+}
+
+.time-slot.tipo-agenda-2 {
+    background-color: var(--color-hora-no-medica);
+    color: #333;
+}
+
+.time-slot.tipo-agenda-2:hover {
+    background-color: #f57c00; /* Versión más oscura */
+}
+
+.time-slot.tipo-agenda-3 {
+    background-color: var(--color-limpieza);
+    color: white;
+}
+
+.time-slot.tipo-agenda-3:hover {
+    background-color: #c2185b; /* Versión más oscura */
+}
+
+.time-slot.tipo-agenda-4 {
+    background-color: var(--color-deshabilitado);
+    color: white;
+}
+
+.time-slot.tipo-agenda-4:hover {
+    background-color: #757575; /* Versión más oscura */
+}
+
+.time-slot.tipo-agenda-5 {
+    background-color: var(--color-mantencion);
+    color: white;
+}
+
+.time-slot.tipo-agenda-5:hover {
+    background-color: #0097a7; /* Versión más oscura */
+}
+
+.time-slot.tipo-agenda-6 {
+    background-color: var(--color-capacitacion);
+    color: white;
+}
+
+.time-slot.tipo-agenda-6:hover {
+    background-color: #303f9f; /* Versión más oscura */
+}
+
+.time-slot.tipo-agenda-7 {
+    background-color: var(--color-reunion);
+    color: white;
+}
+
+.time-slot.tipo-agenda-7:hover {
+    background-color: #7b1fa2; /* Versión más oscura */
+}
+
+.time-slot.tipo-agenda-8 {
+    background-color: var(--color-bloqueado-gestion);
+    color: white;
+}
+
+.time-slot.tipo-agenda-8:hover {
+    background-color: #455a64; /* Versión más oscura */
+}
+
+.time-slot.tipo-agenda-9 {
+    background-color: var(--color-bloqueo-admin);
+    color: white;
+}
+
+.time-slot.tipo-agenda-9:hover {
+    background-color: #5d4037; /* Versión más oscura */
+}
+
+.time-slot.tipo-agenda-10 {
+    background-color: var(--color-urgencias);
+    color: #333;
+}
+
+.time-slot.tipo-agenda-10:hover {
+    background-color: #ffb300; /* Versión más oscura */
+}
