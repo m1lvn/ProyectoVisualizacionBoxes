@@ -1,0 +1,50 @@
+<div class="card bg-dark text-white px-3 py-3" style="width: 200px; border-radius: 12px;">
+  <h6 class="fw-bold mb-3">Estado de los boxes</h6>
+  <ul class="list-unstyled m-0 p-0">
+    <li class="d-flex align-items-center mb-2">
+      <span class="legend-dot me-2" style="background-color: #8BC34A;"></span> Disponible
+    </li>
+    <li class="d-flex align-items-center mb-2">
+      <span class="legend-dot me-2" style="background-color: #FF5722;"></span> Hora médica
+    </li>
+    <li class="d-flex align-items-center mb-2">
+      <span class="legend-dot me-2" style="background-color: #FF9800;"></span> Hora no médica
+    </li>
+    <li class="d-flex align-items-center mb-2">
+      <span class="legend-dot me-2" style="background-color: #E91E63;"></span> Limpieza
+    </li>
+    <li class="d-flex align-items-center mb-2">
+      <span class="legend-dot me-2" style="background-color: #9E9E9E;"></span> Deshabilitado
+    </li>
+    <li class="d-flex align-items-center mb-2">
+      <span class="legend-dot me-2" style="background-color: #00BCD4;"></span> Mantención técnica
+    </li>
+    <li class="d-flex align-items-center mb-2">
+      <span class="legend-dot me-2" style="background-color: #3F51B5;"></span> Capacitación
+    </li>
+    <li class="d-flex align-items-center mb-2">
+      <span class="legend-dot me-2" style="background-color: #9C27B0;"></span> Reunión clínica
+    </li>
+    <li class="d-flex align-items-center mb-2">
+      <span class="legend-dot me-2" style="background-color: #607D8B;"></span> Bloqueado por gestión
+    </li>
+    <li class="d-flex align-items-center mb-2">
+      <span class="legend-dot me-2" style="background-color: #795548;"></span> Bloqueo administrativo
+    </li>
+    <li class="d-flex align-items-center">
+      <span class="legend-dot me-2" style="background-color: #FFC107;"></span> Reservado para urgencias
+    </li>
+  </ul>
+</div>
+
+{# -------- ESTILOS PERSONALIZADOS DE LA VISTA -------- #}
+{% block styles %}
+<style>
+    .legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+    }
+</style>
+{% endblock %}

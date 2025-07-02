@@ -1,0 +1,19 @@
+"""
+URLs para la aplicación de visualización de boxes.
+
+Este módulo define las rutas de la aplicación para acceder a las diferentes
+vistas de visualización y gestión de boxes del hospital.
+"""
+
+from django.urls import path
+from . import views
+
+app_name = 'visualizacionBoxes'
+
+urlpatterns = [
+    # Vista principal - Visualización general de boxes
+    path('', views.visualizacion_general, name='visualizacion_general'),
+    
+    # API AJAX - Obtener detalles de un box específico
+    path('detalle-box/', views.obtener_detalle_box, name='detalle_box'),
+]

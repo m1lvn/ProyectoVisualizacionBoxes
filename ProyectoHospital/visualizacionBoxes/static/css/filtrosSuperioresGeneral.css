@@ -1,0 +1,147 @@
+/* Estilos para los Filtros Superiores */
+
+.contenedor-tabla {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+/* Ajustes de padding para inputs y botones para que se vean más compactos */
+.form-select.form-select-sm {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    font-size: 0.85rem;
+    border-radius: 20px;
+    border: 1px solid #ced4da;
+    transition: all 0.3s ease;
+}
+
+.form-select.form-select-sm:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.input-group-text {
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    font-size: 0.85rem;
+    background-color: #f8f9fa;
+    border: 1px solid #ced4da;
+}
+
+.form-control {
+    font-size: 0.85rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    border: 1px solid #ced4da;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+/* Botones horario más compactos */
+.btn-horario {
+    font-size: 0.75rem;
+    line-height: 1.2;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.btn-horario:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Grupo de botones de horario */
+.btn-group .btn-check:checked + .btn {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+/* Flechas navegación ajustadas */
+.btn-group .btn {
+    font-size: 1rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.25rem;
+    min-width: 2.5rem;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.btn-group .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Estilos para los contenedores de filtros */
+.d-flex.gap-2 > * {
+    flex-shrink: 0;
+}
+
+/* Input group con bordes redondeados */
+.input-group.rounded-pill .input-group-text {
+    border-top-left-radius: 20px;
+    border-bottom-left-radius: 20px;
+    border-right: none;
+}
+
+.input-group.rounded-pill .form-control {
+    border-top-right-radius: 20px;
+    border-bottom-right-radius: 20px;
+    border-left: none;
+}
+
+.input-group.rounded-pill .form-control:focus {
+    border-left: none;
+    box-shadow: none;
+}
+
+.input-group.rounded-pill:focus-within .input-group-text {
+    border-color: #0d6efd;
+}
+
+/* Sombras para los elementos */
+.shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .contenedor-tabla .d-flex {
+        flex-direction: column;
+        gap: 10px !important;
+    }
+    
+    .d-flex.align-items-center.gap-2 {
+        flex-wrap: wrap;
+        gap: 8px !important;
+    }
+    
+    .form-select.form-select-sm,
+    .input-group.input-group-sm {
+        min-width: 140px;
+        max-width: 160px;
+    }
+}
+
+@media (max-width: 576px) {
+    .btn-horario {
+        font-size: 0.7rem;
+        padding-left: 0.4rem;
+        padding-right: 0.4rem;
+    }
+    
+    .btn-group .btn {
+        min-width: 2rem;
+        font-size: 0.9rem;
+    }
+}

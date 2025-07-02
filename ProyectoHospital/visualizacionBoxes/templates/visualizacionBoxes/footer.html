@@ -1,0 +1,64 @@
+<footer class="mt-auto bg-dark text-white py-4">
+  <div class="container">
+    <div class="row text-center text-md-start align-items-start">
+      <!-- Columna 1 -->
+      <div class="col-md-4 mb-3">
+        <h6 class="fw-bold mb-2">Hospital Padre Hurtado</h6>
+        <p class="footer-text">Sistema de visualización de boxes y generación de reportes.</p>
+      </div>
+
+      <!-- Columna 2 -->
+      <div class="col-md-4 mb-3">
+        <h6 class="fw-bold mb-2">Enlaces</h6>
+        <ul class="list-unstyled mb-0">
+          <li><a href="#" class="footer-link">Inicio</a></li>
+          <li><a href="#" class="footer-link">Servicios</a></li>
+          <li><a href="#" class="footer-link">Acerca de</a></li>
+          <li><a href="#" class="footer-link">Desarrolladores</a></li>
+        </ul>
+      </div>
+
+      <!-- Columna 3 -->
+      <div class="col-md-4 mb-3">
+        <h6 class="fw-bold mb-2">Contacto</h6>
+        <p class="footer-text mb-1">Cel: +56 9 1234 5678</p>
+        <p class="footer-text mb-1">contacto@miempresa.com</p>
+        <p class="footer-text mb-0">Santiago, Chile</p>
+      </div>
+    </div>
+
+    <hr class="bg-light my-2">
+
+    <div class="text-center small">
+      <p class="mb-0">&copy; <span id="currentYear"></span> Hospital Padre Hurtado. Todos los derechos reservados.</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById("currentYear").textContent = new Date().getFullYear();
+</script>
+
+<style>
+  .footer-link {
+    color: #adb5bd;
+    font-size: 0.85rem;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+
+  .footer-link:hover {
+    color: #ffffff;
+    text-decoration: underline;
+  }
+
+  .footer-text {
+    font-size: 0.85rem;
+    margin-bottom: 0.3rem;
+    color: #ccc;
+  }
+
+  footer h6 {
+    font-size: 1rem;
+  }
+</style>

@@ -1,0 +1,539 @@
+/* Estilos para la Visualización General de Boxes */
+
+/* Contenedor principal con layout de la imagen */
+.contenedor-principal {
+    display: flex;
+    gap: 20px;
+    padding: 20px;
+    min-height: 70vh;
+}
+
+/* Leyenda lateral fija */
+.leyenda-lateral {
+    flex: 0 0 200px;
+}
+
+/* Contenedor de la matriz de boxes */
+.contenedor-matriz {
+    flex: 1;
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* Grid de boxes como matriz */
+.boxes-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 10px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilo para cada box individual */
+.box-item {
+    width: 120px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-weight: bold;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-size: 14px;
+    border: 2px solid transparent;
+}
+
+.box-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border: 2px solid #ffffff;
+}
+
+/* Estado disponible */
+.disponible {
+    background-color: #8BC34A !important;
+    color: white;
+}
+
+/* Box libre (disponible) - alias para compatibilidad */
+.box-libre {
+    background-color: #8BC34A !important;
+    color: white;
+}
+
+/* Colores para diferentes tipos de agenda - Exactos a los de la leyenda */
+.tipo-agenda-1 {
+    background-color: #FF5722 !important; /* Hora médica */
+    color: white;
+}
+
+.tipo-agenda-2 {
+    background-color: #FF9800 !important; /* Hora no médica */
+    color: white;
+}
+
+.tipo-agenda-3 {
+    background-color: #E91E63 !important; /* Limpieza */
+    color: white;
+}
+
+.tipo-agenda-4 {
+    background-color: #9E9E9E !important; /* Deshabilitado */
+    color: white;
+}
+
+.tipo-agenda-5 {
+    background-color: #00BCD4 !important; /* Mantención técnica */
+    color: white;
+}
+
+.tipo-agenda-6 {
+    background-color: #3F51B5 !important; /* Capacitación */
+    color: white;
+}
+
+.tipo-agenda-7 {
+    background-color: #9C27B0 !important; /* Reunión clínica */
+    color: white;
+}
+
+.tipo-agenda-8 {
+    background-color: #607D8B !important; /* Bloqueado por gestión */
+    color: white;
+}
+
+.tipo-agenda-9 {
+    background-color: #795548 !important; /* Bloqueo administrativo */
+    color: white;
+}
+
+.tipo-agenda-10 {
+    background-color: #FFC107 !important; /* Reservado para urgencias */
+    color: #333;
+}
+
+.tipo-agenda-8 {
+    background: linear-gradient(135deg, #6c757d, #5a6268);
+}
+
+/* Colores específicos para los 10 tipos de agenda */
+.disponible {
+    background-color: #8BC34A !important; /* Verde - Disponible */
+    color: white;
+}
+
+.tipo-agenda-1 {
+    background-color: #FF5722 !important; /* Rojo - Hora médica */
+    color: white;
+}
+
+.tipo-agenda-2 {
+    background-color: #FF9800 !important; /* Naranja - Hora no médica */
+    color: white;
+}
+
+.tipo-agenda-3 {
+    background-color: #E91E63 !important; /* Rosa/Magenta - Limpieza */
+    color: white;
+}
+
+.tipo-agenda-4 {
+    background-color: #9E9E9E !important; /* Gris - Deshabilitado */
+    color: white;
+}
+
+.tipo-agenda-5 {
+    background-color: #00BCD4 !important; /* Cyan - Mantención técnica */
+    color: white;
+}
+
+.tipo-agenda-6 {
+    background-color: #3F51B5 !important; /* Azul índigo - Capacitación */
+    color: white;
+}
+
+.tipo-agenda-7 {
+    background-color: #9C27B0 !important; /* Púrpura - Reunión clínica */
+    color: white;
+}
+
+.tipo-agenda-8 {
+    background-color: #607D8B !important; /* Azul gris - Bloqueado por gestión */
+    color: white;
+}
+
+.tipo-agenda-9 {
+    background-color: #795548 !important; /* Marrón - Bloqueo administrativo */
+    color: white;
+}
+
+.tipo-agenda-10 {
+    background-color: #FFC107 !important; /* Amarillo - Reservado para urgencias */
+    color: #333;
+}
+
+/* Estilos para el modal */
+.modal-content {
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px 15px 0 0;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+    color: #2c3e50;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    color: #2c3e50;
+}
+
+/* Responsive design */
+@media (max-width: 1200px) {
+    .boxes-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+}
+
+@media (max-width: 992px) {
+    .boxes-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+    
+    .box-item {
+        width: 100px;
+        height: 70px;
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 768px) {
+    .boxes-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        padding: 15px;
+    }
+    
+    .box-item {
+        width: 80px;
+        height: 60px;
+        font-size: 11px;
+    }
+}
+
+@media (max-width: 576px) {
+    .boxes-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Estilos de las cabeceras de la tabla */
+.cabecera-box {
+    background-color: #f1f1f1;
+    font-weight: bold;
+}
+
+/* Estilos para la columna de horas */
+.hora {
+    background-color: #e9ecef;
+    font-weight: bold;
+    min-width: 80px;
+}
+
+/* Estilos para los botones de slots de tiempo */
+.time-slot {
+    width: 100px;
+    height: 40px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    border: none;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+}
+
+/* Estados de disponibilidad */
+.libre {
+    background-color: #28a745;
+    color: white;
+}
+
+.libre:hover {
+    background-color: #218838;
+}
+
+/* Colores específicos para diferentes tipos de agenda */
+.tipo-agenda-1 {
+    background-color: #dc3545; /* Rojo - Consulta */
+    color: white;
+}
+
+.tipo-agenda-1:hover {
+    background-color: #c82333;
+}
+
+.tipo-agenda-2 {
+    background-color: #ffc107; /* Amarillo - Procedimiento */
+    color: #333;
+}
+
+.tipo-agenda-2:hover {
+    background-color: #e0a800;
+}
+
+.tipo-agenda-3 {
+    background-color: #17a2b8; /* Azul - Cirugía */
+    color: white;
+}
+
+.tipo-agenda-3:hover {
+    background-color: #138496;
+}
+
+.tipo-agenda-4 {
+    background-color: #6f42c1; /* Morado - Emergencia */
+    color: white;
+}
+
+.tipo-agenda-4:hover {
+    background-color: #5a32a3;
+}
+
+.tipo-agenda-5 {
+    background-color: #fd7e14; /* Naranja - Rehabilitación */
+    color: white;
+}
+
+.tipo-agenda-5:hover {
+    background-color: #e8690d;
+}
+
+/* Fallback para tipos de agenda no definidos */
+.time-slot:not(.libre):not([class*="tipo-agenda-"]) {
+    background-color: #6c757d; /* Gris por defecto */
+    color: white;
+}
+
+.time-slot:not(.libre):not([class*="tipo-agenda-"]):hover {
+    background-color: #5a6268;
+}
+
+/* Efectos hover */
+.time-slot:hover {
+    opacity: 0.9;
+    cursor: pointer;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Estilos para la tabla responsive */
+.table-responsive {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.table {
+    margin-bottom: 0;
+}
+
+.table th {
+    border-top: none;
+    padding: 12px 8px;
+    font-weight: 600;
+    background-color: #f8f9fa;
+}
+
+.table td {
+    padding: 8px;
+    vertical-align: middle;
+}
+
+/* Estilos para el modal */
+.modal-content {
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    border-radius: 10px 10px 0 0;
+}
+
+.modal-title {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Estilos adicionales para mejorar el modal y la información */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.info-item {
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    border-left: 3px solid #0d6efd;
+}
+
+.info-item strong {
+    color: #495057;
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 2px;
+}
+
+.info-item .text-muted {
+    font-size: 0.9rem;
+    color: #6c757d !important;
+}
+
+.ocupado-details p {
+    font-size: 0.9rem;
+}
+
+.alert .bi {
+    font-size: 1.2rem;
+}
+
+/* Estilos para mejorar la carga */
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.loading {
+    position: relative;
+}
+
+/* Mejoras para alertas de error */
+.alert.position-fixed {
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Estilos para tooltips personalizados */
+.tooltip {
+    font-size: 0.85rem;
+}
+
+.tooltip-inner {
+    max-width: 200px;
+    text-align: left;
+}
+
+/* Estilos responsivos */
+@media (max-width: 768px) {
+    .time-slot {
+        width: 80px;
+        height: 35px;
+        font-size: 0.75rem;
+    }
+    
+    .celda-box {
+        width: 80px;
+        height: 35px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 6px 4px;
+        font-size: 0.85rem;
+    }
+    
+    .hora {
+        min-width: 60px;
+    }
+}
+
+@media (max-width: 576px) {
+    .time-slot {
+        width: 70px;
+        height: 30px;
+        font-size: 0.7rem;
+    }
+    
+    .celda-box {
+        width: 70px;
+        height: 30px;
+    }
+    
+    .table th,
+    .table td {
+        padding: 4px 2px;
+        font-size: 0.8rem;
+    }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.table {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Estilos para indicadores de carga */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}

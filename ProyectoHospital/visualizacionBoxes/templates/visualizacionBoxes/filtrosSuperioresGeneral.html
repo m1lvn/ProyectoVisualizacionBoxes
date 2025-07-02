@@ -1,0 +1,56 @@
+<div class="contenedor-tabla px-4 pt-3">
+  <div class="d-flex justify-content-between align-items-center flex-nowrap gap-2">
+
+    <!-- IZQUIERDA: Selector pasillo + fecha + especialidad -->
+    <div class="d-flex align-items-center gap-2 flex-nowrap">
+
+      <!-- Selector fecha -->
+      <div class="input-group input-group-sm rounded-pill shadow-sm" style="max-width: 180px;">
+        <span class="input-group-text bg-white border-end-0 rounded-start-pill py-1 px-2">
+          <i class="bi bi-calendar"></i>
+        </span>
+        <input type="date" id="fecha" class="form-control border-start-0 rounded-end-pill py-1" 
+               value="{{ fecha|date:'Y-m-d' }}" onchange="aplicarFiltros()">
+      </div>
+
+      <!-- Selector pasillo -->
+      <select id="pasillo" class="form-select form-select-sm rounded-pill px-3 py-1 shadow-sm" 
+              style="min-width: 160px; max-width: 180px;" onchange="aplicarFiltros()">
+        <option value="">Todos los pasillos</option>
+        {% for pasillo in pasillos %}
+          <option value="{{ pasillo.idpasillo }}" 
+                  {% if pasillo.idpasillo|stringformat:"s" == pasillo_seleccionado %}selected{% endif %}>
+            {{ pasillo.pasillo }}
+          </option>
+        {% endfor %}
+      </select>
+
+      <!-- Selector especialidad -->
+      <select id="especialidad" class="form-select form-select-sm rounded-pill px-3 py-1 shadow-sm" 
+              style="min-width: 160px; max-width: 200px;" onchange="aplicarFiltros()">
+        <option value="">Todas las especialidades</option>
+        {% for especialidad in especialidades %}
+          <option value="{{ especialidad.idespecialidad }}" 
+                  {% if especialidad.idespecialidad|stringformat:"s" == especialidad_seleccionada %}selected{% endif %}>
+            {{ especialidad.especialidad }}
+          </option>
+        {% endfor %}
+      </select>
+
+    </div>
+
+    <!-- DERECHA: navegación fecha -->
+    <div class="d-flex align-items-center gap-2 flex-nowrap">
+
+      <!-- Navegación fecha -->
+      <div class="btn-group btn-group-sm rounded-pill shadow-sm border" role="group" aria-label="Navegación fecha">
+        <button type="button" class="btn btn-outline-primary px-3 fw-bold py-1" 
+                onclick="cambiarFecha(-1)" aria-label="Día anterior">&lt;</button>
+        <button type="button" class="btn btn-outline-primary px-3 fw-bold py-1" 
+                onclick="cambiarFecha(1)" aria-label="Día siguiente">&gt;</button>
+      </div>
+
+    </div>
+
+  </div>
+</div>

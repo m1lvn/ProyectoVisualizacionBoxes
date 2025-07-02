@@ -1,0 +1,118 @@
+{% extends 'AppFH/base.html' %}
+
+{% load static %}
+
+{% block title %}Visualización General{% endblock %}
+
+
+{% block content %}
+
+{% include "AppFH/filtros_superiores2.html" %}
+
+<!-- Matriz de Boxes -->
+<div class="container mt-5">
+  <h2 class="mb-4">Visualización General (SeleccionBox)</h2>
+  
+  <!-- Tabla de horarios -->
+  <div class="table-responsive">
+    <table class="table table-bordered text-center">
+      <thead class="table-light">
+        <tr>
+          <th>Hora</th>
+          {% for box in boxes %}
+            <th>{{ box.ubicacion|default:"BOX" }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for hora in horas %}
+          <tr>
+            <td><strong>{{ hora }}</strong></td>
+            {% for box in boxes %}
+              <td>
+                <button class="btn btn-success w-100" onclick="mostrarInfo('{{ box.idbox }}', '{{ hora }}')">
+                  Disponible
+                </button>
+              </td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+//Función para detectar si se filtró por bloque horario AM/PM/FULLTIME
+  function filtrarHorario(tipo) {
+    console.log("Filtrando por horario:", tipo);
+    // Aquí irá tu lógica con fetch/AJAX si lo conectas al backend
+  }
+  //Función para detectar clicks en botones de matriz de boxes
+  function seleccionar(boton) {
+    const estado = boton.classList.contains('ocupado') ? 'Ocupado' : 'Libre';
+    const box = boton.innerText;
+    alert(`Seleccionaste ${box} - Estado: ${estado}`);
+  }
+  function mostrarDetalle(boxId, hora) {
+    alert("Box: " + boxId + ", Hora: " + hora);
+    // Aquí podrías hacer fetch para traer datos de detalle y mostrarlo en modal o div
+  }
+  
+</script>
+{% endblock %}
+
+{% block styles %}
+<style>
+    .celda-box {
+      width: 100px;
+      height: 40px;
+      text-align: center;
+      vertical-align: middle;
+      border: 1px solid #dee2e6;
+    }
+
+    .ocupado {
+      background-color: #f8d7da; /* Rojo claro */
+    }
+
+    .libre {
+      background-color: #d4edda; /* Verde claro */
+    }
+
+    .cabecera-box {
+      background-color: #f1f1f1;
+      font-weight: bold;
+    }
+
+    .hora {
+      background-color: #e9ecef;
+      font-weight: bold;
+    }
+    .time-slot {
+    width: 100px;
+    height: 40px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    border: none;
+    transition: 0.3s ease;
+    }
+
+    .libre {
+    background-color: #29a446;
+    }
+
+    .ocupado {
+    background-color: #ca525e;
+    }
+
+    .time-slot:hover {
+    opacity: 0.85;
+    cursor: pointer;
+    }
+
+  </style>
+{% endblock %}

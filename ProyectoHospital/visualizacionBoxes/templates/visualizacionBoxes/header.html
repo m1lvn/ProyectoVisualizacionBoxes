@@ -1,0 +1,46 @@
+<!-- HEADER INSTITUCIONAL HOSPITALARIO -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm fixed-top">
+  <div class="container-fluid">
+    <!-- Logo o Nombre del hospital -->
+    <a class="navbar-brand d-flex align-items-center fw-semibold text-primary" href="#">
+      <i class="bi bi-hospital fs-3 me-2 text-primary"></i>
+      Hospital Padre Hurtado
+    </a>
+
+    <!-- Botón de colapso para móviles -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <!-- Opciones del menú -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto align-items-center gap-3">
+        <li class="nav-item">
+          <a class="nav-link text-dark fw-semibold" href="{% url 'visualizacionBoxes:visualizacion_general' %}">Inicio</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-dark fw-semibold" href="{% url 'visualizacionBoxes:visualizacion_general' %}">Visualización General</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-dark fw-semibold" href="#" onclick="alert('Próximamente')">Visualización Pasillo</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link text-dark fw-semibold" href="#" onclick="alert('Próximamente')">Reportes</a>
+        </li>
+
+        <!-- Dropdown de usuario -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center text-dark" href="#" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-person-circle fs-4"></i>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="accountDropdown">
+            <li><a class="dropdown-item" href="#" onclick="alert('Próximamente')">Perfil</a></li>
+            <li><a class="dropdown-item" href="#" onclick="alert('Próximamente')">Configuración</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="#" onclick="alert('Próximamente')">Cerrar sesión</a></li>
+          </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
