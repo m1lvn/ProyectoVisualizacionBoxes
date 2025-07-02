@@ -1,147 +1,344 @@
-/* Estilos para los Filtros Superiores */
+/* ==================================================== */
+/* ESTILOS PARA FILTROS SUPERIORES - DISEÑO MODERNO */
+/* ==================================================== */
 
-.contenedor-tabla {
-    background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
-}
-
-/* Ajustes de padding para inputs y botones para que se vean más compactos */
-.form-select.form-select-sm {
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    font-size: 0.85rem;
-    border-radius: 20px;
-    border: 1px solid #ced4da;
-    transition: all 0.3s ease;
-}
-
-.form-select.form-select-sm:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-}
-
-.input-group-text {
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    font-size: 0.85rem;
+.filtros-container {
     background-color: #f8f9fa;
-    border: 1px solid #ced4da;
+    padding: 12px 20px;
+    border-radius: 8px;
+    margin: 10px 20px 5px 20px; /* Margin más específico: arriba, derecha, abajo, izquierda */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 
-.form-control {
-    font-size: 0.85rem;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    border: 1px solid #ced4da;
-    transition: all 0.3s ease;
+.filtros-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
 }
 
-.form-control:focus {
-    border-color: #0d6efd;
-    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+.filtros-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex: 1;
 }
 
-/* Botones horario más compactos */
-.btn-horario {
-    font-size: 0.75rem;
-    line-height: 1.2;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    padding-left: 0.6rem;
-    padding-right: 0.6rem;
-    border-radius: 20px;
-    transition: all 0.3s ease;
+.filtros-right {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-left: auto; /* Empujar hacia la derecha */
 }
 
-.btn-horario:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+/* ==================================================== */
+/* ESTILOS PARA DROPDOWNS */
+/* ==================================================== */
+
+.filtro-dropdown {
+    position: relative;
+    display: inline-block;
 }
 
-/* Grupo de botones de horario */
-.btn-group .btn-check:checked + .btn {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-    color: white;
+.filtro-select {
+    appearance: none;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px 35px 8px 12px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    min-width: 160px;
+    transition: all 0.2s ease;
 }
 
-/* Flechas navegación ajustadas */
-.btn-group .btn {
-    font-size: 1rem;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    min-width: 2.5rem;
-    border-radius: 20px;
-    transition: all 0.3s ease;
+.filtro-select:focus {
+    border-color: #0066cc;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
 }
 
-.btn-group .btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.dropdown-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    pointer-events: none;
+    font-size: 12px;
 }
 
-/* Estilos para los contenedores de filtros */
-.d-flex.gap-2 > * {
-    flex-shrink: 0;
+.profesional-dropdown {
+    position: relative;
 }
 
-/* Input group con bordes redondeados */
-.input-group.rounded-pill .input-group-text {
-    border-top-left-radius: 20px;
-    border-bottom-left-radius: 20px;
-    border-right: none;
+.profesional-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    pointer-events: none;
+    font-size: 16px;
 }
 
-.input-group.rounded-pill .form-control {
-    border-top-right-radius: 20px;
-    border-bottom-right-radius: 20px;
-    border-left: none;
+/* ==================================================== */
+/* CAMPOS DE BÚSQUEDA INLINE */
+/* ==================================================== */
+
+.search-input-group {
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    overflow: hidden;
+    transition: all 0.2s ease;
 }
 
-.input-group.rounded-pill .form-control:focus {
-    border-left: none;
-    box-shadow: none;
+.search-input-group:focus-within {
+    border-color: #0066cc;
+    box-shadow: 0 0 0 2px rgba(0, 102, 204, 0.1);
 }
 
-.input-group.rounded-pill:focus-within .input-group-text {
-    border-color: #0d6efd;
+.search-input {
+    border: none;
+    outline: none;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #333;
+    background: transparent;
+    width: 140px;
+    flex: 1;
 }
 
-/* Sombras para los elementos */
-.shadow-sm {
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+.search-input::placeholder {
+    color: #999;
+    font-size: 13px;
 }
 
-/* Responsivo */
-@media (max-width: 768px) {
-    .contenedor-tabla .d-flex {
+.btn-search-inline,
+.btn-clear-inline {
+    background: none;
+    border: none;
+    padding: 8px 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    color: #666;
+}
+
+.btn-search-inline:hover,
+.btn-clear-inline:hover {
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.btn-search-inline i,
+.btn-clear-inline i {
+    font-size: 14px;
+}
+
+.btn-clear-inline {
+    color: #dc3545;
+}
+
+.btn-clear-inline:hover {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* ==================================================== */
+/* NAVEGACIÓN DE PÁGINAS */
+/* ==================================================== */
+
+.navegacion-paginas {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 2px;
+}
+
+.btn-nav {
+    background: none;
+    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    color: #333;
+}
+
+.btn-nav:hover {
+    background-color: #f0f0f0;
+}
+
+.btn-nav:active {
+    background-color: #e0e0e0;
+}
+
+.btn-nav i {
+    font-size: 14px;
+}
+
+/* Estilos para botones de navegación deshabilitados */
+.btn-nav:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+    pointer-events: none;
+}
+
+/* ==================================================== */
+/* RESPONSIVO */
+/* ==================================================== */
+
+@media (max-width: 1024px) {
+    .filtros-row {
         flex-direction: column;
-        gap: 10px !important;
+        gap: 15px;
+        align-items: stretch;
     }
     
-    .d-flex.align-items-center.gap-2 {
+    .filtros-left,
+    .filtros-right {
+        justify-content: center;
         flex-wrap: wrap;
-        gap: 8px !important;
     }
     
-    .form-select.form-select-sm,
-    .input-group.input-group-sm {
+    .filtro-select {
         min-width: 140px;
-        max-width: 160px;
+    }
+}
+
+@media (max-width: 768px) {
+    .filtros-container {
+        padding: 10px 15px;
+    }
+    
+    .filtros-left {
+        gap: 10px;
+    }
+    
+    .filtros-right {
+        gap: 10px;
+    }
+    
+    .filtro-select {
+        min-width: 120px;
+        padding: 6px 30px 6px 10px;
+        font-size: 13px;
+    }
+    
+    .search-input {
+        width: 120px;
+        font-size: 13px;
     }
 }
 
 @media (max-width: 576px) {
-    .btn-horario {
-        font-size: 0.7rem;
-        padding-left: 0.4rem;
-        padding-right: 0.4rem;
+    .filtro-select {
+        min-width: 100px;
+        font-size: 12px;
     }
     
-    .btn-group .btn {
-        min-width: 2rem;
-        font-size: 0.9rem;
+    .search-input-group {
+        max-width: 100%;
+        min-width: 120px;
     }
+    
+    .search-input {
+        width: 100px;
+        font-size: 13px;
+    }
+}
+
+/* ==================================================== */
+/* ESTADOS ACTIVOS Y HOVER */
+/* ==================================================== */
+
+.filtro-dropdown:hover .filtro-select {
+    border-color: #bbb;
+}
+
+/* ==================================================== */
+/* INDICADORES DE FILTROS ACTIVOS */
+/* ==================================================== */
+
+.filtros-activos {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f0f8ff;
+    border-radius: 6px;
+    border: 1px solid #b8d4f1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filtros-activos-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c5282;
+    margin-right: 5px;
+}
+
+.filtro-activo-badge {
+    background-color: #0066cc;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 15px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-remove-filter {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.btn-remove-filter:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-clear-all-filters {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: background-color 0.2s ease;
+}
+
+.btn-clear-all-filters:hover {
+    background-color: #c82333;
 }
