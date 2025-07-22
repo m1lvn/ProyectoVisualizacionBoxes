@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-)lde5c0rf(96+6yjw^d7_5ceewe0syt-el8=l6^ifhw6xt@4qt
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']  # Añadido para desarrollo
 
 
 # Application definition
@@ -83,6 +83,7 @@ DATABASES = {
         'PORT': '3306',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',  # Añadido para mejor soporte de caracteres
         }
     }
 }
@@ -110,9 +111,9 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-cl'  # Cambiado a español chileno
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Santiago'  # Zona horaria de Chile
 
 USE_I18N = True
 
@@ -123,6 +124,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Para producción
+
+# Media files (archivos subidos por usuarios)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

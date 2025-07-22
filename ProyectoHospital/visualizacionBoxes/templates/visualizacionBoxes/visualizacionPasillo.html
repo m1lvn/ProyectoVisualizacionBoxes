@@ -1,0 +1,253 @@
+{% extends 'visualizacionBoxes/base.html' %}
+{% load static %}
+{% load visual_pasillo %}
+{% block title %}Visualización por Pasillo{% endblock %}
+
+{% block content %}
+  {% include "visualizacionBoxes/header.html" %}
+  {% include "visualizacionBoxes/filtrosSuperioresPasillo.html" %}
+
+  <div class="container-fluid mt-3 px-4 visualizacion-pasillo">
+    <div class="row">
+      <!-- Leyenda de estados -->
+      <div class="col-lg-2 d-none d-lg-block leyenda-pasillo">
+        {% include "visualizacionBoxes/leyendaBoxes.html" %}
+      </div>
+
+      <!-- Matriz de Boxes -->
+      <div class="col-lg-7 col-md-12">
+        <div class="contenedor-tabla position-relative">
+          <div class="table-responsive position-relative">
+            <div id="linea-hora-actual"></div>
+            
+            <table class="table table-bordered text-center w-100 table-boxes">
+              <thead class="table-light">
+                <tr>
+                  <th class="celda-hora">Hora</th>
+                  {% for box in boxes %}
+                    <th class="columna-box" data-pasillo="{{ box.idpasillo.pasillo|lower }}">
+                      BOX {{ box.idbox }}
+                    </th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for hora in horas %}
+                  <tr class="fila-horario" data-hora="{{ hora }}">
+                    <td class="celda-hora"><strong>{{ hora }}</strong></td>
+                    {% for box in boxes %}
+                      {% with key=box.idbox|stringformat:"s"|add:"-"|add:hora %}
+                        {% with estado=estado_por_box_y_hora|get_item:key %}
+                          {% with info=info_por_box_y_hora|get_item:key %}
+                            <td class="time-slot {% if estado == 'Reservado' %}ocupado{% elif estado == 'Disponible' %}libre{% elif estado == 'Inhabilitado' %}inhabilitado{% elif estado == 'En mantención' %}mantencion{% elif estado == 'Limpieza' %}limpieza{% else %}libre{% endif %}" 
+                                data-pasillo="{{ box.idpasillo.pasillo|lower }}" 
+                                data-box="{{ box.idbox }}" 
+                                data-hora="{{ hora }}">
+                              {% if estado == 'Reservado' %}
+                                {{ info }}
+                              {% elif estado == 'Disponible' %}
+                                <!-- Libre -->
+                              {% elif estado == 'Inhabilitado' %}
+                                Inhabilitado
+                              {% elif estado == 'En mantención' %}
+                                Mantenimiento
+                              {% elif estado == 'Limpieza' %}
+                                Limpieza
+                              {% else %}
+                                <!-- Libre -->
+                              {% endif %}
+                            </td>
+                          {% endwith %}
+                        {% endwith %}
+                      {% endwith %}
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Información del Pasillo -->
+      <div class="col-lg-3 col-md-12 mt-4 mt-lg-0">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="card-title mb-0">
+              <i class="fas fa-info-circle me-2"></i>
+              Información del Pasillo
+            </h5>
+          </div>
+          <div class="card-body">
+            {% if pasillo_actual %}
+              <h6 class="text-primary">{{ pasillo_actual.pasillo }}</h6>
+              {% if is_paginated %}
+                <p class="mb-2"><strong>Mostrando:</strong> {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ paginator.count }} boxes</p>
+                <p class="mb-2"><strong>Página:</strong> {{ page_obj.number }} de {{ paginator.num_pages }}</p>
+              {% else %}
+                <p class="mb-2"><strong>Total de boxes:</strong> {{ boxes|length }}</p>
+              {% endif %}
+              <p class="mb-2"><strong>Fecha:</strong> {{ fecha|date:"d/m/Y" }}</p>
+              
+              <div class="row text-center">
+                <div class="col-6">
+                  <div class="border rounded p-2">
+                    <div class="h4 text-success mb-1" id="boxes-libres">0</div>
+                    <small class="text-muted">Libres</small>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="border rounded p-2">
+                    <div class="h4 text-danger mb-1" id="boxes-ocupados">0</div>
+                    <small class="text-muted">Ocupados</small>
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              <p class="text-muted">Seleccione un pasillo para ver la información.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/visualizacionPasillo.js' %}"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Configuración de la vista
+      const config = {
+        HORA_ACTUAL: '{{ hora_actual|time:"H:i" }}',
+        FECHA_ACTUAL: '{{ fecha|date:"Y-m-d" }}',
+        PASILLO_ID: {{ pasillo_seleccionado|default:'null' }},
+        ACTUALIZAR_CADA: 30000
+      };
+      
+      // Inicializar funcionalidades específicas del template
+      initializarVisualizacionPasillo(config);
+    });
+    
+    /**
+     * Inicializa las funcionalidades específicas del template
+     */
+    function initializarVisualizacionPasillo(config) {
+      // Marcar hora actual en la tabla
+      marcarHoraActual(config.HORA_ACTUAL);
+      
+      // Actualizar contadores de boxes
+      actualizarContadores();
+      
+      // Configurar eventos de celdas
+      configurarEventosCeldas();
+    }
+    
+    /**
+     * Marca la hora actual en la tabla
+     */
+    function marcarHoraActual(horaActual) {
+      // Remover marcas previas
+      document.querySelectorAll('.fila-horario.hora-actual').forEach(fila => {
+        fila.classList.remove('hora-actual');
+      });
+      
+      // Marcar nueva hora actual
+      document.querySelectorAll('.fila-horario').forEach(fila => {
+        if (fila.dataset.hora === horaActual) {
+          fila.classList.add('hora-actual');
+          
+          // Scroll suave hacia la hora actual
+          fila.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }
+      });
+    }
+    
+    /**
+     * Actualiza los contadores de boxes libres y ocupados
+     */
+    function actualizarContadores() {
+      const slots = document.querySelectorAll('.time-slot');
+      const libres = document.querySelectorAll('.time-slot.libre').length;
+      const ocupados = document.querySelectorAll('.time-slot.ocupado').length;
+      const inhabilitados = document.querySelectorAll('.time-slot.inhabilitado').length;
+      const mantencion = document.querySelectorAll('.time-slot.mantencion').length;
+      const limpieza = document.querySelectorAll('.time-slot.limpieza').length;
+      
+      // Actualizar contadores en la UI
+      const contadorLibres = document.getElementById('boxes-libres');
+      const contadorOcupados = document.getElementById('boxes-ocupados');
+      
+      if (contadorLibres) {
+        contadorLibres.textContent = libres;
+        contadorLibres.parentElement.setAttribute('title', `${libres} boxes libres`);
+      }
+      
+      if (contadorOcupados) {
+        contadorOcupados.textContent = ocupados;
+        contadorOcupados.parentElement.setAttribute('title', `${ocupados} boxes ocupados`);
+      }
+      
+      // Log para depuración
+      console.log('📊 Contadores actualizados:', {
+        libres, ocupados, inhabilitados, mantencion, limpieza,
+        total: slots.length
+      });
+    }
+    
+    /**
+     * Configura los eventos de click en las celdas
+     */
+    function configurarEventosCeldas() {
+      document.querySelectorAll('.time-slot').forEach(celda => {
+        celda.addEventListener('click', function(event) {
+          const box = this.dataset.box;
+          const hora = this.dataset.hora;
+          const pasillo = this.dataset.pasillo;
+          
+          // Determinar estado del box
+          let estado = 'libre';
+          if (this.classList.contains('ocupado')) estado = 'ocupado';
+          else if (this.classList.contains('inhabilitado')) estado = 'inhabilitado';
+          else if (this.classList.contains('mantencion')) estado = 'mantenimiento';
+          else if (this.classList.contains('limpieza')) estado = 'limpieza';
+          
+          // Información del box
+          const info = this.textContent.trim();
+          
+          // Mostrar información detallada
+          mostrarDetalleBox(box, hora, pasillo, estado, info);
+        });
+      });
+    }
+    
+    /**
+     * Muestra el detalle de un box en un modal o alert
+     */
+    function mostrarDetalleBox(box, hora, pasillo, estado, info) {
+      const detalles = [
+        `🏥 Box: ${box}`,
+        `🕒 Hora: ${hora}`,
+        `🏢 Pasillo: ${pasillo}`,
+        `📋 Estado: ${estado}`,
+        info ? `ℹ️ Info: ${info}` : ''
+      ].filter(Boolean).join('\n');
+      
+      // Por ahora usamos alert, pero se puede reemplazar con un modal
+      alert(detalles);
+      
+      // Log para depuración
+      console.log('🔍 Detalle del box:', { box, hora, pasillo, estado, info });
+    }
+  </script>
+{% endblock %}
+
+{% block styles %}
+  <link rel="stylesheet" href="{% static 'css/leyendaBoxes.css' %}">
+  <link rel="stylesheet" href="{% static 'css/visualizacionPasillo.css' %}">
+  <link rel="stylesheet" href="{% static 'css/filtrosSuperioresPasillo.css' %}">
+{% endblock %}

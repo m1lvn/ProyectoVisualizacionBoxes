@@ -1,31 +1,26 @@
+// ============================================================================
+// VISUALIZACIÓN GENERAL DE BOXES - VERSIÓN FINAL ORGANIZADA
+// ============================================================================
+
 /**
- * Visualización General de Boxes - JavaScript
- * 
- * Este archivo contiene las funcionalidades JavaScript para la visualización
- * general de boxes del hospital, incluyendo modales, filtros y navegación.
- * 
- * @author Hospital System
- * @version 1.0
+ * Configuración global de la aplicación
  */
-
-// ==================== CONFIGURACIÓN GLOBAL ====================
-
-const CONFIG = {
-    // Intervalo de actualización automática (30 segundos)
-    UPDATE_INTERVAL: 30000,
-    
-    // Configuración del datepicker
+const CONFIG_GENERAL = {
+    UPDATE_INTERVAL: 30000, // Actualización automática cada 30 segundos
+    BOXES_POR_PAGINA: 48,   // 8 columnas x 6 filas
+    DEBUG: false,           // Desactivar debug en producción
     DATE_FORMAT: "Y-m-d",
     LOCALE: "es"
 };
 
-// ==================== FUNCIONES PRINCIPALES ====================
+// ============================================================================
+// FUNCIONES PRINCIPALES
+// ============================================================================
 
 /**
- * Muestra el modal con detalles de un box específico.
- * 
+ * Muestra el modal con detalles de un box específico
  * @param {string} boxId - ID del box a consultar
- * @param {boolean} disponible - Estado actual del box (true = disponible)
+ * @param {boolean} disponible - Estado actual del box
  */
 function mostrarDetalle(boxId, disponible) {
     const fecha = _obtenerFechaActual();
@@ -54,21 +49,16 @@ function mostrarDetalle(boxId, disponible) {
 }
 
 /**
- * Aplica los filtros seleccionados y recarga la página.
+ * Aplica los filtros seleccionados y recarga la página
  */
 function aplicarFiltros() {
     const filtros = _obtenerFiltrosActivos();
     const url = _construirUrlConFiltros(filtros);
-    
-    // Reiniciar paginación antes de aplicar filtros
-    paginaActual = 1;
-    
     window.location.href = url;
 }
 
 /**
- * Cambia la fecha seleccionada en el número de días especificado.
- * 
+ * Cambia la fecha seleccionada en el número de días especificado
  * @param {number} dias - Número de días a sumar (positivo) o restar (negativo)
  */
 function cambiarFecha(dias) {
@@ -80,17 +70,18 @@ function cambiarFecha(dias) {
 }
 
 /**
- * Actualiza automáticamente el estado de los boxes recargando la página.
+ * Actualiza automáticamente el estado de los boxes
  */
 function actualizarEstadoBoxes() {
     location.reload();
 }
 
-// ==================== FUNCIONES AUXILIARES ====================
+// ============================================================================
+// FUNCIONES AUXILIARES PRIVADAS
+// ============================================================================
 
 /**
- * Obtiene la fecha actual en formato ISO.
- * 
+ * Obtiene la fecha actual en formato ISO
  * @returns {string} Fecha en formato 'YYYY-MM-DD'
  * @private
  */
@@ -100,8 +91,7 @@ function _obtenerFechaActual() {
 }
 
 /**
- * Construye la URL para obtener detalles de un box.
- * 
+ * Construye la URL para obtener detalles de un box
  * @param {string} boxId - ID del box
  * @param {string} fecha - Fecha en formato ISO
  * @returns {string} URL completa
@@ -113,8 +103,104 @@ function _construirUrlDetalle(boxId, fecha) {
 }
 
 /**
- * Genera el contenido HTML del modal con la información del box.
- * 
+ * Obtiene los filtros activos del formulario
+ * @returns {Object} Objeto con los filtros activos
+ * @private
+ */
+function _obtenerFiltrosActivos() {
+    const fecha = document.getElementById('fecha')?.value || '';
+    const pasillo = document.getElementById('pasillo')?.value || '';
+    const codigoMedico = document.getElementById('codigoMedico')?.value || '';
+    const codigoBox = document.getElementById('codigoBox')?.value || '';
+    
+    return { fecha, pasillo, medico: codigoMedico, box: codigoBox };
+}
+
+/**
+ * Construye la URL con los filtros aplicados
+ * @param {Object} filtros - Filtros a aplicar
+ * @returns {string} URL con parámetros de filtro
+ * @private
+ */
+function _construirUrlConFiltros(filtros) {
+    const params = new URLSearchParams();
+    
+    if (filtros.fecha) params.set('fecha', filtros.fecha);
+    if (filtros.pasillo) params.set('pasillo', filtros.pasillo);
+    if (filtros.medico) params.set('medico', filtros.medico);
+    if (filtros.box) params.set('box', filtros.box);
+    
+    const queryString = params.toString();
+    return window.location.pathname + (queryString ? '?' + queryString : '');
+}
+
+/**
+ * Obtiene la fecha actual del input de fecha
+ * @returns {Date} Fecha actual del input
+ * @private
+ */
+function _obtenerFechaInput() {
+    const fechaInput = document.getElementById('fecha');
+    return fechaInput ? new Date(fechaInput.value) : new Date();
+}
+
+/**
+ * Calcula una nueva fecha sumando días a la fecha actual
+ * @param {Date} fechaActual - Fecha base
+ * @param {number} dias - Días a sumar/restar
+ * @returns {Date} Nueva fecha calculada
+ * @private
+ */
+function _calcularNuevaFecha(fechaActual, dias) {
+    const nuevaFecha = new Date(fechaActual);
+    nuevaFecha.setDate(nuevaFecha.getDate() + dias);
+    return nuevaFecha;
+}
+
+/**
+ * Actualiza el input de fecha con una nueva fecha
+ * @param {Date} nuevaFecha - Nueva fecha a establecer
+ * @private
+ */
+function _actualizarFechaInput(nuevaFecha) {
+    const fechaInput = document.getElementById('fecha');
+    if (fechaInput) {
+        fechaInput.value = nuevaFecha.toISOString().split('T')[0];
+    }
+}
+
+/**
+ * Muestra un loader mientras se cargan los datos
+ * @private
+ */
+function _mostrarLoader() {
+    if (CONFIG_GENERAL.DEBUG) {
+        console.log('Cargando...');
+    }
+}
+
+/**
+ * Oculta el loader
+ * @private
+ */
+function _ocultarLoader() {
+    if (CONFIG_GENERAL.DEBUG) {
+        console.log('Carga completada');
+    }
+}
+
+/**
+ * Muestra un mensaje de error al usuario
+ * @param {string} mensaje - Mensaje de error a mostrar
+ * @private
+ */
+function _mostrarError(mensaje) {
+    console.error(mensaje);
+    alert('Error: ' + mensaje);
+}
+
+/**
+ * Genera el contenido HTML del modal con la información del box
  * @param {Object} data - Datos del box y agenda
  * @param {string} fecha - Fecha actual
  * @returns {string} HTML del contenido del modal
@@ -156,125 +242,18 @@ function _generarContenidoModal(data, fecha) {
 }
 
 /**
- * Obtiene los filtros activos del formulario.
- * 
- * @returns {Object} Objeto con los filtros activos
- * @private
- */
-function _obtenerFiltrosActivos() {
-    const fecha = document.getElementById('fecha')?.value || '';
-    const pasillo = document.getElementById('pasillo')?.value || '';
-    const codigoMedico = document.getElementById('codigoMedico')?.value || '';
-    const codigoBox = document.getElementById('codigoBox')?.value || '';
-    
-    return { fecha, pasillo, medico: codigoMedico, box: codigoBox };
-}
-
-/**
- * Construye la URL con los filtros aplicados.
- * 
- * @param {Object} filtros - Filtros a aplicar
- * @returns {string} URL con parámetros de filtro
- * @private
- */
-function _construirUrlConFiltros(filtros) {
-    const params = new URLSearchParams();
-    
-    if (filtros.fecha) params.set('fecha', filtros.fecha);
-    if (filtros.pasillo) params.set('pasillo', filtros.pasillo);
-    if (filtros.medico) params.set('medico', filtros.medico);
-    if (filtros.box) params.set('box', filtros.box);
-    
-    const queryString = params.toString();
-    return window.location.pathname + (queryString ? '?' + queryString : '');
-}
-
-/**
- * Obtiene la fecha actual del input de fecha.
- * 
- * @returns {Date} Fecha actual del input
- * @private
- */
-function _obtenerFechaInput() {
-    const fechaInput = document.getElementById('fecha');
-    return fechaInput ? new Date(fechaInput.value) : new Date();
-}
-
-/**
- * Calcula una nueva fecha sumando días a la fecha actual.
- * 
- * @param {Date} fechaActual - Fecha base
- * @param {number} dias - Días a sumar/restar
- * @returns {Date} Nueva fecha calculada
- * @private
- */
-function _calcularNuevaFecha(fechaActual, dias) {
-    const nuevaFecha = new Date(fechaActual);
-    nuevaFecha.setDate(nuevaFecha.getDate() + dias);
-    return nuevaFecha;
-}
-
-/**
- * Actualiza el input de fecha con una nueva fecha.
- * 
- * @param {Date} nuevaFecha - Nueva fecha a establecer
- * @private
- */
-function _actualizarFechaInput(nuevaFecha) {
-    const fechaInput = document.getElementById('fecha');
-    if (fechaInput) {
-        fechaInput.value = nuevaFecha.toISOString().split('T')[0];
-    }
-}
-
-/**
- * Muestra un loader mientras se cargan los datos.
- * 
- * @private
- */
-function _mostrarLoader() {
-    // Implementar según el diseño del modal
-    console.log('Cargando...');
-}
-
-/**
- * Oculta el loader.
- * 
- * @private
- */
-function _ocultarLoader() {
-    // Implementar según el diseño del modal
-    console.log('Carga completada');
-}
-
-/**
- * Muestra un mensaje de error al usuario.
- * 
- * @param {string} mensaje - Mensaje de error a mostrar
- * @private
- */
-function _mostrarError(mensaje) {
-    console.error(mensaje);
-    alert('Error: ' + mensaje);
-}
-
-/**
- * Muestra el modal con el contenido proporcionado.
- * 
+ * Muestra el modal con el contenido proporcionado
  * @param {string} contenido - HTML del contenido del modal
  * @private
  */
 function _mostrarModal(contenido) {
-    // Buscar el modal en el DOM
     let modal = document.getElementById('detalleModal');
     
     if (!modal) {
-        // Crear modal si no existe
         modal = _crearModal();
         document.body.appendChild(modal);
     }
     
-    // Actualizar contenido del modal
     const modalBody = modal.querySelector('.modal-body');
     if (modalBody) {
         modalBody.innerHTML = contenido;
@@ -285,15 +264,13 @@ function _mostrarModal(contenido) {
         const modalInstance = new bootstrap.Modal(modal);
         modalInstance.show();
     } else {
-        // Fallback para mostrar modal sin Bootstrap
         modal.style.display = 'block';
         modal.classList.add('show');
     }
 }
 
 /**
- * Crea el elemento modal dinámicamente.
- * 
+ * Crea el elemento modal dinámicamente
  * @returns {HTMLElement} Elemento modal creado
  * @private
  */
@@ -320,11 +297,12 @@ function _crearModal() {
     return modal;
 }
 
-// ==================== FUNCIONES DE PAGINACIÓN ====================
+// ============================================================================
+// FUNCIONES DE PAGINACIÓN
+// ============================================================================
 
 // Variables globales para paginación
 let paginaActual = 1;
-let boxesPorPagina = 48; // 8 columnas x 6 filas para coincidir con la imagen
 let totalPaginas = 1;
 
 /**
@@ -332,7 +310,7 @@ let totalPaginas = 1;
  */
 function calcularPaginas() {
     const totalBoxes = document.querySelectorAll('.box-item').length;
-    totalPaginas = Math.ceil(totalBoxes / boxesPorPagina);
+    totalPaginas = Math.ceil(totalBoxes / CONFIG_GENERAL.BOXES_POR_PAGINA);
     return totalPaginas;
 }
 
@@ -342,7 +320,7 @@ function calcularPaginas() {
 function paginaAnterior() {
     if (paginaActual > 1) {
         paginaActual--;
-        mostrarPaginaMejorada(paginaActual);
+        mostrarPagina(paginaActual);
         actualizarIndicadoresPaginacion();
     }
 }
@@ -354,7 +332,7 @@ function paginaSiguiente() {
     calcularPaginas();
     if (paginaActual < totalPaginas) {
         paginaActual++;
-        mostrarPaginaMejorada(paginaActual);
+        mostrarPagina(paginaActual);
         actualizarIndicadoresPaginacion();
     }
 }
@@ -365,81 +343,21 @@ function paginaSiguiente() {
  */
 function mostrarPagina(pagina) {
     const boxes = document.querySelectorAll('.box-item');
-    const inicio = (pagina - 1) * boxesPorPagina;
-    const fin = inicio + boxesPorPagina;
+    const inicio = (pagina - 1) * CONFIG_GENERAL.BOXES_POR_PAGINA;
+    const fin = inicio + CONFIG_GENERAL.BOXES_POR_PAGINA;
     
-    // Ocultar todos los boxes
+    // Mostrar/ocultar boxes según la página
     boxes.forEach((box, index) => {
-        if (index >= inicio && index < fin) {
-            box.style.display = 'flex';
-        } else {
-            box.style.display = 'none';
-        }
+        box.style.display = (index >= inicio && index < fin) ? 'flex' : 'none';
     });
     
-    // Agregar efecto de transición
+    // Efecto de transición
     const grid = document.querySelector('.boxes-grid');
     if (grid) {
         grid.style.opacity = '0.5';
-        setTimeout(() => {
-            grid.style.opacity = '1';
-        }, 200);
-    }
-}
-
-/**
- * Actualizar información de resultados
- */
-function actualizarInfoResultados() {
-    const totalBoxes = document.querySelectorAll('.box-item').length;
-    const boxesPaginaActual = Math.min(boxesPorPagina, totalBoxes - (paginaActual - 1) * boxesPorPagina);
-    
-    // Crear o actualizar indicador de resultados
-    let indicadorResultados = document.querySelector('.indicador-resultados');
-    if (!indicadorResultados) {
-        indicadorResultados = document.createElement('div');
-        indicadorResultados.className = 'indicador-resultados';
-        const contenedorMatriz = document.querySelector('.contenedor-matriz');
-        if (contenedorMatriz) {
-            contenedorMatriz.insertBefore(indicadorResultados, contenedorMatriz.firstChild);
-        }
+        setTimeout(() => grid.style.opacity = '1', 200);
     }
     
-    indicadorResultados.innerHTML = `
-        <span class="resultados-texto">
-            Mostrando ${boxesPaginaActual} de ${totalBoxes} boxes
-            ${totalPaginas > 1 ? `(Página ${paginaActual} de ${totalPaginas})` : ''}
-        </span>
-    `;
-}
-
-/**
- * Mejorar la función mostrarPagina para incluir actualización de resultados
- */
-function mostrarPaginaMejorada(pagina) {
-    const boxes = document.querySelectorAll('.box-item');
-    const inicio = (pagina - 1) * boxesPorPagina;
-    const fin = inicio + boxesPorPagina;
-    
-    // Ocultar todos los boxes
-    boxes.forEach((box, index) => {
-        if (index >= inicio && index < fin) {
-            box.style.display = 'flex';
-        } else {
-            box.style.display = 'none';
-        }
-    });
-    
-    // Agregar efecto de transición
-    const grid = document.querySelector('.boxes-grid');
-    if (grid) {
-        grid.style.opacity = '0.5';
-        setTimeout(() => {
-            grid.style.opacity = '1';
-        }, 200);
-    }
-    
-    // Actualizar información de resultados
     actualizarInfoResultados();
 }
 
@@ -461,19 +379,45 @@ function actualizarIndicadoresPaginacion() {
         btnSiguiente.style.opacity = paginaActual >= totalPaginas ? '0.5' : '1';
     }
     
-    // Mostrar información de página actual
     if (navegacion) {
         navegacion.setAttribute('data-pagina', `Página ${paginaActual} de ${totalPaginas}`);
     }
 }
 
-// ==================== FUNCIONES DE BÚSQUEDA ====================
+/**
+ * Actualiza la información de resultados mostrados
+ */
+function actualizarInfoResultados() {
+    const totalBoxes = document.querySelectorAll('.box-item').length;
+    const boxesPaginaActual = Math.min(CONFIG_GENERAL.BOXES_POR_PAGINA, totalBoxes - (paginaActual - 1) * CONFIG_GENERAL.BOXES_POR_PAGINA);
+    
+    let indicadorResultados = document.querySelector('.indicador-resultados');
+    if (!indicadorResultados) {
+        indicadorResultados = document.createElement('div');
+        indicadorResultados.className = 'indicador-resultados';
+        const contenedorMatriz = document.querySelector('.contenedor-matriz');
+        if (contenedorMatriz) {
+            contenedorMatriz.insertBefore(indicadorResultados, contenedorMatriz.firstChild);
+        }
+    }
+    
+    indicadorResultados.innerHTML = `
+        <span class="resultados-texto">
+            Mostrando ${boxesPaginaActual} de ${totalBoxes} boxes
+            ${totalPaginas > 1 ? `(Página ${paginaActual} de ${totalPaginas})` : ''}
+        </span>
+    `;
+}
+
+// ============================================================================
+// FUNCIONES DE BÚSQUEDA Y FILTROS
+// ============================================================================
 
 /**
- * Buscar por código médico
+ * Busca por código médico
  */
 function buscarPorMedico() {
-    const codigoMedico = document.getElementById('codigoMedico').value.trim();
+    const codigoMedico = document.getElementById('codigoMedico')?.value.trim();
     
     if (!codigoMedico) {
         _mostrarError('Por favor, ingrese un código médico válido');
@@ -482,119 +426,28 @@ function buscarPorMedico() {
     
     _mostrarLoader();
     
-    // Agregar parámetro de búsqueda médica a la URL
     const url = new URL(window.location);
     url.searchParams.set('medico', codigoMedico);
-    
-    // Recargar la página con el filtro de médico
     window.location.href = url.toString();
 }
 
 /**
- * Buscar por código de box
+ * Busca por código de box
  */
 function buscarPorBox() {
-    const codigoBox = document.getElementById('codigoBox').value.trim();
+    const codigoBox = document.getElementById('codigoBox')?.value.trim();
     
     if (!codigoBox) {
         _mostrarError('Por favor, ingrese un código de box válido');
         return;
     }
     
-    // Buscar el box en la página actual
-    const boxes = document.querySelectorAll('.box-item');
-    let boxEncontrado = false;
-    
-    boxes.forEach((box, index) => {
-        const textoBox = box.textContent.trim();
-        if (textoBox === codigoBox) {
-            // Calcular en qué página está el box
-            const paginaDelBox = Math.ceil((index + 1) / boxesPorPagina);
-            
-            // Ir a esa página
-            paginaActual = paginaDelBox;
-            mostrarPagina(paginaActual);
-            actualizarIndicadoresPaginacion();
-            
-            // Resaltar el box encontrado
-            setTimeout(() => {
-                box.style.animation = 'pulse 1s ease-in-out 3';
-                box.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 300);
-            
-            boxEncontrado = true;
-        }
-    });
-    
-    if (!boxEncontrado) {
-        _mostrarError(`No se encontró el box con código: ${codigoBox}`);
-    }
-}
-
-/**
- * Inicializa el estado de los filtros de búsqueda al cargar la página
- */
-function inicializarFiltrosBusqueda() {
-    const codigoMedico = document.getElementById('codigoMedico')?.value;
-    const codigoBox = document.getElementById('codigoBox')?.value;
-    
-    // Mostrar búsqueda médica si hay valor
-    if (codigoMedico) {
-        const busquedaMedico = document.getElementById('busqueda-medico');
-        const btnMedico = document.querySelector('.btn-search:first-of-type');
-        if (busquedaMedico && btnMedico) {
-            busquedaMedico.style.display = 'block';
-            busquedaMedico.classList.add('show');
-            btnMedico.classList.add('active');
-        }
-    }
-    
-    // Mostrar búsqueda box si hay valor
-    if (codigoBox) {
-        const busquedaBox = document.getElementById('busqueda-box');
-        const btnBox = document.querySelector('.btn-search:last-of-type');
-        if (busquedaBox && btnBox) {
-            busquedaBox.style.display = 'block';
-            busquedaBox.classList.add('show');
-            btnBox.classList.add('active');
-        }
-    }
-}
-
-/**
- * Limpiar filtro de búsqueda médica
- */
-function limpiarBusquedaMedico() {
-    document.getElementById('codigoMedico').value = '';
     aplicarFiltros();
 }
 
 /**
- * Limpiar filtro de búsqueda de box
- */
-function limpiarBusquedaBox() {
-    document.getElementById('codigoBox').value = '';
-    aplicarFiltros();
-}
-
-/**
- * Mejorar la función de búsqueda por box para que también aplique filtros
- */
-function buscarPorBoxMejorado() {
-    const codigoBox = document.getElementById('codigoBox').value.trim();
-    
-    if (!codigoBox) {
-        _mostrarError('Por favor, ingrese un código de box válido');
-        return;
-    }
-    
-    // Aplicar filtro por box
-    aplicarFiltros();
-}
-
-/**
- * Remover un filtro específico
- * @param {string} tipoFiltro - Tipo de filtro a remover ('pasillo', 'medico', 'box')
+ * Remueve un filtro específico
+ * @param {string} tipoFiltro - Tipo de filtro a remover
  */
 function removerFiltro(tipoFiltro) {
     const url = new URL(window.location);
@@ -617,13 +470,12 @@ function removerFiltro(tipoFiltro) {
 }
 
 /**
- * Limpiar todos los filtros activos
+ * Limpia todos los filtros activos
  */
 function limpiarTodosFiltros() {
     const url = new URL(window.location);
     const fecha = url.searchParams.get('fecha'); // Mantener la fecha
     
-    // Limpiar todos los parámetros excepto la fecha
     url.search = '';
     if (fecha) {
         url.searchParams.set('fecha', fecha);
@@ -632,37 +484,49 @@ function limpiarTodosFiltros() {
     window.location.href = url.toString();
 }
 
-// ==================== INICIALIZACIÓN ====================
+// ============================================================================
+// INICIALIZACIÓN
+// ============================================================================
 
 /**
- * Inicializa la aplicación cuando el DOM esté listo.
+ * Inicializa la aplicación cuando el DOM esté listo
  */
 document.addEventListener('DOMContentLoaded', function() {
+    // Registrar funciones globalmente para uso en templates
+    window.mostrarDetalle = mostrarDetalle;
+    window.aplicarFiltros = aplicarFiltros;
+    window.cambiarFecha = cambiarFecha;
+    window.actualizarEstadoBoxes = actualizarEstadoBoxes;
+    window.paginaAnterior = paginaAnterior;
+    window.paginaSiguiente = paginaSiguiente;
+    window.buscarPorMedico = buscarPorMedico;
+    window.buscarPorBox = buscarPorBox;
+    window.removerFiltro = removerFiltro;
+    window.limpiarTodosFiltros = limpiarTodosFiltros;
+    
+    // Inicializar funcionalidades
+    inicializarPaginacion();
+    configurarEventosEnter();
+    
     // Configurar actualización automática si está habilitada
-    if (CONFIG.UPDATE_INTERVAL > 0) {
-        setInterval(actualizarEstadoBoxes, CONFIG.UPDATE_INTERVAL);
+    if (CONFIG_GENERAL.UPDATE_INTERVAL > 0) {
+        setInterval(actualizarEstadoBoxes, CONFIG_GENERAL.UPDATE_INTERVAL);
     }
     
-    // Agregar listeners a eventos específicos si es necesario
-    console.log('Visualización General de Boxes inicializada');
-    
-    // Inicializar paginación
-    inicializarPaginacion();
-    inicializarFiltrosBusqueda();
-    agregarListenersEnter();
+    if (CONFIG_GENERAL.DEBUG) {
+        console.log('🏥 Visualización General de Boxes inicializada');
+    }
 });
 
-// ==================== INICIALIZACIÓN DE PAGINACIÓN ====================
-
 /**
- * Inicializa la funcionalidad de paginación al cargar la página
+ * Inicializa la funcionalidad de paginación
  */
 function inicializarPaginacion() {
     calcularPaginas();
-    mostrarPaginaMejorada(1);
+    mostrarPagina(1);
     actualizarIndicadoresPaginacion();
     
-    // Agregar estilos para la animación de pulse
+    // Agregar estilos para animaciones
     if (!document.querySelector('#pulse-style')) {
         const style = document.createElement('style');
         style.id = 'pulse-style';
@@ -678,9 +542,9 @@ function inicializarPaginacion() {
 }
 
 /**
- * Agregar listeners para presionar Enter en campos de búsqueda
+ * Configura eventos de teclado para los campos de búsqueda
  */
-function agregarListenersEnter() {
+function configurarEventosEnter() {
     const codigoMedicoInput = document.getElementById('codigoMedico');
     const codigoBoxInput = document.getElementById('codigoBox');
     
@@ -695,7 +559,7 @@ function agregarListenersEnter() {
     if (codigoBoxInput) {
         codigoBoxInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                buscarPorBoxMejorado();
+                buscarPorBox();
             }
         });
     }

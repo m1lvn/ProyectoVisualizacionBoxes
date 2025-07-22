@@ -21,15 +21,16 @@ INTERVALOS_ACTUALIZACION = {
     'LENTO': 60000,     # 1 minuto
 }
 
-# Configuración de horarios
+# Configuración de horarios - SIN RESTRICCIONES (24/7)
 HORARIOS = {
-    'INICIO_DIA': '08:00',
-    'FIN_DIA': '18:00',
-    'INTERVALO_MINUTOS': 30,
+    'INICIO_DIA': '00:00',      # Permite desde medianoche
+    'FIN_DIA': '23:59',         # Hasta antes de medianoche
+    'INTERVALO_MINUTOS': 30,    # Mantener intervalos de 30 minutos
     'BLOQUES': {
-        'AM': {'inicio': '08:00', 'fin': '12:00'},
-        'PM': {'inicio': '14:00', 'fin': '18:00'},
-        'FULLTIME': {'inicio': '08:00', 'fin': '18:00'},
+        'AM': {'inicio': '00:00', 'fin': '11:59'},      # Madrugada/Mañana
+        'PM': {'inicio': '12:00', 'fin': '23:59'},      # Tarde/Noche
+        'FULLTIME': {'inicio': '00:00', 'fin': '23:59'}, # Todo el día
+        'NOCHE': {'inicio': '20:00', 'fin': '07:59'},   # Turno nocturno
     }
 }
 

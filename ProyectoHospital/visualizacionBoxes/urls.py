@@ -14,6 +14,9 @@ urlpatterns = [
     # Vista principal - Visualización general de boxes
     path('', views.visualizacion_general, name='visualizacion_general'),
     
+    # Vista de visualización por pasillo - NUEVA
+    path('pasillo/', views.visualizacion_pasillo, name='visualizacion_pasillo'),
+    
     # API AJAX - Obtener detalles de un box específico
     path('detalle-box/', views.obtener_detalle_box, name='detalle_box'),
 ]

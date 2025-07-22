@@ -186,14 +186,12 @@
     font-size: 0.85rem;
 }
 
-/* Estados de disponibilidad */
-.libre {
-    background-color: #28a745;
-    color: white;
-}
+/* Estados de disponibilidad - Usa clases de leyendaBoxes.css */
+/* Los colores están definidos en leyendaBoxes.css */
+/* Solo agregamos efectos específicos para la vista general */
 
 .libre:hover {
-    background-color: #218838;
+    opacity: 0.85;
 }
 
 /* Fallback para tipos de agenda no definidos */

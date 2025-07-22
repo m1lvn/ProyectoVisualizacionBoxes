@@ -221,3 +221,31 @@ class Agenda(models.Model):
         now = datetime.now()
         return (self.fecha == now.date() and 
                 self.horainicio <= now.time() < self.horafin)
+
+    def clean(self):
+        """
+        Validación personalizada para el modelo Agenda - SIN RESTRICCIONES DE HORARIO.
+        Permite horarios 24/7.
+        """
+        from django.core.exceptions import ValidationError
+        
+        if self.horainicio and self.horafin:
+            # Solo validar que hora inicio sea menor que hora fin
+            if self.horainicio >= self.horafin:
+                raise ValidationError({
+                    'horafin': 'La hora de fin debe ser posterior a la hora de inicio.'
+                })
+        
+        # Validar que no haya solapamiento con otras agendas del mismo box y fecha
+        if self.idbox and self.fecha:
+            agendas_solapadas = Agenda.objects.filter(
+                idbox=self.idbox,
+                fecha=self.fecha,
+                horainicio__lt=self.horafin,
+                horafin__gt=self.horainicio
+            ).exclude(pk=self.pk)
+            
+            if agendas_solapadas.exists():
+                raise ValidationError(
+                    'Ya existe una agenda que se solapa con este horario para el mismo box.'
+                )
