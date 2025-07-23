@@ -1,0 +1,500 @@
+/* ===========================
+   ESTILOS PARA MÓDULO DE REPORTES - DISEÑO ACTUALIZADO
+   =========================== */
+
+/* Contenedor principal del módulo */
+
+.reportes-dashboard {
+    background: #f8f9fa;
+    min-height: 100vh;
+    width: 100vw;
+    display: flex;
+    flex-direction: row;
+}
+
+
+
+.reportes-sidebar {
+    min-width: 220px;
+    width: 270px;
+    height: auto;
+    position: sticky;
+    top: 90px;
+    margin-top: 30px;
+    margin-bottom: 30px;
+    margin-right: 32px;
+    box-shadow: -2px 0 12px rgba(44,62,80,0.08);
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+}
+
+.reportes-sidebar h4 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 2rem;
+}
+
+.reportes-sidebar form .form-label {
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.reportes-sidebar .form-select {
+    background: #495057 !important;
+    color: #fff;
+    border: 1px solid #6c757d;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+}
+
+.reportes-sidebar .form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.reportes-sidebar #btn-download {
+    width: 100%;
+    height: 70px;
+    border-radius: 16px;
+    font-size: 2rem;
+    margin-top: 1rem;
+    margin-bottom: 0;
+}
+
+.reportes-sidebar .btn:disabled {
+    background: #6c757d;
+    opacity: 0.6;
+}
+
+.reportes-dashboard main {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+    min-height: 100vh;
+}
+
+.reportes-dashboard .card {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.reportes-dashboard .d-flex.justify-content-center {
+    gap: 60px;
+}
+
+.reportes-dashboard .form-control-lg {
+    width: 160px;
+    text-align: center;
+    font-size: 1.1rem;
+    border-radius: 10px;
+}
+
+.reportes-dashboard .vr {
+    width: 80px;
+    height: 2px;
+    background: #dee2e6;
+    border-radius: 2px;
+    margin: 0 20px;
+    display: block;
+}
+
+@media (max-width: 1200px) {
+    .reportes-dashboard main {
+        padding: 20px 0;
+    }
+    .reportes-dashboard .card {
+        max-width: 900px;
+    }
+    .reportes-sidebar {
+        min-width: 260px;
+        width: 260px;
+    }
+}
+
+@media (max-width: 992px) {
+    .reportes-dashboard {
+        flex-direction: column;
+    }
+    .reportes-sidebar {
+        position: static;
+        width: 100%;
+        min-width: unset;
+        height: auto;
+        box-shadow: none;
+        flex-direction: row;
+        align-items: flex-start;
+        padding: 0;
+    }
+    .reportes-sidebar .w-100 {
+        width: 100% !important;
+    }
+    .reportes-sidebar #btn-download {
+        width: 100%;
+        margin-top: 0;
+    }
+    .reportes-dashboard main {
+        padding: 10px 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .reportes-dashboard .card {
+        max-width: 100vw;
+        margin: 0 5px;
+    }
+    .reportes-dashboard .form-control-lg {
+        width: 100px;
+        font-size: 1rem;
+    }
+    .reportes-dashboard .vr {
+        width: 40px;
+    }
+}
+
+@media (max-width: 576px) {
+    .reportes-dashboard main {
+        padding: 5px 0;
+    }
+    .reportes-dashboard .card {
+        max-width: 100vw;
+        margin: 0 2px;
+    }
+    .reportes-sidebar {
+        padding: 0;
+    }
+}
+
+/* Título principal */
+.display-6 {
+    font-size: 2.5rem;
+    font-weight: 700;
+}
+
+/* Card principal mejorado */
+.card {
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.card.shadow-lg {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Campos de formulario estilo moderno */
+.form-control, .form-select {
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background: #ffffff;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+    transform: none;
+}
+
+.form-control-lg {
+    padding: 16px 20px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+}
+
+.form-select-lg {
+    padding: 16px 20px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+}
+
+/* Labels mejorados */
+.form-label small {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* Panel lateral oscuro */
+.bg-dark {
+    background: linear-gradient(135deg, #2c3e50, #34495e) !important;
+}
+
+.bg-secondary {
+    background: #495057 !important;
+}
+
+.form-select.bg-secondary {
+    border: 1px solid #6c757d;
+}
+
+.form-select.bg-secondary:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Línea separadora vertical */
+.vr {
+    width: 2px;
+    background: linear-gradient(to bottom, transparent, #dee2e6, transparent);
+    opacity: 0.5;
+}
+
+/* Botón de descarga principal */
+#btn-download {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: none;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+#btn-download:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0056b3, #004085);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 123, 255, 0.4);
+}
+
+#btn-download:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+    transform: none;
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+/* Botón de vista previa */
+#btn-preview {
+    border-radius: 25px;
+    padding: 10px 25px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+/* Vista previa de datos mejorada */
+.card-header {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+    border-bottom: 2px solid #007bff;
+}
+
+/* Tabla de vista previa mejorada */
+.table-preview {
+    margin-bottom: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 0.9rem;
+}
+
+.table-preview thead th {
+    background: linear-gradient(135deg, #343a40, #495057);
+    color: white;
+    border: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.8rem;
+    padding: 15px 12px;
+    text-align: center;
+}
+
+.table-preview tbody tr {
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.table-preview tbody tr:hover {
+    background: rgba(0, 123, 255, 0.05);
+}
+
+.table-preview tbody td {
+    padding: 12px;
+    vertical-align: middle;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #495057;
+}
+
+/* Alternating row colors like in the image */
+.table-preview tbody tr:nth-child(even) {
+    background: #f8f9fa;
+}
+
+.table-preview tbody tr:nth-child(odd) {
+    background: #ffffff;
+}
+
+/* Estados de carga mejorados */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* Notificaciones mejoradas */
+.notification {
+    position: relative;
+    border-radius: 12px;
+    border: none;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.alert-success-custom {
+    background: linear-gradient(135deg, #d4edda, #c3e6cb);
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.alert-warning-custom {
+    background: linear-gradient(135deg, #fff3cd, #fdeaa7);
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+.alert-danger-custom {
+    background: linear-gradient(135deg, #f8d7da, #f1aeb5);
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.btn-close {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    opacity: 0.7;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+}
+
+/* Responsivo mejorado */
+@media (max-width: 992px) {
+    .vr {
+        display: none !important;
+    }
+    
+    .display-6 {
+        font-size: 2rem;
+    }
+    
+    #btn-download {
+        width: 60px;
+        height: 60px;
+        font-size: 1.2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .reportes-container {
+        padding: 0 10px;
+    }
+    
+    .form-control-lg, .form-select-lg {
+        padding: 12px 16px;
+        font-size: 1rem;
+    }
+    
+    .card-body {
+        padding: 20px !important;
+    }
+    
+    .table-preview {
+        font-size: 0.8rem;
+    }
+    
+    .table-preview thead th,
+    .table-preview tbody td {
+        padding: 8px 6px;
+    }
+}
+
+@media (max-width: 576px) {
+    .display-6 {
+        font-size: 1.5rem;
+    }
+    
+    .lead {
+        font-size: 1rem;
+    }
+    
+    #btn-download {
+        width: 50px;
+        height: 50px;
+        font-size: 1rem;
+    }
+    
+    .table-responsive {
+        border-radius: 8px;
+    }
+}
+
+/* Efectos y animaciones */
+.fade-in {
+    animation: fadeIn 0.6s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.slide-up {
+    animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Spinner personalizado */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Hover effects para botones */
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+/* Focus states mejorados */
+.form-control:focus,
+.form-select:focus,
+.btn:focus {
+    outline: none;
+}
+
+/* Estilos para flatpickr */
+.flatpickr-input {
+    cursor: pointer;
+}
+
+.flatpickr-input:focus {
+    border-color: #007bff !important;
+}

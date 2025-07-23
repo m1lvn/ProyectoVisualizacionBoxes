@@ -505,3 +505,501 @@ def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, codigo_medico):
 
 
 # ==================== FUNCIONES AUXILIARES GENERALES ====================
+
+
+def reportes(request):
+    """
+    Vista para el módulo de reportes con queries especializadas.
+    
+    Permite generar reportes detallados sobre la ocupación de boxes,
+    profesionales, especialidades y tipos de agenda en un rango de fechas.
+    
+    Parámetros POST:
+    - fechainicio: Fecha de inicio del reporte
+    - fechafin: Fecha de fin del reporte  
+    - pasillo: ID del pasillo (opcional, "General" para todos)
+    - tipo_reporte: Tipo de reporte (ocupacion, profesionales, especialidades, tipos_agenda)
+    - formato: Formato de salida (csv, pdf, excel)
+    - action: Acción a realizar (preview, download)
+    
+    Returns:
+        HttpResponse: Template de reportes o descarga de archivo
+        JsonResponse: Vista previa en formato AJAX
+    """
+    from django.http import HttpResponse
+    from django.db.models import Count, Sum, Avg, F, Case, When, IntegerField
+    from django.db.models.functions import Cast
+    import csv
+    import json
+    from datetime import datetime, timedelta
+    
+    # Obtener datos para filtros
+    pasillos = Pasillo.objects.all().order_by('pasillo')
+    
+    if request.method == 'POST':
+        # Obtener parámetros del formulario
+        fecha_inicio_str = request.POST.get('fechainicio')
+        fecha_fin_str = request.POST.get('fechafin')
+        pasillo_id = request.POST.get('pasillo')
+        tipo_reporte = request.POST.get('tipo_reporte', 'ocupacion')
+        formato = request.POST.get('formato', 'csv')
+        action = request.POST.get('action', 'preview')
+        
+        # Validar fechas
+        try:
+            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+        except (ValueError, TypeError):
+            return JsonResponse({
+                'success': False, 
+                'message': 'Fechas inválidas. Use formato YYYY-MM-DD.'
+            })
+        
+        if fecha_inicio > fecha_fin:
+            return JsonResponse({
+                'success': False,
+                'message': 'La fecha de inicio no puede ser posterior a la fecha de fin.'
+            })
+        
+        # Filtrar agendas por rango de fechas
+        agendas_query = Agenda.objects.filter(
+            fecha__gte=fecha_inicio,
+            fecha__lte=fecha_fin
+        ).select_related('idbox', 'idbox__idpasillo', 'idprofesional', 'idtipoagenda')
+        
+        # Filtrar por pasillo si se especifica
+        if pasillo_id and pasillo_id != 'General':
+            agendas_query = agendas_query.filter(idbox__idpasillo=pasillo_id)
+        
+        # Generar reporte según el tipo
+        if tipo_reporte == 'ocupacion':
+            datos = _generar_reporte_ocupacion(agendas_query, fecha_inicio, fecha_fin)
+        elif tipo_reporte == 'profesionales':
+            datos = _generar_reporte_profesionales(agendas_query, fecha_inicio, fecha_fin)
+        elif tipo_reporte == 'especialidades':
+            datos = _generar_reporte_especialidades(agendas_query, fecha_inicio, fecha_fin)
+        elif tipo_reporte == 'tipos_agenda':
+            datos = _generar_reporte_tipos_agenda(agendas_query, fecha_inicio, fecha_fin)
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': 'Tipo de reporte no válido.'
+            })
+        
+        # Acción de vista previa
+        if action == 'preview':
+            if not datos['registros']:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'No se encontraron datos para los filtros seleccionados.'
+                })
+            
+            # Generar HTML para vista previa
+            html_preview = _generar_html_preview(datos)
+            return JsonResponse({
+                'success': True,
+                'html': html_preview,
+                'total_registros': len(datos['registros'])
+            })
+        
+        # Acción de descarga
+        elif action == 'download':
+            if formato == 'csv':
+                return _generar_csv_response(datos, tipo_reporte, fecha_inicio, fecha_fin)
+            elif formato == 'excel':
+                return _generar_excel_response(datos, tipo_reporte, fecha_inicio, fecha_fin)
+            elif formato == 'pdf':
+                return _generar_pdf_response(datos, tipo_reporte, fecha_inicio, fecha_fin)
+    
+    # GET request - mostrar formulario
+    context = {
+        'pasillos': pasillos,
+    }
+    
+    return render(request, 'visualizacionBoxes/reportes.html', context)
+
+
+def _generar_reporte_ocupacion(agendas_query, fecha_inicio, fecha_fin):
+    """
+    Genera reporte de ocupación de boxes con estadísticas detalladas.
+    """
+    from django.db.models import Count, Sum, F, Case, When, DurationField
+    from django.db.models.functions import Cast
+    from datetime import datetime, timedelta
+    
+    # Calcular duración de cada agenda en horas
+    agendas_con_duracion = agendas_query.annotate(
+        duracion_segundos=Cast(
+            F('horafin') - F('horainicio'),
+            DurationField()
+        )
+    )
+    
+    # Agrupar por box y calcular estadísticas
+    estadisticas_box = agendas_con_duracion.values(
+        'idbox__idbox',
+        'idbox__idpasillo__pasillo'
+    ).annotate(
+        total_agendas=Count('idagenda'),
+        total_horas=Sum(
+            Cast(F('duracion_segundos'), DurationField())
+        )
+    ).order_by('idbox__idbox')
+    
+    registros = []
+    for stat in estadisticas_box:
+        # Convertir duración a horas
+        duracion_total = stat['total_horas']
+        horas_ocupacion = duracion_total.total_seconds() / 3600 if duracion_total else 0
+        
+        # Calcular días en el rango
+        dias_periodo = (fecha_fin - fecha_inicio).days + 1
+        horas_disponibles = dias_periodo * 24  # Asumiendo 24 horas disponibles por día
+        
+        porcentaje_ocupacion = (horas_ocupacion / horas_disponibles * 100) if horas_disponibles > 0 else 0
+        
+        registros.append({
+            'Box': f"Box {stat['idbox__idbox']}",
+            'Pasillo': stat['idbox__idpasillo__pasillo'],
+            'Total Agendas': stat['total_agendas'],
+            'Horas Ocupación': round(horas_ocupacion, 2),
+            'Horas Disponibles': horas_disponibles,
+            'Porcentaje Ocupación': f"{porcentaje_ocupacion:.1f}%"
+        })
+    
+    return {
+        'registros': registros,
+        'columnas': ['Box', 'Pasillo', 'Total Agendas', 'Horas Ocupación', 'Horas Disponibles', 'Porcentaje Ocupación'],
+        'titulo': 'Reporte de Ocupación de Boxes'
+    }
+
+
+def _generar_reporte_profesionales(agendas_query, fecha_inicio, fecha_fin):
+    """
+    Genera reporte de actividad por profesional.
+    """
+    from django.db.models import Count, F
+    
+    estadisticas_prof = agendas_query.values(
+        'idprofesional__idprofesional',
+        'idprofesional__nombre',
+        'idprofesional__idespecialidad__especialidad'
+    ).annotate(
+        total_agendas=Count('idagenda'),
+        boxes_utilizados=Count('idbox', distinct=True)
+    ).order_by('-total_agendas')
+    
+    registros = []
+    for stat in estadisticas_prof:
+        registros.append({
+            'ID Profesional': stat['idprofesional__idprofesional'],
+            'Nombre': stat['idprofesional__nombre'],
+            'Especialidad': stat['idprofesional__idespecialidad__especialidad'],
+            'Total Agendas': stat['total_agendas'],
+            'Boxes Utilizados': stat['boxes_utilizados']
+        })
+    
+    return {
+        'registros': registros,
+        'columnas': ['ID Profesional', 'Nombre', 'Especialidad', 'Total Agendas', 'Boxes Utilizados'],
+        'titulo': 'Reporte de Actividad por Profesional'
+    }
+
+
+def _generar_reporte_especialidades(agendas_query, fecha_inicio, fecha_fin):
+    """
+    Genera reporte de actividad por especialidad.
+    """
+    from django.db.models import Count
+    
+    estadisticas_esp = agendas_query.values(
+        'idprofesional__idespecialidad__especialidad'
+    ).annotate(
+        total_agendas=Count('idagenda'),
+        profesionales_activos=Count('idprofesional', distinct=True),
+        boxes_utilizados=Count('idbox', distinct=True)
+    ).order_by('-total_agendas')
+    
+    registros = []
+    for stat in estadisticas_esp:
+        registros.append({
+            'Especialidad': stat['idprofesional__idespecialidad__especialidad'],
+            'Total Agendas': stat['total_agendas'],
+            'Profesionales Activos': stat['profesionales_activos'],
+            'Boxes Utilizados': stat['boxes_utilizados']
+        })
+    
+    return {
+        'registros': registros,
+        'columnas': ['Especialidad', 'Total Agendas', 'Profesionales Activos', 'Boxes Utilizados'],
+        'titulo': 'Reporte de Actividad por Especialidad'
+    }
+
+
+def _generar_reporte_tipos_agenda(agendas_query, fecha_inicio, fecha_fin):
+    """
+    Genera reporte de actividad por tipo de agenda.
+    """
+    from django.db.models import Count
+    
+    estadisticas_tipo = agendas_query.values(
+        'idtipoagenda__tipoagenda'
+    ).annotate(
+        total_agendas=Count('idagenda'),
+        boxes_utilizados=Count('idbox', distinct=True),
+        profesionales_involucrados=Count('idprofesional', distinct=True)
+    ).order_by('-total_agendas')
+    
+    registros = []
+    for stat in estadisticas_tipo:
+        registros.append({
+            'Tipo de Agenda': stat['idtipoagenda__tipoagenda'],
+            'Total Agendas': stat['total_agendas'],
+            'Boxes Utilizados': stat['boxes_utilizados'],
+            'Profesionales Involucrados': stat['profesionales_involucrados']
+        })
+    
+    return {
+        'registros': registros,
+        'columnas': ['Tipo de Agenda', 'Total Agendas', 'Boxes Utilizados', 'Profesionales Involucrados'],
+        'titulo': 'Reporte de Actividad por Tipo de Agenda'
+    }
+
+
+def _generar_html_preview(datos):
+    """
+    Genera HTML para vista previa de los datos del reporte.
+    """
+    if not datos['registros']:
+        return '<div class="alert alert-info-custom">No hay datos para mostrar</div>'
+    
+    # Identificar el box más y menos utilizado si es reporte de ocupación
+    stats_extra = ""
+    if 'Porcentaje Ocupación' in datos['columnas'] and len(datos['registros']) > 0:
+        # Encontrar box más utilizado
+        box_mas_usado = max(datos['registros'], 
+                           key=lambda x: float(x.get('Porcentaje Ocupación', '0%').replace('%', '')))
+        box_menos_usado = min(datos['registros'], 
+                             key=lambda x: float(x.get('Porcentaje Ocupación', '0%').replace('%', '')))
+        
+        stats_extra = f'''
+        <div class="row mt-3 mb-3">
+            <div class="col-md-6">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center py-2">
+                        <small><strong>Box más utilizado:</strong> {box_mas_usado.get('Box', '')}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-warning text-dark">
+                    <div class="card-body text-center py-2">
+                        <small><strong>Box menos utilizado:</strong> {box_menos_usado.get('Box', '')}</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        '''
+    
+    html = f'<h6 class="mb-3 text-center">{datos["titulo"]}</h6>'
+    html += stats_extra
+    html += '<div class="table-responsive">'
+    html += '<table class="table table-preview table-striped">'
+    html += '<thead><tr>'
+    
+    for columna in datos['columnas']:
+        html += f'<th>{columna}</th>'
+    html += '</tr></thead><tbody>'
+    
+    # Mostrar solo los primeros 15 registros en preview para parecerse más a la imagen
+    registros_preview = datos['registros'][:15]
+    
+    for i, registro in enumerate(registros_preview):
+        # Alternar colores como en la imagen
+        row_class = ""
+        html += f'<tr{row_class}>'
+        for columna in datos['columnas']:
+            valor = registro.get(columna, "")
+            # Formatear valores especiales
+            if 'Porcentaje' in columna and isinstance(valor, str) and '%' in valor:
+                porcentaje = float(valor.replace('%', ''))
+                if porcentaje > 75:
+                    html += f'<td><span class="badge bg-success">{valor}</span></td>'
+                elif porcentaje > 50:
+                    html += f'<td><span class="badge bg-warning">{valor}</span></td>'
+                else:
+                    html += f'<td><span class="badge bg-secondary">{valor}</span></td>'
+            elif 'Box' in columna:
+                # Formatear número de box
+                if isinstance(valor, str) and 'Box' in valor:
+                    numero = valor.replace('Box ', '')
+                    html += f'<td><strong>{numero.zfill(2)}</strong></td>'
+                else:
+                    html += f'<td><strong>{valor}</strong></td>'
+            else:
+                html += f'<td>{valor}</td>'
+        html += '</tr>'
+    
+    html += '</tbody></table>'
+    
+    if len(datos['registros']) > 15:
+        html += f'<div class="text-center mt-3">'
+        html += f'<small class="text-muted">Mostrando 15 de {len(datos["registros"])} registros. '
+        html += f'Descarga el reporte completo para ver todos los datos.</small>'
+        html += f'</div>'
+    
+    html += '</div>'
+    
+    return html
+
+
+def _generar_csv_response(datos, tipo_reporte, fecha_inicio, fecha_fin):
+    """
+    Genera respuesta HTTP con archivo CSV.
+    """
+    import csv
+    from django.http import HttpResponse
+    
+    filename = f'reporte_{tipo_reporte}_{fecha_inicio}_{fecha_fin}.csv'
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    # Agregar BOM para UTF-8
+    response.write('\ufeff')
+    
+    writer = csv.writer(response)
+    
+    # Escribir encabezados
+    writer.writerow(datos['columnas'])
+    
+    # Escribir datos
+    for registro in datos['registros']:
+        fila = [registro.get(columna, '') for columna in datos['columnas']]
+        writer.writerow(fila)
+    
+    return response
+
+
+def _generar_excel_response(datos, tipo_reporte, fecha_inicio, fecha_fin):
+    """
+    Genera respuesta HTTP con archivo Excel.
+    Requiere: pip install openpyxl
+    """
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font, PatternFill
+        from django.http import HttpResponse
+        import io
+        
+        wb = Workbook()
+        ws = wb.active
+        ws.title = datos['titulo']
+        
+        # Escribir encabezados con estilo
+        for col, columna in enumerate(datos['columnas'], 1):
+            cell = ws.cell(row=1, column=col, value=columna)
+            cell.font = Font(bold=True)
+            cell.fill = PatternFill(start_color="CCCCCC", end_color="CCCCCC", fill_type="solid")
+        
+        # Escribir datos
+        for row, registro in enumerate(datos['registros'], 2):
+            for col, columna in enumerate(datos['columnas'], 1):
+                ws.cell(row=row, column=col, value=registro.get(columna, ''))
+        
+        # Ajustar ancho de columnas
+        for column in ws.columns:
+            max_length = 0
+            column_letter = column[0].column_letter
+            for cell in column:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column_letter].width = adjusted_width
+        
+        # Guardar en memoria
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        filename = f'reporte_{tipo_reporte}_{fecha_inicio}_{fecha_fin}.xlsx'
+        response = HttpResponse(
+            output.getvalue(),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+        
+    except ImportError:
+        # Si openpyxl no está instalado, fallback a CSV
+        return _generar_csv_response(datos, tipo_reporte, fecha_inicio, fecha_fin)
+
+
+def _generar_pdf_response(datos, tipo_reporte, fecha_inicio, fecha_fin):
+    """
+    Genera respuesta HTTP con archivo PDF.
+    Requiere: pip install reportlab
+    """
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter, A4
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+        from django.http import HttpResponse
+        import io
+        
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        elements = []
+        
+        styles = getSampleStyleSheet()
+        
+        # Título
+        title = Paragraph(datos['titulo'], styles['Title'])
+        elements.append(title)
+        elements.append(Spacer(1, 12))
+        
+        # Rango de fechas
+        date_range = Paragraph(f"Período: {fecha_inicio} al {fecha_fin}", styles['Normal'])
+        elements.append(date_range)
+        elements.append(Spacer(1, 12))
+        
+        # Preparar datos para tabla
+        table_data = [datos['columnas']]
+        for registro in datos['registros']:
+            fila = [str(registro.get(columna, '')) for columna in datos['columnas']]
+            table_data.append(fila)
+        
+        # Crear tabla
+        table = Table(table_data)
+        table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 12),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+        ]))
+        
+        elements.append(table)
+        
+        doc.build(elements)
+        
+        buffer.seek(0)
+        filename = f'reporte_{tipo_reporte}_{fecha_inicio}_{fecha_fin}.pdf'
+        response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        return response
+        
+    except ImportError:
+        # Si reportlab no está instalado, fallback a CSV
+        return _generar_csv_response(datos, tipo_reporte, fecha_inicio, fecha_fin)
+
+
+# ==================== FUNCIONES AUXILIARES GENERALES ====================

@@ -1,0 +1,108 @@
+{% extends 'visualizacionBoxes/base.html' %}
+{% load static %}
+
+{% block title %}Reportes - Sistema de Visualización{% endblock %}
+
+{% block content %}
+<div class="reportes-dashboard d-flex" style="min-height: 100vh;">
+  <!-- Área principal de reportes -->
+  <main class="flex-grow-1 d-flex flex-column align-items-center justify-content-center py-5">
+    <div class="w-100" style="max-width: 1100px;">
+      <div class="d-flex justify-content-center align-items-center mb-4 gap-5">
+        <div>
+          <label for="fechainicio" class="form-label text-muted fw-semibold mb-2"><small>Desde</small></label>
+          <input type="text" class="form-control form-control-lg border-2 text-center" id="fechainicio" name="fechainicio" placeholder="01/02/2025" readonly style="width: 160px;">
+        </div>
+        <div style="height: 2px; width: 80px; background: #dee2e6; border-radius: 2px;"></div>
+        <div>
+          <label for="fechafin" class="form-label text-muted fw-semibold mb-2"><small>Hasta</small></label>
+          <input type="text" class="form-control form-control-lg border-2 text-center" id="fechafin" name="fechafin" placeholder="01/04/2025" readonly style="width: 160px;">
+        </div>
+      </div>
+      <div class="card border-0 shadow rounded-4">
+        <div class="card-header bg-light border-0 rounded-top-4 py-3">
+          <div class="row align-items-center">
+            <div class="col">
+              <h5 class="mb-0 fw-bold">
+                <i class="bi bi-table text-primary me-2"></i>Pre-Visualización de los Datos
+              </h5>
+            </div>
+            <div class="col-auto">
+              <button type="button" id="btn-preview" class="btn btn-outline-primary">
+                <i class="bi bi-eye me-2"></i>Generar Vista Previa
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-4">
+          <div id="preview-container" class="text-center text-muted py-5">
+            <i class="bi bi-file-earmark-spreadsheet display-1 text-muted mb-3"></i>
+            <p class="lead">Selecciona los filtros y presiona "Generar Vista Previa" para ver los datos</p>
+            <small class="text-muted">Los datos se mostrarán en una tabla similar a la imagen de referencia</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Panel lateral derecho -->
+  <aside class="reportes-sidebar bg-dark text-white d-flex flex-column justify-content-between align-items-center" style="width: 340px; min-width: 280px; height: 800px; position: sticky; top: 90px; margin-top: 30px; margin-bottom: 30px; margin-right: 32px; box-shadow: -2px 0 12px rgba(44,62,80,0.08); border-radius: 18px;">
+    <div class="w-100 px-4 pt-4">
+      <h4 class="fw-bold text-center mb-4">Filtros</h4>
+      <form method="POST" id="reportes-form" class="w-100" novalidate>
+        {% csrf_token %}
+        <div class="mb-3">
+          <label for="pasillo" class="form-label text-light fw-semibold mb-2"><small>Pasillo</small></label>
+          <select class="form-select form-select-lg bg-secondary text-white border-0" id="pasillo" name="pasillo">
+            <option value="General" selected>Todos los Pasillos</option>
+            {% for i in pasillos %}
+              <option value="{{ i.idpasillo }}">{{ i.pasillo }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="formato" class="form-label text-light fw-semibold mb-2"><small>Formato</small></label>
+          <select class="form-select form-select-lg bg-secondary text-white border-0" id="formato" name="formato">
+            <option value="csv" selected>CSV</option>
+            <option value="excel">Excel</option>
+            <option value="pdf">PDF</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="tipo_reporte" class="form-label text-light fw-semibold mb-2"><small>Tipo de Reporte</small></label>
+          <select class="form-select form-select-lg bg-secondary text-white border-0" id="tipo_reporte" name="tipo_reporte">
+            <option value="ocupacion" selected>Horas de Uso</option>
+            <option value="profesionales">Por Profesional</option>
+            <option value="especialidades">Por Especialidad</option>
+            <option value="tipos_agenda">Por Tipo de Agenda</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="w-100 px-4 pb-4">
+      <button type="button" id="btn-download" class="btn btn-primary btn-lg w-100" style="height: 70px;" disabled>
+        <i class="bi bi-download fs-3"></i>
+      </button>
+    </div>
+  </aside>
+</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+
+<!-- Configuración de URLs para JavaScript -->
+<script>
+  window.reportesUrls = {
+    reportes: '{% url "visualizacionBoxes:reportes" %}'
+  };
+</script>
+
+<!-- Script principal de reportes -->
+<script src="{% static 'js/reportes.js' %}"></script>
+{% endblock %}

@@ -17,6 +17,9 @@ urlpatterns = [
     # Vista de visualización por pasillo - NUEVA
     path('pasillo/', views.visualizacion_pasillo, name='visualizacion_pasillo'),
     
+    # Vista de reportes
+    path('reportes/', views.reportes, name='reportes'),
+    
     # API AJAX - Obtener detalles de un box específico
     path('detalle-box/', views.obtener_detalle_box, name='detalle_box'),
 ]

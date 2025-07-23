@@ -1,3 +1,7 @@
 Django>=4.2.0,<5.0
 python-decouple>=3.6
 Pillow>=9.0.0
+
+# Librerías opcionales para reportes
+openpyxl>=3.0.0  # Para generar archivos Excel
+reportlab>=3.6.0  # Para generar archivos PDF
