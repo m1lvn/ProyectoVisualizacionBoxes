@@ -394,7 +394,7 @@ def _obtener_boxes_filtrados(pasillo_id, codigo_box):
         boxes = Box.objects.all().order_by('idbox')
     
     if codigo_box:
-        boxes = boxes.filter(Q(idbox__icontains=codigo_box) | Q(box__icontains=codigo_box))
+        boxes = boxes.filter(idbox__icontains=codigo_box)
     
     return boxes
 

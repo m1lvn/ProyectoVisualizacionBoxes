@@ -1,3 +1,4 @@
+console.log('visualizacionPasillo.js cargado');
 // ============================================================================
 // VISUALIZACIÓN DE PASILLOS HOSPITALARIOS - CÓDIGO LIMPIO Y ORGANIZADO
 // ============================================================================
@@ -18,29 +19,19 @@ const CONFIG_PASILLO = {
  */
 function aplicarFiltrosPasillo() {
     const params = new URLSearchParams();
-    
     // Obtener valores de filtros
     const pasillo = document.getElementById('pasillo')?.value;
     const fecha = document.getElementById('fecha')?.value;
     const jornada = document.getElementById('jornada')?.value;
-    
-    // Agregar parámetros no vacíos
+    const codigoMedico = document.getElementById('codigoMedico')?.value.trim();
+    const codigoBox = document.getElementById('codigoBox')?.value.trim();
+
     if (pasillo) params.set('pasillo', pasillo);
     if (fecha) params.set('fecha', fecha);
     if (jornada) params.set('jornada', jornada);
-    
-    // Mantener filtros de búsqueda actuales
-    const urlActual = new URL(window.location);
-    const medico = urlActual.searchParams.get('medico');
-    const box = urlActual.searchParams.get('box');
-    
-    if (medico) params.set('medico', medico);
-    if (box) params.set('box', box);
-    
-    // Resetear a página 1
+    if (codigoMedico) params.set('medico', codigoMedico);
+    if (codigoBox) params.set('box', codigoBox);
     params.set('page', '1');
-    
-    // Navegar a la nueva URL
     window.location.href = window.location.pathname + '?' + params.toString();
 }
 
@@ -49,17 +40,23 @@ function aplicarFiltrosPasillo() {
  */
 function buscarPorMedicoPasillo() {
     const codigoMedico = document.getElementById('codigoMedico')?.value.trim();
-    
     if (!codigoMedico) {
         alert('Por favor, ingrese un código de médico válido');
         return;
     }
-    
-    const url = new URL(window.location);
-    url.searchParams.set('medico', codigoMedico);
-    url.searchParams.set('page', '1');
-    
-    window.location.href = url.toString();
+    // Tomar todos los filtros activos
+    const pasillo = document.getElementById('pasillo')?.value;
+    const fecha = document.getElementById('fecha')?.value;
+    const jornada = document.getElementById('jornada')?.value;
+    const codigoBox = document.getElementById('codigoBox')?.value.trim();
+    const params = new URLSearchParams();
+    if (pasillo) params.set('pasillo', pasillo);
+    if (fecha) params.set('fecha', fecha);
+    if (jornada) params.set('jornada', jornada);
+    params.set('medico', codigoMedico);
+    if (codigoBox) params.set('box', codigoBox);
+    params.set('page', '1');
+    window.location.href = window.location.pathname + '?' + params.toString();
 }
 
 /**
@@ -67,17 +64,23 @@ function buscarPorMedicoPasillo() {
  */
 function buscarPorBoxPasillo() {
     const codigoBox = document.getElementById('codigoBox')?.value.trim();
-    
     if (!codigoBox) {
         alert('Por favor, ingrese un código de box válido');
         return;
     }
-    
-    const url = new URL(window.location);
-    url.searchParams.set('box', codigoBox);
-    url.searchParams.set('page', '1');
-    
-    window.location.href = url.toString();
+    // Tomar todos los filtros activos
+    const pasillo = document.getElementById('pasillo')?.value;
+    const fecha = document.getElementById('fecha')?.value;
+    const jornada = document.getElementById('jornada')?.value;
+    const codigoMedico = document.getElementById('codigoMedico')?.value.trim();
+    const params = new URLSearchParams();
+    if (pasillo) params.set('pasillo', pasillo);
+    if (fecha) params.set('fecha', fecha);
+    if (jornada) params.set('jornada', jornada);
+    if (codigoMedico) params.set('medico', codigoMedico);
+    params.set('box', codigoBox);
+    params.set('page', '1');
+    window.location.href = window.location.pathname + '?' + params.toString();
 }
 
 /**
@@ -208,7 +211,10 @@ function registrarFuncionesGlobales() {
  */
 document.addEventListener('DOMContentLoaded', function() {
     registrarFuncionesGlobales();
-    
+
+    // Inicializar línea roja de hora actual
+    inicializarLineaHoraActual();
+
     if (CONFIG_PASILLO.DEBUG) {
         console.log('🏥 Sistema de filtros de pasillo cargado');
     }
@@ -216,3 +222,112 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Registrar funciones inmediatamente también
 registrarFuncionesGlobales();
+
+
+/**
+ * Inicializa y gestiona la línea roja que indica la hora actual en la matriz de boxes.
+ */
+function inicializarLineaHoraActual() {
+    const grilla = document.querySelector('.contenedor-tabla');
+    if (!grilla) { return; }
+    const tableResponsive = grilla.querySelector('.table-responsive');
+    if (!tableResponsive) { return; }
+    const tabla = tableResponsive.querySelector('.table-boxes');
+    if (!tabla) { return; }
+
+    // Asegura que la tabla tenga position: relative
+    tabla.style.position = 'relative';
+
+    let linea = tabla.querySelector('#linea-hora-actual');
+    if (!linea) {
+        linea = crearLineaHoraActual();
+        tabla.appendChild(linea);
+    }
+
+    function obtenerMinutosActuales(horaInicio) {
+        const ahora = new Date();
+        return (ahora.getHours() - horaInicio) * 60 + ahora.getMinutes();
+    }
+
+    function obtenerAlturaFila(tabla) {
+        const filas = tabla.querySelectorAll('tbody tr');
+        if (filas.length === 0) return 0;
+        return filas[0].offsetHeight;
+    }
+
+    function calcularPosicionLinea({horaInicio, horaFin, tabla, grillaHeight}) {
+        const ahora = new Date();
+        const horaActual = ahora.getHours();
+        const minutosActual = ahora.getMinutes();
+        // Filtra solo filas visibles
+        const filas = Array.from(tabla.querySelectorAll('tbody tr')).filter(fila => fila.offsetParent !== null);
+        let horasFilas = filas.map(fila => {
+            const celdaHora = fila.querySelector('.celda-hora');
+            if (!celdaHora) return null;
+            let texto = '';
+            const strong = celdaHora.querySelector('strong');
+            if (strong) {
+                texto = strong.textContent.trim();
+            } else {
+                texto = celdaHora.textContent.trim();
+            }
+            const match = texto.match(/(\d{1,2}):(\d{2})/);
+            if (!match) return null;
+            const h = Number(match[1]);
+            const m = Number(match[2]);
+            return h + m / 60;
+        });
+        const horaDecimal = horaActual + minutosActual / 60;
+        let idx = -1;
+        for (let i = 0; i < horasFilas.length; i++) {
+            if (horasFilas[i] !== null && horasFilas[i] <= horaDecimal) {
+                idx = i;
+            }
+        }
+        let top = 0;
+        if (idx === -1) {
+            top = 0;
+        } else {
+            // Interpolación dentro del bloque horario
+            const filaActual = filas[idx];
+            const alturaFila = filaActual.offsetHeight;
+            // ¿Cuántos minutos han pasado desde el inicio del bloque?
+            const minutosEnBloque = (horaDecimal - horasFilas[idx]) * 60;
+            // ¿Cuántos minutos dura el bloque?
+            let minutosBloque = 30;
+            if (idx + 1 < horasFilas.length) {
+                minutosBloque = (horasFilas[idx + 1] - horasFilas[idx]) * 60;
+            }
+            // Calcula el desplazamiento proporcional
+            const desplazamiento = Math.max(0, Math.min(alturaFila, (minutosEnBloque / minutosBloque) * alturaFila));
+            top = filaActual.offsetTop + desplazamiento;
+        }
+        top = Math.max(0, Math.min(tabla.offsetHeight - 2, top));
+        return top;
+    }
+
+    function actualizarLinea() {
+        const horaInicio = 8; // Ajusta según tu sistema
+        const horaFin = 20;  // Ajusta según tu sistema
+        const top = calcularPosicionLinea({horaInicio, horaFin, tabla, grillaHeight: tabla.offsetHeight});
+        linea.style.top = top + 'px';
+    }
+
+    actualizarLinea();
+    setInterval(actualizarLinea, 60000);
+}
+
+/**
+ * Crea el elemento visual de la línea roja de hora actual.
+ */
+function crearLineaHoraActual() {
+    const linea = document.createElement('div');
+    linea.id = 'linea-hora-actual';
+    linea.style.position = 'absolute';
+    linea.style.left = '0';
+    linea.style.right = '0';
+    linea.style.height = '2px';
+    linea.style.background = 'red';
+    linea.style.zIndex = '10';
+    return linea;
+}

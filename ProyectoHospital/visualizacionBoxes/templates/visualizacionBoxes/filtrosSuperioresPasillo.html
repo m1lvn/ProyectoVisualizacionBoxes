@@ -124,76 +124,29 @@
   </div>
 
   <!-- Indicadores de Filtros Activos -->
-  {% if pasillo_seleccionado or jornada_seleccionada or fecha or codigo_medico or codigo_box %}
+  {% if pasillo_seleccionado or codigo_medico or codigo_box %}
   <div class="filtros-activos">
-    <span class="filtros-activos-label">
-      <i class="bi bi-funnel" aria-hidden="true"></i>
-      Filtros activos:
+    <span class="filtros-activos-label">Filtros activos:</span>
+    {% if pasillo_seleccionado %}
+    <span class="filtro-activo-badge">
+      Pasillo: {{ pasillo_seleccionado }}
+      <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('pasillo')">×</button>
     </span>
-    
-    <!-- Badges de Filtros -->
-    <div class="filtros-badges">
-      {% if pasillo_seleccionado %}
-      <span class="filtro-activo-badge">
-        <i class="bi bi-building" aria-hidden="true"></i>
-        Pasillo: {{ pasillo_seleccionado }}
-        <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('pasillo')" 
-                aria-label="Remover filtro de pasillo" title="Remover filtro">
-          <i class="bi bi-x" aria-hidden="true"></i>
-        </button>
-      </span>
-      {% endif %}
-      
-      {% if jornada_seleccionada %}
-      <span class="filtro-activo-badge">
-        <i class="bi bi-clock" aria-hidden="true"></i>
-        Jornada: {{ jornada_seleccionada }}
-        <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('jornada')" 
-                aria-label="Remover filtro de jornada" title="Remover filtro">
-          <i class="bi bi-x" aria-hidden="true"></i>
-        </button>
-      </span>
-      {% endif %}
-      
-      {% if fecha %}
-      <span class="filtro-activo-badge">
-        <i class="bi bi-calendar3" aria-hidden="true"></i>
-        Fecha: {{ fecha|date:'d/m/Y' }}
-        <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('fecha')" 
-                aria-label="Remover filtro de fecha" title="Remover filtro">
-          <i class="bi bi-x" aria-hidden="true"></i>
-        </button>
-      </span>
-      {% endif %}
-      
-      {% if codigo_medico %}
-      <span class="filtro-activo-badge">
-        <i class="bi bi-person-badge" aria-hidden="true"></i>
-        Médico: {{ codigo_medico }}
-        <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('medico')" 
-                aria-label="Remover filtro de médico" title="Remover filtro">
-          <i class="bi bi-x" aria-hidden="true"></i>
-        </button>
-      </span>
-      {% endif %}
-      
-      {% if codigo_box %}
-      <span class="filtro-activo-badge">
-        <i class="bi bi-door-open" aria-hidden="true"></i>
-        Box: {{ codigo_box }}
-        <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('box')" 
-                aria-label="Remover filtro de box" title="Remover filtro">
-          <i class="bi bi-x" aria-hidden="true"></i>
-        </button>
-      </span>
-      {% endif %}
-    </div>
-    
-    <!-- Botón Limpiar Todos -->
-    <button type="button" class="btn-clear-all-filters" onclick="limpiarTodosFiltrosPasillo()" 
-            aria-label="Limpiar todos los filtros" title="Limpiar todos los filtros">
-      <i class="bi bi-x-circle" aria-hidden="true"></i>
-      Limpiar todos
+    {% endif %}
+    {% if codigo_medico %}
+    <span class="filtro-activo-badge">
+      Médico: {{ codigo_medico }}
+      <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('medico')">×</button>
+    </span>
+    {% endif %}
+    {% if codigo_box %}
+    <span class="filtro-activo-badge">
+      Box: {{ codigo_box }}
+      <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('box')">×</button>
+    </span>
+    {% endif %}
+    <button type="button" class="btn-clear-all-filters" onclick="limpiarTodosFiltrosPasillo()">
+      <i class="bi bi-x-circle"></i> Limpiar todos
     </button>
   </div>
   {% endif %}

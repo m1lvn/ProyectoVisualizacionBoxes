@@ -8,18 +8,16 @@
   {% include "visualizacionBoxes/filtrosSuperioresPasillo.html" %}
 
   <div class="container-fluid mt-3 px-4 visualizacion-pasillo">
-    <div class="row">
+    <div class="d-flex align-items-start gap-4">
       <!-- Leyenda de estados -->
-      <div class="col-lg-2 d-none d-lg-block leyenda-pasillo">
+      <div class="leyenda-lateral" style="min-width:200px;">
         {% include "visualizacionBoxes/leyendaBoxes.html" %}
       </div>
 
       <!-- Matriz de Boxes -->
-      <div class="col-lg-7 col-md-12">
+      <div class="flex-fill">
         <div class="contenedor-tabla position-relative">
           <div class="table-responsive position-relative">
-            <div id="linea-hora-actual"></div>
-            
             <table class="table table-bordered text-center w-100 table-boxes">
               <thead class="table-light">
                 <tr>
@@ -70,7 +68,7 @@
       </div>
 
       <!-- Información del Pasillo -->
-      <div class="col-lg-3 col-md-12 mt-4 mt-lg-0">
+      <div style="max-width:350px; min-width:220px;" class="ms-2 mt-4 mt-lg-0">
         <div class="card">
           <div class="card-header">
             <h5 class="card-title mb-0">
