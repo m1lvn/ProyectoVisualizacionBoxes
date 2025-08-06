@@ -22,70 +22,121 @@ def visualizacion_general(request):
     
     Muestra el estado actual de todos los boxes basado en la hora actual
     y permite filtrar por fecha, pasillo, especialidad, médico y box específico.
+    Incluye paginación para mejorar el rendimiento.
     
     Parámetros GET:
     - fecha: Fecha en formato YYYY-MM-DD (por defecto: fecha actual)
     - pasillo: ID del pasillo a filtrar
     - medico: ID del profesional para filtrar
     - box: Código del box para filtrar
+    - page: Número de página para paginación
     
     Returns:
         HttpResponse: Template con matriz de boxes y sus estados actuales
     """
-    # Obtener parámetros de filtros desde la URL
+    # ===============================
+    # OBTENER PARÁMETROS DE FILTROS
+    # ===============================
     fecha_str = request.GET.get('fecha', datetime.now().strftime('%Y-%m-%d'))
     pasillo_id = request.GET.get('pasillo', None)
-    codigo_medico = request.GET.get('medico', None)
+    nombre_medico = request.GET.get('medico', None)  # Cambiado de codigo_medico a nombre_medico
     codigo_box = request.GET.get('box', None)
+    page = request.GET.get('page', 1)
     
-    # Validar y parsear la fecha
+    # Constantes
+    BOXES_POR_PAGINA = 40  # Valor optimizado para producción
+    
+    # ===============================
+    # VALIDAR Y PROCESAR FECHA
+    # ===============================
     try:
         fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
     except ValueError:
         fecha = datetime.now().date()
     
-    # Obtener hora actual
     hora_actual = datetime.now().time()
     
-    # Aplicar filtros a los boxes
+    # ===============================
+    # APLICAR FILTROS A BOXES
+    # ===============================
     boxes = Box.objects.all().order_by('idbox')
+    
     if pasillo_id:
         boxes = boxes.filter(idpasillo=pasillo_id)
     if codigo_box:
         boxes = boxes.filter(idbox__icontains=codigo_box)
     
-    # Obtener datos para filtros
+    # ===============================
+    # OBTENER DATOS PARA FILTROS
+    # ===============================
     pasillos = Pasillo.objects.all().order_by('pasillo')
     especialidades = Especialidad.objects.all().order_by('especialidad')
     tipos_agenda = Tipoagenda.objects.all().order_by('tipoagenda')
     
-    # Obtener agendas del día
+    # ===============================
+    # OBTENER Y FILTRAR AGENDAS
+    # ===============================
     agendas = Agenda.objects.filter(fecha=fecha)
-    if codigo_medico:
-        # Buscar por idprofesional en la tabla Agenda
-        agendas = agendas.filter(idprofesional=codigo_medico)
-        # Si hay código médico, filtrar boxes solo a aquellos que tienen agendas de ese médico
-        if agendas.exists():
-            boxes_con_medico = agendas.values_list('idbox', flat=True).distinct()
-            boxes = boxes.filter(idbox__in=boxes_con_medico)
+    
+    if nombre_medico:
+        # Buscar médicos que coincidan con el nombre
+        medicos_encontrados = Profesional.objects.filter(
+            nombre__icontains=nombre_medico
+        ).values_list('idprofesional', flat=True)
+        
+        if medicos_encontrados.exists():
+            # Filtrar agendas por los médicos encontrados
+            agendas = agendas.filter(idprofesional__in=medicos_encontrados)
+            # Si hay nombre médico, filtrar boxes solo a aquellos que tienen agendas de esos médicos
+            if agendas.exists():
+                boxes_con_medico = agendas.values_list('idbox', flat=True).distinct()
+                boxes = boxes.filter(idbox__in=boxes_con_medico)
+            else:
+                # Si no hay agendas para esos médicos, no mostrar ningún box
+                boxes = Box.objects.none()
         else:
-            # Si no hay agendas para ese médico, no mostrar ningún box
+            # Si no se encontraron médicos, no mostrar ningún box
             boxes = Box.objects.none()
     
-    # Crear estado actual de cada box
-    estado_boxes = _crear_estado_actual_boxes(boxes, hora_actual, agendas)
+    # ===============================
+    # CONFIGURAR PAGINACIÓN
+    # ===============================
+    paginator = Paginator(boxes, BOXES_POR_PAGINA)
     
+    try:
+        boxes_page = paginator.page(page)
+    except PageNotAnInteger:
+        boxes_page = paginator.page(1)
+    except EmptyPage:
+        boxes_page = paginator.page(paginator.num_pages)
+    
+    boxes_list = list(boxes_page)
+    
+    # ===============================
+    # GENERAR ESTADO DE BOXES
+    # ===============================
+    estado_boxes = _crear_estado_actual_boxes(boxes_list, hora_actual, agendas)
+    
+    # ===============================
+    # PREPARAR CONTEXTO DE RESPUESTA
+    # ===============================
     context = {
-        'boxes': boxes,
+        'boxes': boxes_list,
         'fecha': fecha,
         'hora_actual': hora_actual,
         'pasillos': pasillos,
         'especialidades': especialidades,
         'tipos_agenda': tipos_agenda,
         'pasillo_seleccionado': pasillo_id,
-        'codigo_medico': codigo_medico,
+        'nombre_medico': nombre_medico,  # Cambiado de codigo_medico a nombre_medico
         'codigo_box': codigo_box,
         'estado_boxes': estado_boxes,
+        # Datos de paginación
+        'boxes_page': boxes_page,
+        'paginator': paginator,
+        'page_obj': boxes_page,
+        'is_paginated': paginator.num_pages > 1,
+        'page_range': paginator.get_elided_page_range(boxes_page.number),
     }
     
     return render(request, 'visualizacionBoxes/visualizacionGeneral.html', context)
@@ -105,6 +156,9 @@ def obtener_detalle_box(request):
     if request.method != 'GET':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
+    # ===============================
+    # VALIDAR PARÁMETROS
+    # ===============================
     box_id = request.GET.get('box_id')
     fecha_str = request.GET.get('fecha', datetime.now().strftime('%Y-%m-%d'))
     
@@ -112,11 +166,20 @@ def obtener_detalle_box(request):
         return JsonResponse({'error': 'ID del box requerido'}, status=400)
     
     try:
+        # ===============================
+        # PROCESAR FECHA Y HORA
+        # ===============================
         fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
         hora_actual = datetime.now().time()
+        
+        # ===============================
+        # OBTENER BOX
+        # ===============================
         box = get_object_or_404(Box, idbox=box_id)
         
-        # Buscar agenda activa en este momento
+        # ===============================
+        # BUSCAR AGENDA ACTIVA
+        # ===============================
         agenda = Agenda.objects.filter(
             idbox=box,
             fecha=fecha,
@@ -124,6 +187,9 @@ def obtener_detalle_box(request):
             horafin__gt=hora_actual
         ).first()
         
+        # ===============================
+        # PREPARAR DATOS DE RESPUESTA
+        # ===============================
         box_data = {
             'id': box.idbox,
             'pasillo': box.idpasillo.pasillo,
@@ -131,6 +197,7 @@ def obtener_detalle_box(request):
         }
         
         if agenda:
+            # Box ocupado
             data = {
                 'disponible': False,
                 'box': box_data,
@@ -143,6 +210,7 @@ def obtener_detalle_box(request):
                 }
             }
         else:
+            # Box disponible
             data = {
                 'disponible': True,
                 'box': box_data,
@@ -163,7 +231,7 @@ def visualizacion_pasillo(request):
     
     Muestra una matriz de horarios vs boxes para un pasillo determinado,
     permitiendo ver la ocupación de boxes a lo largo del día.
-    Incluye paginación (8 boxes por página) y filtros consistentes.
+    Incluye paginación optimizada y filtros consistentes.
     
     Parámetros GET:
     - pasillo: ID del pasillo a visualizar
@@ -177,7 +245,7 @@ def visualizacion_pasillo(request):
         HttpResponse: Template con datos de boxes, horarios y paginación
     """
     # ===============================
-    # PARÁMETROS DE FILTROS
+    # OBTENER PARÁMETROS DE FILTROS
     # ===============================
     filtros = {
         'pasillo': request.GET.get('pasillo', None),
@@ -188,17 +256,91 @@ def visualizacion_pasillo(request):
         'page': request.GET.get('page', 1)
     }
     
-    # Constantes
+    print(f"DEBUG PASILLO: Received filters: {filtros}")
+    
+    # Constantes optimizadas
     BOXES_POR_PAGINA = 8
     
     # ===============================
-    # VALIDACIÓN Y PROCESAMIENTO
+    # VALIDAR Y PROCESAR FECHA
     # ===============================
-    # Validar y parsear la fecha
     try:
         fecha_procesada = datetime.strptime(filtros['fecha'], '%Y-%m-%d').date()
     except ValueError:
         fecha_procesada = datetime.now().date()
+    
+    hora_actual = datetime.now().time()
+    
+    # ===============================
+    # OBTENER DATOS BASE
+    # ===============================
+    pasillos = Pasillo.objects.all().order_by('pasillo')
+    
+    # ===============================
+    # APLICAR FILTROS A BOXES
+    # ===============================
+    boxes = _obtener_boxes_filtrados(filtros['pasillo'], filtros['box'])
+    
+    # ===============================
+    # FILTRAR POR MÉDICO
+    # ===============================
+    if filtros['medico']:
+        print(f"DEBUG PASILLO: Filtering by medico: '{filtros['medico']}'")
+        boxes = _aplicar_filtro_medico(boxes, filtros['medico'], fecha_procesada)
+        print(f"DEBUG PASILLO: Boxes after medico filter: {boxes.count()}")
+    
+    # ===============================
+    # CONFIGURAR PAGINACIÓN
+    # ===============================
+    paginator = Paginator(boxes, BOXES_POR_PAGINA)
+    
+    try:
+        boxes_page = paginator.page(filtros['page'])
+    except PageNotAnInteger:
+        boxes_page = paginator.page(1)
+    except EmptyPage:
+        boxes_page = paginator.page(paginator.num_pages)
+    
+    boxes_list = list(boxes_page)
+    
+    # ===============================
+    # GENERAR HORARIOS Y ESTADO
+    # ===============================
+    horas = _generar_horarios_por_jornada(filtros['jornada'])
+    estado_datos = _generar_estado_boxes_pasillo(boxes_list, fecha_procesada, horas, filtros['medico'])
+    
+    # ===============================
+    # PREPARAR CONTEXTO DE RESPUESTA
+    # ===============================
+    pasillo_actual = None
+    if filtros['pasillo']:
+        try:
+            pasillo_actual = Pasillo.objects.get(idpasillo=filtros['pasillo'])
+        except Pasillo.DoesNotExist:
+            pasillo_actual = None
+    
+    context = {
+        'boxes': boxes_list,
+        'horas': horas,
+        'fecha': fecha_procesada,
+        'hora_actual': hora_actual,
+        'pasillos': pasillos,
+        'pasillo_seleccionado': filtros['pasillo'],
+        'pasillo_actual': pasillo_actual,
+        'jornada_seleccionada': filtros['jornada'],
+        'codigo_medico': filtros['medico'],
+        'codigo_box': filtros['box'],
+        'estado_por_box_y_hora': estado_datos['estado'],
+        'info_por_box_y_hora': estado_datos['info'],
+        # Datos de paginación
+        'boxes_page': boxes_page,
+        'paginator': paginator,
+        'page_obj': boxes_page,
+        'is_paginated': paginator.num_pages > 1,
+        'page_range': paginator.get_elided_page_range(boxes_page.number),
+    }
+    
+    return render(request, 'visualizacionBoxes/visualizacionPasillo.html', context)
     
     hora_actual = datetime.now().time()
     
@@ -297,6 +439,7 @@ def _crear_estado_actual_boxes(boxes, hora_actual, agendas):
         ).first()
         
         if agenda_activa:
+            # Box ocupado con agenda activa
             estado[box.idbox] = {
                 'disponible': False,
                 'tipo_agenda': agenda_activa.idtipoagenda.tipoagenda,
@@ -307,6 +450,7 @@ def _crear_estado_actual_boxes(boxes, hora_actual, agendas):
                 'hora_fin': agenda_activa.horafin
             }
         else:
+            # Box disponible
             estado[box.idbox] = {
                 'disponible': True,
                 'tipo_agenda': None,
@@ -399,25 +543,33 @@ def _obtener_boxes_filtrados(pasillo_id, codigo_box):
     return boxes
 
 
-def _aplicar_filtro_medico(boxes, codigo_medico, fecha):
+def _aplicar_filtro_medico(boxes, nombre_medico, fecha):
     """
-    Aplica filtro por médico a los boxes.
+    Aplica filtro por médico a los boxes usando búsqueda por nombre.
     
     Args:
         boxes: QuerySet de boxes
-        codigo_medico: Código del médico a filtrar
+        nombre_medico: Nombre del médico a filtrar (búsqueda parcial)
         fecha: Fecha para buscar agendas
         
     Returns:
         QuerySet: Boxes filtrados por médico
     """
-    if not codigo_medico:
+    if not nombre_medico:
         return boxes
     
-    # Obtener agendas del médico en la fecha especificada
+    # Buscar médicos que coincidan con el nombre
+    medicos_encontrados = Profesional.objects.filter(
+        nombre__icontains=nombre_medico
+    ).values_list('idprofesional', flat=True)
+    
+    if not medicos_encontrados.exists():
+        return Box.objects.none()
+    
+    # Obtener agendas de los médicos encontrados en la fecha especificada
     agendas = Agenda.objects.filter(
         fecha=fecha,
-        idprofesional=codigo_medico
+        idprofesional__in=medicos_encontrados
     ).select_related('idprofesional', 'idtipoagenda', 'idprofesional__idespecialidad')
     
     if agendas.exists():
@@ -427,7 +579,7 @@ def _aplicar_filtro_medico(boxes, codigo_medico, fecha):
         return Box.objects.none()
 
 
-def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, codigo_medico):
+def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, nombre_medico):
     """
     Genera el estado de los boxes para la visualización de pasillo.
     
@@ -435,7 +587,7 @@ def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, codigo_medico):
         boxes_list: Lista de boxes a procesar
         fecha: Fecha para buscar agendas
         horas: Lista de horas a procesar
-        codigo_medico: Código del médico (para optimización)
+        nombre_medico: Nombre del médico para filtrar (búsqueda parcial)
         
     Returns:
         dict: Diccionario con estado e info de cada box por hora
@@ -446,8 +598,16 @@ def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, codigo_medico):
     ).select_related('idprofesional', 'idtipoagenda', 'idprofesional__idespecialidad')
     
     # Aplicar filtro por médico si existe
-    if codigo_medico:
-        agendas = agendas.filter(idprofesional=codigo_medico)
+    if nombre_medico:
+        # Buscar médicos que coincidan con el nombre
+        medicos_encontrados = Profesional.objects.filter(
+            nombre__icontains=nombre_medico
+        ).values_list('idprofesional', flat=True)
+        
+        if medicos_encontrados.exists():
+            agendas = agendas.filter(idprofesional__in=medicos_encontrados)
+        else:
+            agendas = Agenda.objects.none()
     
     # Filtrar agendas por los boxes que se van a mostrar
     box_ids = [box.idbox for box in boxes_list]
@@ -509,23 +669,27 @@ def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, codigo_medico):
 
 def reportes(request):
     """
-    Vista para el módulo de reportes con queries especializadas.
+    Vista para el módulo de reportes del sistema hospitalario.
     
-    Permite generar reportes detallados sobre la ocupación de boxes,
-    profesionales, especialidades y tipos de agenda en un rango de fechas.
+    Genera reportes detallados sobre ocupación de boxes, profesionales,
+    especialidades y tipos de agenda en un rango de fechas específico.
+    Soporta vista previa AJAX y descarga en múltiples formatos.
     
     Parámetros POST:
-    - fechainicio: Fecha de inicio del reporte
-    - fechafin: Fecha de fin del reporte  
-    - pasillo: ID del pasillo (opcional, "General" para todos)
-    - tipo_reporte: Tipo de reporte (ocupacion, profesionales, especialidades, tipos_agenda)
-    - formato: Formato de salida (csv, pdf, excel)
-    - action: Acción a realizar (preview, download)
+    - fechainicio: Fecha inicio del reporte (formato YYYY-MM-DD)
+    - fechafin: Fecha fin del reporte (formato YYYY-MM-DD)
+    - pasillo: ID del pasillo ("General" para todos los pasillos)
+    - tipo_reporte: Tipo (ocupacion, profesionales, especialidades, tipos_agenda)
+    - formato: Formato de salida (csv, excel, pdf)
+    - action: Acción (preview, download)
     
     Returns:
-        HttpResponse: Template de reportes o descarga de archivo
+        HttpResponse: Template de reportes o archivo de descarga
         JsonResponse: Vista previa en formato AJAX
     """
+    # ===============================
+    # IMPORTACIONES LOCALIZADAS
+    # ===============================
     from django.http import HttpResponse
     from django.db.models import Count, Sum, Avg, F, Case, When, IntegerField
     from django.db.models.functions import Cast
@@ -533,22 +697,33 @@ def reportes(request):
     import json
     from datetime import datetime, timedelta
     
-    # Obtener datos para filtros
+    # ===============================
+    # OBTENER DATOS BASE
+    # ===============================
     pasillos = Pasillo.objects.all().order_by('pasillo')
     
+    # ===============================
+    # PROCESAR SOLICITUD POST
+    # ===============================
     if request.method == 'POST':
-        # Obtener parámetros del formulario
-        fecha_inicio_str = request.POST.get('fechainicio')
-        fecha_fin_str = request.POST.get('fechafin')
-        pasillo_id = request.POST.get('pasillo')
-        tipo_reporte = request.POST.get('tipo_reporte', 'ocupacion')
-        formato = request.POST.get('formato', 'csv')
-        action = request.POST.get('action', 'preview')
+        # ===============================
+        # OBTENER PARÁMETROS DEL FORM
+        # ===============================
+        parametros = {
+            'fecha_inicio_str': request.POST.get('fechainicio'),
+            'fecha_fin_str': request.POST.get('fechafin'),
+            'pasillo_id': request.POST.get('pasillo'),
+            'tipo_reporte': request.POST.get('tipo_reporte', 'ocupacion'),
+            'formato': request.POST.get('formato', 'csv'),
+            'action': request.POST.get('action', 'preview')
+        }
         
-        # Validar fechas
+        # ===============================
+        # VALIDAR Y PROCESAR FECHAS
+        # ===============================
         try:
-            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+            fecha_inicio = datetime.strptime(parametros['fecha_inicio_str'], '%Y-%m-%d').date()
+            fecha_fin = datetime.strptime(parametros['fecha_fin_str'], '%Y-%m-%d').date()
         except (ValueError, TypeError):
             return JsonResponse({
                 'success': False, 
@@ -561,24 +736,28 @@ def reportes(request):
                 'message': 'La fecha de inicio no puede ser posterior a la fecha de fin.'
             })
         
-        # Filtrar agendas por rango de fechas
+        # ===============================
+        # CONSTRUIR QUERY BASE
+        # ===============================
         agendas_query = Agenda.objects.filter(
             fecha__gte=fecha_inicio,
             fecha__lte=fecha_fin
         ).select_related('idbox', 'idbox__idpasillo', 'idprofesional', 'idtipoagenda')
         
         # Filtrar por pasillo si se especifica
-        if pasillo_id and pasillo_id != 'General':
-            agendas_query = agendas_query.filter(idbox__idpasillo=pasillo_id)
+        if parametros['pasillo_id'] and parametros['pasillo_id'] != 'General':
+            agendas_query = agendas_query.filter(idbox__idpasillo=parametros['pasillo_id'])
         
-        # Generar reporte según el tipo
-        if tipo_reporte == 'ocupacion':
+        # ===============================
+        # GENERAR DATOS DEL REPORTE
+        # ===============================
+        if parametros['tipo_reporte'] == 'ocupacion':
             datos = _generar_reporte_ocupacion(agendas_query, fecha_inicio, fecha_fin)
-        elif tipo_reporte == 'profesionales':
+        elif parametros['tipo_reporte'] == 'profesionales':
             datos = _generar_reporte_profesionales(agendas_query, fecha_inicio, fecha_fin)
-        elif tipo_reporte == 'especialidades':
+        elif parametros['tipo_reporte'] == 'especialidades':
             datos = _generar_reporte_especialidades(agendas_query, fecha_inicio, fecha_fin)
-        elif tipo_reporte == 'tipos_agenda':
+        elif parametros['tipo_reporte'] == 'tipos_agenda':
             datos = _generar_reporte_tipos_agenda(agendas_query, fecha_inicio, fecha_fin)
         else:
             return JsonResponse({
@@ -586,8 +765,10 @@ def reportes(request):
                 'message': 'Tipo de reporte no válido.'
             })
         
-        # Acción de vista previa
-        if action == 'preview':
+        # ===============================
+        # PROCESAR SEGÚN ACCIÓN
+        # ===============================
+        if parametros['action'] == 'preview':
             if not datos['registros']:
                 return JsonResponse({
                     'success': False,
@@ -603,15 +784,17 @@ def reportes(request):
             })
         
         # Acción de descarga
-        elif action == 'download':
-            if formato == 'csv':
-                return _generar_csv_response(datos, tipo_reporte, fecha_inicio, fecha_fin)
-            elif formato == 'excel':
-                return _generar_excel_response(datos, tipo_reporte, fecha_inicio, fecha_fin)
-            elif formato == 'pdf':
-                return _generar_pdf_response(datos, tipo_reporte, fecha_inicio, fecha_fin)
+        elif parametros['action'] == 'download':
+            if parametros['formato'] == 'csv':
+                return _generar_csv_response(datos, parametros['tipo_reporte'], fecha_inicio, fecha_fin)
+            elif parametros['formato'] == 'excel':
+                return _generar_excel_response(datos, parametros['tipo_reporte'], fecha_inicio, fecha_fin)
+            elif parametros['formato'] == 'pdf':
+                return _generar_pdf_response(datos, parametros['tipo_reporte'], fecha_inicio, fecha_fin)
     
-    # GET request - mostrar formulario
+    # ===============================
+    # PROCESAR SOLICITUD GET
+    # ===============================
     context = {
         'pasillos': pasillos,
     }
@@ -1003,3 +1186,44 @@ def _generar_pdf_response(datos, tipo_reporte, fecha_inicio, fecha_fin):
 
 
 # ==================== FUNCIONES AUXILIARES GENERALES ====================
+
+
+def buscar_medicos(request):
+    """
+    Vista AJAX para buscar médicos por nombre.
+    
+    Busca profesionales cuyo nombre contenga el término de búsqueda
+    y retorna una lista con ID y nombre para autocompletado.
+    
+    Parámetros GET:
+    - q: Término de búsqueda (nombre del médico)
+    
+    Returns:
+        JsonResponse: Lista de médicos encontrados con formato:
+        {
+            'medicos': [
+                {'id': 1, 'nombre': 'Dr. Juan Pérez', 'especialidad': 'Cardiología'},
+                ...
+            ]
+        }
+    """
+    termino = request.GET.get('q', '').strip()
+    
+    if len(termino) < 2:
+        return JsonResponse({'medicos': []})
+    
+    # Buscar médicos que coincidan con el término
+    medicos = Profesional.objects.filter(
+        nombre__icontains=termino
+    ).select_related('idespecialidad').order_by('nombre')[:10]  # Limitar a 10 resultados
+    
+    # Formatear respuesta
+    medicos_data = []
+    for medico in medicos:
+        medicos_data.append({
+            'id': medico.idprofesional,
+            'nombre': medico.nombre,
+            'especialidad': medico.idespecialidad.especialidad if medico.idespecialidad else 'Sin especialidad'
+        })
+    
+    return JsonResponse({'medicos': medicos_data})

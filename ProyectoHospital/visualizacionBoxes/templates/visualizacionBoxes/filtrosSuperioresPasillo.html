@@ -1,4 +1,7 @@
-<!-- Filtros Superiores - Visualización por Pasillo -->
+<!-- ============================================================================ -->
+<!-- FILTROS SUPERIORES PARA VISUALIZACIÓN DE PASILLO -->
+<!-- ============================================================================ -->
+
 <div class="filtros-container">
   <div class="filtros-row">
     
@@ -42,23 +45,26 @@
         <i class="bi bi-calendar3 dropdown-icon" aria-hidden="true"></i>
       </div>
 
-      <!-- Búsqueda por Código Médico -->
+      <!-- Búsqueda por Nombre Médico -->
       <div class="search-input-group">
-        <label for="codigoMedico" class="visually-hidden">Buscar por código médico</label>
-        <input type="text" class="form-control search-input" placeholder="Código Médico..." 
-               id="codigoMedico" value="{{ codigo_medico|default:'' }}" 
+        <label for="nombreMedico" class="visually-hidden">Buscar por nombre médico</label>
+        <input type="text" class="form-control search-input" placeholder="Nombre Médico..." 
+               id="nombreMedico" value="{{ nombre_medico|default:'' }}" 
                onkeypress="if(event.key==='Enter') buscarPorMedicoPasillo()" 
-               aria-label="Buscar por código médico">
+               aria-label="Buscar por nombre médico"
+               autocomplete="off">
         <button class="btn-search-inline" type="button" onclick="buscarPorMedicoPasillo()" 
                 title="Buscar médico" aria-label="Buscar médico">
           <i class="bi bi-search" aria-hidden="true"></i>
         </button>
-        {% if codigo_medico %}
+        {% if nombre_medico %}
         <button class="btn-clear-inline" type="button" onclick="limpiarBusquedaMedicoPasillo()" 
                 title="Limpiar búsqueda" aria-label="Limpiar búsqueda de médico">
           <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
         {% endif %}
+        <!-- Dropdown para sugerencias de médicos -->
+        <div id="medicosDropdownPasillo" class="medicos-dropdown" style="display: none;"></div>
       </div>
 
       <!-- Búsqueda por Código Box -->

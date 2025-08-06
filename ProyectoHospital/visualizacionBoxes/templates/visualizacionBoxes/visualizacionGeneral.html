@@ -69,6 +69,9 @@
 <script>
     // Configurar URLs para JavaScript
     window.detalleBoxUrl = "{% url 'visualizacionBoxes:detalle_box' %}";
+    window.medicosUrls = {
+        buscar_medicos: "{% url 'visualizacionBoxes:buscar_medicos' %}"
+    };
 </script>
 <script src="{% static 'js/visualizacionGeneral.js' %}"></script>
 {% endblock %}

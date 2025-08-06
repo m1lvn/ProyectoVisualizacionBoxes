@@ -1,9 +1,21 @@
-/* ===========================
-   ESTILOS PARA MÓDULO DE REPORTES - DISEÑO ACTUALIZADO
-   =========================== */
+/* ============================================================================
+ * MÓDULO DE REPORTES - SISTEMA HOSPITALARIO
+ * ============================================================================
+ * 
+ * Estilos CSS para el módulo de generación de reportes del sistema de
+ * visualización de boxes hospitalarios. Incluye estilos para formularios,
+ * vista previa, descargas y interfaz responsive.
+ * 
+ * Autor: Sistema de Gestión Hospitalaria
+ * Fecha: 2025
+ * ============================================================================
+ */
 
-/* Contenedor principal del módulo */
+/* ============================================================================
+ * CONFIGURACIÓN BASE Y LAYOUT PRINCIPAL
+ * ============================================================================ */
 
+/* Contenedor principal del módulo de reportes */
 .reportes-dashboard {
     background: #f8f9fa;
     min-height: 100vh;
@@ -12,8 +24,7 @@
     flex-direction: row;
 }
 
-
-
+/* Sidebar de navegación y filtros */
 .reportes-sidebar {
     min-width: 220px;
     width: 270px;

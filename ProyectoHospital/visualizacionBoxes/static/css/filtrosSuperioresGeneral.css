@@ -158,44 +158,71 @@
 .navegacion-paginas {
     display: flex;
     align-items: center;
-    gap: 2px;
-    background-color: white;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 2px;
+    gap: 15px;
+}
+
+.info-pagina {
+    text-align: center;
+    min-width: 120px;
+}
+
+.info-pagina span {
+    font-size: 14px;
+    font-weight: 600;
+    color: #495057;
+    display: block;
+}
+
+.info-pagina small {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.controles-navegacion {
+    display: flex;
+    gap: 5px;
 }
 
 .btn-nav {
-    background: none;
-    border: none;
-    width: 32px;
-    height: 32px;
+    background: #ffffff;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #495057;
+    font-size: 14px;
+    min-width: 38px;
+    min-height: 38px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-    color: #333;
 }
 
-.btn-nav:hover {
-    background-color: #f0f0f0;
+.btn-nav:hover:not(.disabled) {
+    background: #007bff;
+    color: #ffffff;
+    border-color: #007bff;
 }
 
-.btn-nav:active {
-    background-color: #e0e0e0;
+.btn-nav.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #f8f9fa;
+    color: #6c757d;
 }
 
 .btn-nav i {
     font-size: 14px;
 }
 
-/* Estilos para botones de navegación deshabilitados */
-.btn-nav:disabled {
-    opacity: 0.5 !important;
-    cursor: not-allowed !important;
-    pointer-events: none;
+/* Asegurar que los botones de navegación sean clickeables */
+.btn-nav {
+    pointer-events: auto !important;
+}
+
+.btn-nav:disabled,
+.btn-nav.disabled {
+    pointer-events: none !important;
 }
 
 /* ==================================================== */
@@ -341,4 +368,75 @@
 
 .btn-clear-all-filters:hover {
     background-color: #c82333;
+}
+
+/* ============================================================================
+ * DROPDOWN DE AUTOCOMPLETADO PARA MÉDICOS
+ * ============================================================================ */
+
+.search-input-group {
+    position: relative;
+}
+
+.medicos-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.medico-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f1f1;
+    transition: background-color 0.2s ease;
+}
+
+.medico-option:last-child {
+    border-bottom: none;
+}
+
+.medico-option:hover {
+    background-color: #f8f9fa;
+}
+
+.medico-option.selected {
+    background-color: #e7f3ff;
+}
+
+.medico-nombre {
+    font-weight: 500;
+    color: #333;
+    font-size: 14px;
+}
+
+.medico-especialidad {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.medicos-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.medicos-dropdown::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.medicos-dropdown::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.medicos-dropdown::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
 }

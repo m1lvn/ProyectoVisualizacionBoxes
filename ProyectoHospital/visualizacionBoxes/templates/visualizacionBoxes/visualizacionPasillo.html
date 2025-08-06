@@ -112,6 +112,12 @@
 {% endblock %}
 
 {% block scripts %}
+  <script>
+    // Configurar URLs para JavaScript
+    window.medicosUrls = {
+        buscar_medicos: "{% url 'visualizacionBoxes:buscar_medicos' %}"
+    };
+  </script>
   <script src="{% static 'js/visualizacionPasillo.js' %}"></script>
   
   <script>

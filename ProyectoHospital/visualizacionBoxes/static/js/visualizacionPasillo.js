@@ -1,62 +1,48 @@
-console.log('visualizacionPasillo.js cargado');
 // ============================================================================
-// VISUALIZACIÓN DE PASILLOS HOSPITALARIOS - CÓDIGO LIMPIO Y ORGANIZADO
+// VISUALIZACIÓN DE PASILLOS - SISTEMA HOSPITALARIO
 // ============================================================================
 
 /**
- * Configuración global
+ * Configuración global de la aplicación de pasillos
  */
 const CONFIG_PASILLO = {
-    DEBUG: false
+    DEBUG: false,           // Debug deshabilitado en producción
+    BOXES_POR_PAGINA: 8,    // Boxes por página para paginación
+    UPDATE_INTERVAL: 30000, // Actualización automática cada 30 segundos
+    DATE_FORMAT: "Y-m-d",
+    LOCALE: "es"
 };
 
 // ============================================================================
-// FUNCIONES DE FILTROS
+// FUNCIONES DE FILTROS Y BÚSQUEDA
 // ============================================================================
 
 /**
- * Aplica todos los filtros seleccionados
+ * Aplica todos los filtros seleccionados y navega a la página
  */
 function aplicarFiltrosPasillo() {
-    const params = new URLSearchParams();
-    // Obtener valores de filtros
-    const pasillo = document.getElementById('pasillo')?.value;
-    const fecha = document.getElementById('fecha')?.value;
-    const jornada = document.getElementById('jornada')?.value;
-    const codigoMedico = document.getElementById('codigoMedico')?.value.trim();
-    const codigoBox = document.getElementById('codigoBox')?.value.trim();
-
-    if (pasillo) params.set('pasillo', pasillo);
-    if (fecha) params.set('fecha', fecha);
-    if (jornada) params.set('jornada', jornada);
-    if (codigoMedico) params.set('medico', codigoMedico);
-    if (codigoBox) params.set('box', codigoBox);
-    params.set('page', '1');
-    window.location.href = window.location.pathname + '?' + params.toString();
+    const filtros = _obtenerFiltrosActivosPasillo();
+    const url = _construirUrlConFiltrosPasillo(filtros);
+    window.location.href = url;
 }
 
 /**
- * Busca por código de médico
+ * Busca por nombre de médico
  */
 function buscarPorMedicoPasillo() {
-    const codigoMedico = document.getElementById('codigoMedico')?.value.trim();
-    if (!codigoMedico) {
-        alert('Por favor, ingrese un código de médico válido');
+    const nombreMedico = document.getElementById('nombreMedico')?.value.trim();
+    
+    if (!nombreMedico) {
+        _mostrarErrorPasillo('Por favor, ingrese un nombre de médico válido');
         return;
     }
-    // Tomar todos los filtros activos
-    const pasillo = document.getElementById('pasillo')?.value;
-    const fecha = document.getElementById('fecha')?.value;
-    const jornada = document.getElementById('jornada')?.value;
-    const codigoBox = document.getElementById('codigoBox')?.value.trim();
-    const params = new URLSearchParams();
-    if (pasillo) params.set('pasillo', pasillo);
-    if (fecha) params.set('fecha', fecha);
-    if (jornada) params.set('jornada', jornada);
-    params.set('medico', codigoMedico);
-    if (codigoBox) params.set('box', codigoBox);
-    params.set('page', '1');
-    window.location.href = window.location.pathname + '?' + params.toString();
+    
+    const filtros = _obtenerFiltrosActivosPasillo();
+    filtros.medico = nombreMedico;
+    filtros.page = '1'; // Reset página en nueva búsqueda
+    
+    const url = _construirUrlConFiltrosPasillo(filtros);
+    window.location.href = url;
 }
 
 /**
@@ -64,23 +50,18 @@ function buscarPorMedicoPasillo() {
  */
 function buscarPorBoxPasillo() {
     const codigoBox = document.getElementById('codigoBox')?.value.trim();
+    
     if (!codigoBox) {
-        alert('Por favor, ingrese un código de box válido');
+        _mostrarErrorPasillo('Por favor, ingrese un código de box válido');
         return;
     }
-    // Tomar todos los filtros activos
-    const pasillo = document.getElementById('pasillo')?.value;
-    const fecha = document.getElementById('fecha')?.value;
-    const jornada = document.getElementById('jornada')?.value;
-    const codigoMedico = document.getElementById('codigoMedico')?.value.trim();
-    const params = new URLSearchParams();
-    if (pasillo) params.set('pasillo', pasillo);
-    if (fecha) params.set('fecha', fecha);
-    if (jornada) params.set('jornada', jornada);
-    if (codigoMedico) params.set('medico', codigoMedico);
-    params.set('box', codigoBox);
-    params.set('page', '1');
-    window.location.href = window.location.pathname + '?' + params.toString();
+    
+    const filtros = _obtenerFiltrosActivosPasillo();
+    filtros.box = codigoBox;
+    filtros.page = '1'; // Reset página en nueva búsqueda
+    
+    const url = _construirUrlConFiltrosPasillo(filtros);
+    window.location.href = url;
 }
 
 /**
@@ -90,6 +71,15 @@ function limpiarBusquedaMedicoPasillo() {
     const url = new URL(window.location);
     url.searchParams.delete('medico');
     url.searchParams.set('page', '1');
+    
+    // Limpiar campo de input
+    const inputMedico = document.getElementById('nombreMedico');
+    if (inputMedico) {
+        inputMedico.value = '';
+    }
+    
+    // Ocultar dropdown de sugerencias
+    _ocultarDropdownMedicosPasillo();
     
     window.location.href = url.toString();
 }
@@ -101,6 +91,12 @@ function limpiarBusquedaBoxPasillo() {
     const url = new URL(window.location);
     url.searchParams.delete('box');
     url.searchParams.set('page', '1');
+    
+    // Limpiar campo de input
+    const inputBox = document.getElementById('codigoBox');
+    if (inputBox) {
+        inputBox.value = '';
+    }
     
     window.location.href = url.toString();
 }
@@ -154,45 +150,110 @@ function paginaSiguientePasillo() {
 
 /**
  * Remueve un filtro específico
+ * @param {string} tipoFiltro - Tipo de filtro a remover
  */
 function removerFiltroPasillo(tipoFiltro) {
-    const params = new URLSearchParams(window.location.search);
+    const url = new URL(window.location);
     
     switch(tipoFiltro) {
         case 'pasillo':
-            params.delete('pasillo');
+            url.searchParams.delete('pasillo');
             break;
         case 'jornada':
-            params.delete('jornada');
+            url.searchParams.delete('jornada');
             break;
         case 'fecha':
-            params.delete('fecha');
+            url.searchParams.delete('fecha');
             break;
         case 'medico':
-            params.delete('medico');
+            url.searchParams.delete('medico');
+            // Limpiar campo de input
+            const inputMedico = document.getElementById('nombreMedico');
+            if (inputMedico) inputMedico.value = '';
             break;
         case 'box':
-            params.delete('box');
+            url.searchParams.delete('box');
+            // Limpiar campo de input
+            const inputBox = document.getElementById('codigoBox');
+            if (inputBox) inputBox.value = '';
             break;
     }
     
-    params.set('page', '1');
-    window.location.href = window.location.pathname + '?' + params.toString();
+    url.searchParams.set('page', '1');
+    window.location.href = url.toString();
 }
 
 /**
  * Limpia todos los filtros
  */
 function limpiarTodosFiltrosPasillo() {
+    // Limpiar campos de input
+    const inputMedico = document.getElementById('nombreMedico');
+    const inputBox = document.getElementById('codigoBox');
+    
+    if (inputMedico) inputMedico.value = '';
+    if (inputBox) inputBox.value = '';
+    
     window.location.href = window.location.pathname;
 }
 
 // ============================================================================
-// INICIALIZACIÓN
+// FUNCIONES AUXILIARES PRIVADAS
 // ============================================================================
 
 /**
- * Registra las funciones globalmente
+ * Obtiene los filtros activos del formulario
+ * @returns {Object} Objeto con los filtros activos
+ * @private
+ */
+function _obtenerFiltrosActivosPasillo() {
+    const pasillo = document.getElementById('pasillo')?.value || '';
+    const fecha = document.getElementById('fecha')?.value || '';
+    const jornada = document.getElementById('jornada')?.value || '';
+    const medico = document.getElementById('nombreMedico')?.value.trim() || '';
+    const box = document.getElementById('codigoBox')?.value.trim() || '';
+    
+    return { pasillo, fecha, jornada, medico, box };
+}
+
+/**
+ * Construye la URL con los filtros aplicados
+ * @param {Object} filtros - Filtros a aplicar
+ * @returns {string} URL con parámetros de filtro
+ * @private
+ */
+function _construirUrlConFiltrosPasillo(filtros) {
+    const params = new URLSearchParams();
+    
+    if (filtros.pasillo) params.set('pasillo', filtros.pasillo);
+    if (filtros.fecha) params.set('fecha', filtros.fecha);
+    if (filtros.jornada) params.set('jornada', filtros.jornada);
+    if (filtros.medico) params.set('medico', filtros.medico);
+    if (filtros.box) params.set('box', filtros.box);
+    if (filtros.page) params.set('page', filtros.page);
+    
+    const queryString = params.toString();
+    return window.location.pathname + (queryString ? '?' + queryString : '');
+}
+
+/**
+ * Muestra un mensaje de error al usuario
+ * @param {string} mensaje - Mensaje de error a mostrar
+ * @private
+ */
+function _mostrarErrorPasillo(mensaje) {
+    if (CONFIG_PASILLO.DEBUG) {
+        console.error(mensaje);
+    }
+    alert('Error: ' + mensaje);
+}
+
+// ============================================================================
+// INICIALIZACIÓN Y REGISTRO DE FUNCIONES
+// ============================================================================
+
+/**
+ * Registra las funciones globalmente para uso en templates
  */
 function registrarFuncionesGlobales() {
     window.aplicarFiltrosPasillo = aplicarFiltrosPasillo;
@@ -207,23 +268,56 @@ function registrarFuncionesGlobales() {
 }
 
 /**
- * Inicializa la aplicación
+ * Inicializa la aplicación cuando el DOM esté listo
  */
 document.addEventListener('DOMContentLoaded', function() {
+    // Registrar funciones globalmente
     registrarFuncionesGlobales();
-
-    // Inicializar línea roja de hora actual
+    
+    // Inicializar línea de hora actual
     inicializarLineaHoraActual();
-
+    
+    // Configurar eventos de teclado
+    configurarEventosEnterPasillo();
+    
+    // Configurar autocompletado de médicos
+    configurarAutocompletadoMedicosPasillo();
+    
     if (CONFIG_PASILLO.DEBUG) {
-        console.log('🏥 Sistema de filtros de pasillo cargado');
+        console.log('🏥 Visualización de Pasillo inicializada');
     }
 });
 
-// Registrar funciones inmediatamente también
+// Registrar funciones inmediatamente para compatibilidad
 registrarFuncionesGlobales();
 
+/**
+ * Configura eventos de teclado para los campos de búsqueda
+ */
+function configurarEventosEnterPasillo() {
+    const nombreMedicoInput = document.getElementById('nombreMedico');
+    const codigoBoxInput = document.getElementById('codigoBox');
+    
+    if (nombreMedicoInput) {
+        nombreMedicoInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                buscarPorMedicoPasillo();
+            }
+        });
+    }
+    
+    if (codigoBoxInput) {
+        codigoBoxInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                buscarPorBoxPasillo();
+            }
+        });
+    }
+}
 
+// ============================================================================
+// FUNCIONES DE LÍNEA DE HORA ACTUAL
+// ============================================================================
 /**
  * Inicializa y gestiona la línea roja que indica la hora actual en la matriz de boxes.
  */
@@ -330,4 +424,182 @@ function crearLineaHoraActual() {
     linea.style.background = 'red';
     linea.style.zIndex = '10';
     return linea;
+}
+
+// ============================================================================
+// FUNCIONES DE AUTOCOMPLETADO DE MÉDICOS - PASILLO
+// ============================================================================
+
+/**
+ * Configura el autocompletado para búsqueda de médicos en pasillo
+ */
+function configurarAutocompletadoMedicosPasillo() {
+    const input = document.getElementById('nombreMedico');
+    if (!input) return;
+    
+    let timeoutId;
+    
+    input.addEventListener('input', function(e) {
+        clearTimeout(timeoutId);
+        const termino = e.target.value.trim();
+        
+        if (termino.length < 2) {
+            _ocultarDropdownMedicosPasillo();
+            return;
+        }
+        
+        // Debounce de 300ms para evitar muchas peticiones
+        timeoutId = setTimeout(() => {
+            _buscarMedicosPasillo(termino);
+        }, 300);
+    });
+    
+    // Ocultar dropdown al perder foco
+    input.addEventListener('blur', function() {
+        setTimeout(_ocultarDropdownMedicosPasillo, 200);
+    });
+    
+    // Manejar navegación con teclado
+    input.addEventListener('keydown', function(e) {
+        _manejarTecladoDropdownPasillo(e);
+    });
+}
+
+/**
+ * Busca médicos por nombre mediante AJAX para pasillo
+ * @param {string} termino - Término de búsqueda
+ * @private
+ */
+function _buscarMedicosPasillo(termino) {
+    if (!window.medicosUrls || !window.medicosUrls.buscar_medicos) {
+        console.error('URL de búsqueda de médicos no configurada');
+        return;
+    }
+    
+    const url = `${window.medicosUrls.buscar_medicos}?q=${encodeURIComponent(termino)}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            _mostrarDropdownMedicosPasillo(data.medicos);
+        })
+        .catch(error => {
+            console.error('Error al buscar médicos:', error);
+            _ocultarDropdownMedicosPasillo();
+        });
+}
+
+/**
+ * Muestra el dropdown con las sugerencias de médicos para pasillo
+ * @param {Array} medicos - Lista de médicos encontrados
+ * @private
+ */
+function _mostrarDropdownMedicosPasillo(medicos) {
+    const dropdown = document.getElementById('medicosDropdownPasillo');
+    if (!dropdown || !medicos.length) {
+        _ocultarDropdownMedicosPasillo();
+        return;
+    }
+    
+    dropdown.innerHTML = '';
+    
+    medicos.forEach((medico, index) => {
+        const option = document.createElement('div');
+        option.className = 'medico-option';
+        option.dataset.index = index;
+        option.innerHTML = `
+            <div class="medico-nombre">${medico.nombre}</div>
+            <div class="medico-especialidad">${medico.especialidad}</div>
+        `;
+        
+        option.addEventListener('click', () => {
+            _seleccionarMedicoPasillo(medico.nombre);
+        });
+        
+        dropdown.appendChild(option);
+    });
+    
+    dropdown.style.display = 'block';
+}
+
+/**
+ * Oculta el dropdown de médicos para pasillo
+ * @private
+ */
+function _ocultarDropdownMedicosPasillo() {
+    const dropdown = document.getElementById('medicosDropdownPasillo');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+        dropdown.innerHTML = '';
+    }
+}
+
+/**
+ * Selecciona un médico del dropdown para pasillo
+ * @param {string} nombreMedico - Nombre del médico seleccionado
+ * @private
+ */
+function _seleccionarMedicoPasillo(nombreMedico) {
+    const input = document.getElementById('nombreMedico');
+    if (input) {
+        input.value = nombreMedico;
+        _ocultarDropdownMedicosPasillo();
+        buscarPorMedicoPasillo();
+    }
+}
+
+/**
+ * Maneja la navegación del dropdown con teclado para pasillo
+ * @param {KeyboardEvent} e - Evento de teclado
+ * @private
+ */
+function _manejarTecladoDropdownPasillo(e) {
+    const dropdown = document.getElementById('medicosDropdownPasillo');
+    if (!dropdown || dropdown.style.display === 'none') return;
+    
+    const opciones = dropdown.querySelectorAll('.medico-option');
+    const actual = dropdown.querySelector('.medico-option.selected');
+    let indice = actual ? parseInt(actual.dataset.index) : -1;
+    
+    switch (e.key) {
+        case 'ArrowDown':
+            e.preventDefault();
+            indice = Math.min(indice + 1, opciones.length - 1);
+            _resaltarOpcionPasillo(opciones, indice);
+            break;
+            
+        case 'ArrowUp':
+            e.preventDefault();
+            indice = Math.max(indice - 1, 0);
+            _resaltarOpcionPasillo(opciones, indice);
+            break;
+            
+        case 'Enter':
+            e.preventDefault();
+            if (actual) {
+                const nombre = actual.querySelector('.medico-nombre').textContent;
+                _seleccionarMedicoPasillo(nombre);
+            }
+            break;
+            
+        case 'Escape':
+            _ocultarDropdownMedicosPasillo();
+            break;
+    }
+}
+
+/**
+ * Resalta una opción específica del dropdown para pasillo
+ * @param {NodeList} opciones - Lista de opciones
+ * @param {number} indice - Índice a resaltar
+ * @private
+ */
+function _resaltarOpcionPasillo(opciones, indice) {
+    opciones.forEach((opcion, i) => {
+        if (i === indice) {
+            opcion.classList.add('selected');
+        } else {
+            opcion.classList.remove('selected');
+        }
+    });
 }

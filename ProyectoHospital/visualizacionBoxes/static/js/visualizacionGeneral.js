@@ -1,5 +1,5 @@
 // ============================================================================
-// VISUALIZACIÓN GENERAL DE BOXES - VERSIÓN FINAL ORGANIZADA
+// VISUALIZACIÓN GENERAL DE BOXES - SISTEMA HOSPITALARIO
 // ============================================================================
 
 /**
@@ -7,8 +7,8 @@
  */
 const CONFIG_GENERAL = {
     UPDATE_INTERVAL: 30000, // Actualización automática cada 30 segundos
-    BOXES_POR_PAGINA: 48,   // 8 columnas x 6 filas
-    DEBUG: false,           // Desactivar debug en producción
+    BOXES_POR_PAGINA: 40,   // Boxes por página para paginación
+    DEBUG: false,           // Debug deshabilitado en producción
     DATE_FORMAT: "Y-m-d",
     LOCALE: "es"
 };
@@ -110,10 +110,10 @@ function _construirUrlDetalle(boxId, fecha) {
 function _obtenerFiltrosActivos() {
     const fecha = document.getElementById('fecha')?.value || '';
     const pasillo = document.getElementById('pasillo')?.value || '';
-    const codigoMedico = document.getElementById('codigoMedico')?.value || '';
+    const nombreMedico = document.getElementById('nombreMedico')?.value || '';
     const codigoBox = document.getElementById('codigoBox')?.value || '';
     
-    return { fecha, pasillo, medico: codigoMedico, box: codigoBox };
+    return { fecha, pasillo, medico: nombreMedico, box: codigoBox };
 }
 
 /**
@@ -129,6 +129,12 @@ function _construirUrlConFiltros(filtros) {
     if (filtros.pasillo) params.set('pasillo', filtros.pasillo);
     if (filtros.medico) params.set('medico', filtros.medico);
     if (filtros.box) params.set('box', filtros.box);
+    
+    // Preservar página actual si no es una búsqueda nueva
+    const currentPage = new URLSearchParams(window.location.search).get('page');
+    if (currentPage && !filtros.resetPage) {
+        params.set('page', currentPage);
+    }
     
     const queryString = params.toString();
     return window.location.pathname + (queryString ? '?' + queryString : '');
@@ -301,112 +307,43 @@ function _crearModal() {
 // FUNCIONES DE PAGINACIÓN
 // ============================================================================
 
-// Variables globales para paginación
-let paginaActual = 1;
-let totalPaginas = 1;
-
 /**
- * Calcula el número total de páginas basado en los boxes disponibles
- */
-function calcularPaginas() {
-    const totalBoxes = document.querySelectorAll('.box-item').length;
-    totalPaginas = Math.ceil(totalBoxes / CONFIG_GENERAL.BOXES_POR_PAGINA);
-    return totalPaginas;
-}
-
-/**
- * Muestra la página anterior de boxes
+ * Navega a la página anterior
  */
 function paginaAnterior() {
+    const params = new URLSearchParams(window.location.search);
+    const paginaActual = parseInt(params.get('page') || '1');
+    
     if (paginaActual > 1) {
-        paginaActual--;
-        mostrarPagina(paginaActual);
-        actualizarIndicadoresPaginacion();
+        params.set('page', paginaActual - 1);
+        window.location.href = window.location.pathname + '?' + params.toString();
     }
 }
 
 /**
- * Muestra la página siguiente de boxes
+ * Navega a la página siguiente
  */
 function paginaSiguiente() {
-    calcularPaginas();
-    if (paginaActual < totalPaginas) {
-        paginaActual++;
-        mostrarPagina(paginaActual);
-        actualizarIndicadoresPaginacion();
-    }
-}
-
-/**
- * Muestra los boxes correspondientes a una página específica
- * @param {number} pagina - Número de página a mostrar
- */
-function mostrarPagina(pagina) {
-    const boxes = document.querySelectorAll('.box-item');
-    const inicio = (pagina - 1) * CONFIG_GENERAL.BOXES_POR_PAGINA;
-    const fin = inicio + CONFIG_GENERAL.BOXES_POR_PAGINA;
+    const params = new URLSearchParams(window.location.search);
+    const paginaActual = parseInt(params.get('page') || '1');
     
-    // Mostrar/ocultar boxes según la página
-    boxes.forEach((box, index) => {
-        box.style.display = (index >= inicio && index < fin) ? 'flex' : 'none';
-    });
-    
-    // Efecto de transición
-    const grid = document.querySelector('.boxes-grid');
-    if (grid) {
-        grid.style.opacity = '0.5';
-        setTimeout(() => grid.style.opacity = '1', 200);
-    }
-    
-    actualizarInfoResultados();
-}
-
-/**
- * Actualiza los indicadores visuales de paginación
- */
-function actualizarIndicadoresPaginacion() {
-    const btnAnterior = document.querySelector('.btn-nav:first-child');
-    const btnSiguiente = document.querySelector('.btn-nav:last-child');
-    const navegacion = document.querySelector('.navegacion-paginas');
-    
-    if (btnAnterior) {
-        btnAnterior.disabled = paginaActual <= 1;
-        btnAnterior.style.opacity = paginaActual <= 1 ? '0.5' : '1';
-    }
-    
-    if (btnSiguiente) {
-        btnSiguiente.disabled = paginaActual >= totalPaginas;
-        btnSiguiente.style.opacity = paginaActual >= totalPaginas ? '0.5' : '1';
-    }
-    
-    if (navegacion) {
-        navegacion.setAttribute('data-pagina', `Página ${paginaActual} de ${totalPaginas}`);
-    }
-}
-
-/**
- * Actualiza la información de resultados mostrados
- */
-function actualizarInfoResultados() {
-    const totalBoxes = document.querySelectorAll('.box-item').length;
-    const boxesPaginaActual = Math.min(CONFIG_GENERAL.BOXES_POR_PAGINA, totalBoxes - (paginaActual - 1) * CONFIG_GENERAL.BOXES_POR_PAGINA);
-    
-    let indicadorResultados = document.querySelector('.indicador-resultados');
-    if (!indicadorResultados) {
-        indicadorResultados = document.createElement('div');
-        indicadorResultados.className = 'indicador-resultados';
-        const contenedorMatriz = document.querySelector('.contenedor-matriz');
-        if (contenedorMatriz) {
-            contenedorMatriz.insertBefore(indicadorResultados, contenedorMatriz.firstChild);
+    // Obtener total de páginas del DOM
+    const infoPagina = document.querySelector('.info-pagina span');
+    if (infoPagina) {
+        const match = infoPagina.textContent.match(/Página (\d+) de (\d+)/);
+        if (match) {
+            const totalPaginas = parseInt(match[2]);
+            if (paginaActual < totalPaginas) {
+                params.set('page', paginaActual + 1);
+                window.location.href = window.location.pathname + '?' + params.toString();
+            }
+            return;
         }
     }
     
-    indicadorResultados.innerHTML = `
-        <span class="resultados-texto">
-            Mostrando ${boxesPaginaActual} de ${totalBoxes} boxes
-            ${totalPaginas > 1 ? `(Página ${paginaActual} de ${totalPaginas})` : ''}
-        </span>
-    `;
+    // Fallback: intentar navegar
+    params.set('page', paginaActual + 1);
+    window.location.href = window.location.pathname + '?' + params.toString();
 }
 
 // ============================================================================
@@ -414,27 +351,27 @@ function actualizarInfoResultados() {
 // ============================================================================
 
 /**
- * Busca por código médico
+ * Busca por nombre de médico con autocompletado
  */
 function buscarPorMedico() {
-    const codigoMedico = document.getElementById('codigoMedico')?.value.trim();
+    const nombreMedico = document.getElementById('nombreMedico')?.value.trim();
     
-    if (!codigoMedico) {
-        _mostrarError('Por favor, ingrese un código médico válido');
+    if (!nombreMedico) {
+        _mostrarError('Por favor, ingrese un nombre de médico válido');
         return;
     }
     
     _mostrarLoader();
     
     const url = new URL(window.location);
-    url.searchParams.set('medico', codigoMedico);
+    url.searchParams.set('medico', nombreMedico);
     window.location.href = url.toString();
 }
 
 /**
- * Busca por código de box
+ * Busca por código de box (versión mejorada)
  */
-function buscarPorBox() {
+function buscarPorBoxMejorado() {
     const codigoBox = document.getElementById('codigoBox')?.value.trim();
     
     if (!codigoBox) {
@@ -442,7 +379,38 @@ function buscarPorBox() {
         return;
     }
     
-    aplicarFiltros();
+    const url = new URL(window.location);
+    url.searchParams.set('box', codigoBox);
+    url.searchParams.delete('page'); // Reset pagination on new search
+    window.location.href = url.toString();
+}
+
+/**
+ * Busca por código de box
+ */
+function buscarPorBox() {
+    buscarPorBoxMejorado();
+}
+
+/**
+ * Limpia la búsqueda de médico
+ */
+function limpiarBusquedaMedico() {
+    const url = new URL(window.location);
+    url.searchParams.delete('medico');
+    document.getElementById('nombreMedico').value = '';
+    _ocultarDropdownMedicos();
+    window.location.href = url.toString();
+}
+
+/**
+ * Limpia la búsqueda de box
+ */
+function limpiarBusquedaBox() {
+    const url = new URL(window.location);
+    url.searchParams.delete('box');
+    document.getElementById('codigoBox').value = '';
+    window.location.href = url.toString();
 }
 
 /**
@@ -458,7 +426,7 @@ function removerFiltro(tipoFiltro) {
             break;
         case 'medico':
             url.searchParams.delete('medico');
-            document.getElementById('codigoMedico').value = '';
+            document.getElementById('nombreMedico').value = '';
             break;
         case 'box':
             url.searchParams.delete('box');
@@ -501,11 +469,13 @@ document.addEventListener('DOMContentLoaded', function() {
     window.paginaSiguiente = paginaSiguiente;
     window.buscarPorMedico = buscarPorMedico;
     window.buscarPorBox = buscarPorBox;
+    window.buscarPorBoxMejorado = buscarPorBoxMejorado;
+    window.limpiarBusquedaMedico = limpiarBusquedaMedico;
+    window.limpiarBusquedaBox = limpiarBusquedaBox;
     window.removerFiltro = removerFiltro;
     window.limpiarTodosFiltros = limpiarTodosFiltros;
     
     // Inicializar funcionalidades
-    inicializarPaginacion();
     configurarEventosEnter();
     
     // Configurar actualización automática si está habilitada
@@ -513,43 +483,22 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(actualizarEstadoBoxes, CONFIG_GENERAL.UPDATE_INTERVAL);
     }
     
-    if (CONFIG_GENERAL.DEBUG) {
-        console.log('🏥 Visualización General de Boxes inicializada');
-    }
+    // Configurar autocompletado de médicos
+    configurarAutocompletadoMedicos();
+    
+    console.log('🏥 Visualización General de Boxes inicializada');
 });
 
-/**
- * Inicializa la funcionalidad de paginación
- */
-function inicializarPaginacion() {
-    calcularPaginas();
-    mostrarPagina(1);
-    actualizarIndicadoresPaginacion();
-    
-    // Agregar estilos para animaciones
-    if (!document.querySelector('#pulse-style')) {
-        const style = document.createElement('style');
-        style.id = 'pulse-style';
-        style.textContent = `
-            @keyframes pulse {
-                0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.7); }
-                50% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(13, 110, 253, 0); }
-                100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(13, 110, 253, 0); }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
 
 /**
  * Configura eventos de teclado para los campos de búsqueda
  */
 function configurarEventosEnter() {
-    const codigoMedicoInput = document.getElementById('codigoMedico');
+    const nombreMedicoInput = document.getElementById('nombreMedico');
     const codigoBoxInput = document.getElementById('codigoBox');
     
-    if (codigoMedicoInput) {
-        codigoMedicoInput.addEventListener('keypress', function(e) {
+    if (nombreMedicoInput) {
+        nombreMedicoInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 buscarPorMedico();
             }
@@ -563,4 +512,182 @@ function configurarEventosEnter() {
             }
         });
     }
+}
+
+// ============================================================================
+// FUNCIONES DE AUTOCOMPLETADO DE MÉDICOS
+// ============================================================================
+
+/**
+ * Configura el autocompletado para búsqueda de médicos
+ */
+function configurarAutocompletadoMedicos() {
+    const input = document.getElementById('nombreMedico');
+    if (!input) return;
+    
+    let timeoutId;
+    
+    input.addEventListener('input', function(e) {
+        clearTimeout(timeoutId);
+        const termino = e.target.value.trim();
+        
+        if (termino.length < 2) {
+            _ocultarDropdownMedicos();
+            return;
+        }
+        
+        // Debounce de 300ms para evitar muchas peticiones
+        timeoutId = setTimeout(() => {
+            _buscarMedicos(termino);
+        }, 300);
+    });
+    
+    // Ocultar dropdown al perder foco
+    input.addEventListener('blur', function() {
+        setTimeout(_ocultarDropdownMedicos, 200);
+    });
+    
+    // Manejar navegación con teclado
+    input.addEventListener('keydown', function(e) {
+        _manejarTecladoDropdown(e);
+    });
+}
+
+/**
+ * Busca médicos por nombre mediante AJAX
+ * @param {string} termino - Término de búsqueda
+ * @private
+ */
+function _buscarMedicos(termino) {
+    if (!window.medicosUrls || !window.medicosUrls.buscar_medicos) {
+        console.error('URL de búsqueda de médicos no configurada');
+        return;
+    }
+    
+    const url = `${window.medicosUrls.buscar_medicos}?q=${encodeURIComponent(termino)}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            _mostrarDropdownMedicos(data.medicos);
+        })
+        .catch(error => {
+            console.error('Error al buscar médicos:', error);
+            _ocultarDropdownMedicos();
+        });
+}
+
+/**
+ * Muestra el dropdown con las sugerencias de médicos
+ * @param {Array} medicos - Lista de médicos encontrados
+ * @private
+ */
+function _mostrarDropdownMedicos(medicos) {
+    const dropdown = document.getElementById('medicosDropdown');
+    if (!dropdown || !medicos.length) {
+        _ocultarDropdownMedicos();
+        return;
+    }
+    
+    dropdown.innerHTML = '';
+    
+    medicos.forEach((medico, index) => {
+        const option = document.createElement('div');
+        option.className = 'medico-option';
+        option.dataset.index = index;
+        option.innerHTML = `
+            <div class="medico-nombre">${medico.nombre}</div>
+            <div class="medico-especialidad">${medico.especialidad}</div>
+        `;
+        
+        option.addEventListener('click', () => {
+            _seleccionarMedico(medico.nombre);
+        });
+        
+        dropdown.appendChild(option);
+    });
+    
+    dropdown.style.display = 'block';
+}
+
+/**
+ * Oculta el dropdown de médicos
+ * @private
+ */
+function _ocultarDropdownMedicos() {
+    const dropdown = document.getElementById('medicosDropdown');
+    if (dropdown) {
+        dropdown.style.display = 'none';
+        dropdown.innerHTML = '';
+    }
+}
+
+/**
+ * Selecciona un médico del dropdown
+ * @param {string} nombreMedico - Nombre del médico seleccionado
+ * @private
+ */
+function _seleccionarMedico(nombreMedico) {
+    const input = document.getElementById('nombreMedico');
+    if (input) {
+        input.value = nombreMedico;
+        _ocultarDropdownMedicos();
+        buscarPorMedico();
+    }
+}
+
+/**
+ * Maneja la navegación del dropdown con teclado
+ * @param {KeyboardEvent} e - Evento de teclado
+ * @private
+ */
+function _manejarTecladoDropdown(e) {
+    const dropdown = document.getElementById('medicosDropdown');
+    if (!dropdown || dropdown.style.display === 'none') return;
+    
+    const opciones = dropdown.querySelectorAll('.medico-option');
+    const actual = dropdown.querySelector('.medico-option.selected');
+    let indice = actual ? parseInt(actual.dataset.index) : -1;
+    
+    switch (e.key) {
+        case 'ArrowDown':
+            e.preventDefault();
+            indice = Math.min(indice + 1, opciones.length - 1);
+            _resaltarOpcion(opciones, indice);
+            break;
+            
+        case 'ArrowUp':
+            e.preventDefault();
+            indice = Math.max(indice - 1, 0);
+            _resaltarOpcion(opciones, indice);
+            break;
+            
+        case 'Enter':
+            e.preventDefault();
+            if (actual) {
+                const nombre = actual.querySelector('.medico-nombre').textContent;
+                _seleccionarMedico(nombre);
+            }
+            break;
+            
+        case 'Escape':
+            _ocultarDropdownMedicos();
+            break;
+    }
+}
+
+/**
+ * Resalta una opción específica del dropdown
+ * @param {NodeList} opciones - Lista de opciones
+ * @param {number} indice - Índice a resaltar
+ * @private
+ */
+function _resaltarOpcion(opciones, indice) {
+    opciones.forEach((opcion, i) => {
+        if (i === indice) {
+            opcion.classList.add('selected');
+        } else {
+            opcion.classList.remove('selected');
+        }
+    });
 }

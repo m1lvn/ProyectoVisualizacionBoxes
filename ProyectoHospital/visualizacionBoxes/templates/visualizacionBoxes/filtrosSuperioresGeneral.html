@@ -1,3 +1,7 @@
+<!-- ============================================================================ -->
+<!-- FILTROS SUPERIORES PARA VISUALIZACIÓN GENERAL DE BOXES -->
+<!-- ============================================================================ -->
+
 <div class="filtros-container">
   <div class="filtros-row">
     
@@ -18,19 +22,22 @@
         <i class="bi bi-chevron-down dropdown-icon"></i>
       </div>
 
-      <!-- Campo de búsqueda por Código Médico -->
+      <!-- Campo de búsqueda por Nombre Médico -->
       <div class="search-input-group">
-        <input type="text" class="form-control search-input" placeholder="Código Médico..." 
-               id="codigoMedico" value="{{ codigo_medico|default:'' }}" 
-               onkeypress="if(event.key==='Enter') buscarPorMedico()">
+        <input type="text" class="form-control search-input" placeholder="Nombre Médico..." 
+               id="nombreMedico" value="{{ nombre_medico|default:'' }}" 
+               onkeypress="if(event.key==='Enter') buscarPorMedico()"
+               autocomplete="off">
         <button class="btn-search-inline" type="button" onclick="buscarPorMedico()" title="Buscar médico">
           <i class="bi bi-search"></i>
         </button>
-        {% if codigo_medico %}
+        {% if nombre_medico %}
         <button class="btn-clear-inline" type="button" onclick="limpiarBusquedaMedico()" title="Limpiar búsqueda">
           <i class="bi bi-x-lg"></i>
         </button>
         {% endif %}
+        <!-- Dropdown para sugerencias de médicos -->
+        <div id="medicosDropdown" class="medicos-dropdown" style="display: none;"></div>
       </div>
 
       <!-- Campo de búsqueda por Código Box -->
@@ -55,12 +62,53 @@
       
       <!-- Navegación de páginas -->
       <div class="navegacion-paginas">
-        <button type="button" class="btn-nav" onclick="paginaAnterior()" aria-label="Página anterior">
-          <i class="bi bi-chevron-left"></i>
-        </button>
-        <button type="button" class="btn-nav" onclick="paginaSiguiente()" aria-label="Página siguiente">
-          <i class="bi bi-chevron-right"></i>
-        </button>
+        {% if is_paginated %}
+          <!-- Información de Página -->
+          <div class="info-pagina">
+            <span class="text-muted">Página {{ page_obj.number }} de {{ paginator.num_pages }}</span>
+            <small class="text-muted d-block">{{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ paginator.count }} boxes</small>
+          </div>
+          
+          <!-- Controles de Navegación -->
+          <div class="controles-navegacion">
+            {% if page_obj.has_previous %}
+              <button type="button" class="btn-nav" 
+                      onclick="paginaAnterior()" 
+                      aria-label="Página anterior"
+                      title="Página anterior">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+              </button>
+            {% else %}
+              <button type="button" class="btn-nav disabled" 
+                      disabled
+                      aria-label="Página anterior"
+                      title="Página anterior">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+              </button>
+            {% endif %}
+            
+            {% if page_obj.has_next %}
+              <button type="button" class="btn-nav" 
+                      onclick="paginaSiguiente()" 
+                      aria-label="Página siguiente"
+                      title="Página siguiente">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+              </button>
+            {% else %}
+              <button type="button" class="btn-nav disabled" 
+                      disabled
+                      aria-label="Página siguiente"
+                      title="Página siguiente">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+              </button>
+            {% endif %}
+          </div>
+        {% else %}
+          <!-- Información sin Paginación -->
+          <div class="info-pagina">
+            <span class="text-muted">{{ boxes|length }} boxes total</span>
+          </div>
+        {% endif %}
       </div>
 
     </div>

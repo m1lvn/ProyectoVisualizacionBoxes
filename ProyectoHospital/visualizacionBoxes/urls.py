@@ -22,4 +22,7 @@ urlpatterns = [
     
     # API AJAX - Obtener detalles de un box específico
     path('detalle-box/', views.obtener_detalle_box, name='detalle_box'),
+    
+    # API AJAX - Buscar médicos por nombre
+    path('buscar-medicos/', views.buscar_medicos, name='buscar_medicos'),
 ]

@@ -1,8 +1,8 @@
 /* ============================================================================
-   FILTROS DE PASILLO - ESTILOS BÁSICOS Y LIMPIOS
+   FILTROS SUPERIORES PARA VISUALIZACIÓN DE PASILLO - SISTEMA HOSPITALARIO
    ============================================================================ */
 
-/* Contenedor principal */
+/* Contenedor principal de filtros */
 .filtros-container {
   background: #ffffff;
   border: 1px solid #dee2e6;
@@ -296,4 +296,71 @@
   .btn-clear-all-filters {
     align-self: center;
   }
+}
+
+/* ============================================================================
+ * DROPDOWN DE AUTOCOMPLETADO PARA MÉDICOS
+ * ============================================================================ */
+
+.medicos-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.medico-option {
+  padding: 10px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f1f1;
+  transition: background-color 0.2s ease;
+}
+
+.medico-option:last-child {
+  border-bottom: none;
+}
+
+.medico-option:hover {
+  background-color: #f8f9fa;
+}
+
+.medico-option.selected {
+  background-color: #e7f3ff;
+}
+
+.medico-nombre {
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.medico-especialidad {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.medicos-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
+
+.medicos-dropdown::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.medicos-dropdown::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.medicos-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }
