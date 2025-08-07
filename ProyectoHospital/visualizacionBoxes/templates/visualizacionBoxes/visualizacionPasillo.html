@@ -1,58 +1,102 @@
 {% extends 'visualizacionBoxes/base.html' %}
 {% load static %}
 {% load visual_pasillo %}
+
 {% block title %}Visualización por Pasillo{% endblock %}
 
 {% block content %}
+  <!-- Meta tag para JavaScript -->
+  <meta name="fecha" content="{{ fecha|date:'Y-m-d' }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
   {% include "visualizacionBoxes/header.html" %}
   {% include "visualizacionBoxes/filtrosSuperioresPasillo.html" %}
 
   <div class="container-fluid mt-3 px-4 visualizacion-pasillo">
     <div class="d-flex align-items-start gap-4">
-      <!-- Leyenda de estados -->
+      
+      <!-- ============================================= -->
+      <!-- LEYENDA DE ESTADOS                            -->
+      <!-- ============================================= -->
       <div class="leyenda-lateral" style="min-width:200px;">
         {% include "visualizacionBoxes/leyendaBoxes.html" %}
       </div>
 
-      <!-- Matriz de Boxes -->
+      <!-- ============================================= -->
+      <!-- MATRIZ PRINCIPAL DE BOXES                    -->
+      <!-- ============================================= -->
       <div class="flex-fill">
         <div class="contenedor-tabla position-relative">
           <div class="table-responsive position-relative">
             <table class="table table-bordered text-center w-100 table-boxes">
-              <thead class="table-light">
+              
+              <!-- Encabezado de la tabla -->
+              <thead class="table-light sticky-top">
                 <tr>
-                  <th class="celda-hora">Hora</th>
+                  <th class="celda-hora">
+                    <i class="fas fa-clock me-1"></i>Hora
+                  </th>
                   {% for box in boxes %}
-                    <th class="columna-box" data-pasillo="{{ box.idpasillo.pasillo|lower }}">
-                      BOX {{ box.idbox }}
+                    <th class="columna-box" data-pasillo="{{ box.idpasillo.pasillo|lower }}" title="Pasillo: {{ box.idpasillo.pasillo }}">
+                      <div class="box-header">
+                        <i class="fas fa-bed me-1"></i>
+                        <strong>BOX {{ box.idbox }}</strong>
+                      </div>
                     </th>
                   {% endfor %}
                 </tr>
               </thead>
+              
+              <!-- Cuerpo de la tabla con horarios -->
               <tbody>
                 {% for hora in horas %}
                   <tr class="fila-horario" data-hora="{{ hora }}">
-                    <td class="celda-hora"><strong>{{ hora }}</strong></td>
+                    <td class="celda-hora">
+                      <strong>{{ hora }}</strong>
+                    </td>
                     {% for box in boxes %}
                       {% with key=box.idbox|stringformat:"s"|add:"-"|add:hora %}
                         {% with estado=estado_por_box_y_hora|get_item:key %}
                           {% with info=info_por_box_y_hora|get_item:key %}
-                            <td class="time-slot {% if estado == 'Reservado' %}ocupado{% elif estado == 'Disponible' %}libre{% elif estado == 'Inhabilitado' %}inhabilitado{% elif estado == 'En mantención' %}mantencion{% elif estado == 'Limpieza' %}limpieza{% else %}libre{% endif %}" 
+                            <td class="time-slot 
+                                     {% if estado == 'Reservado' %}ocupado
+                                     {% elif estado == 'Disponible' %}libre
+                                     {% elif estado == 'Inhabilitado' %}inhabilitado
+                                     {% elif estado == 'En mantención' %}mantencion
+                                     {% elif estado == 'Limpieza' %}limpieza
+                                     {% else %}libre{% endif %}" 
                                 data-pasillo="{{ box.idpasillo.pasillo|lower }}" 
                                 data-box="{{ box.idbox }}" 
-                                data-hora="{{ hora }}">
+                                data-hora="{{ hora }}"
+                                data-estado="{{ estado }}"
+                                title="Box {{ box.idbox }} - {{ hora }} - {{ estado }}">
+                              
+                              <!-- Contenido de la celda según el estado -->
                               {% if estado == 'Reservado' %}
-                                {{ info }}
-                              {% elif estado == 'Disponible' %}
-                                <!-- Libre -->
+                                <div class="box-content reservado">
+                                  <i class="fas fa-user-md"></i>
+                                  <small>{{ info }}</small>
+                                </div>
                               {% elif estado == 'Inhabilitado' %}
-                                Inhabilitado
+                                <div class="box-content inhabilitado">
+                                  <i class="fas fa-ban"></i>
+                                  <small>Inhabilitado</small>
+                                </div>
                               {% elif estado == 'En mantención' %}
-                                Mantenimiento
+                                <div class="box-content mantencion">
+                                  <i class="fas fa-tools"></i>
+                                  <small>Mantención</small>
+                                </div>
                               {% elif estado == 'Limpieza' %}
-                                Limpieza
+                                <div class="box-content limpieza">
+                                  <i class="fas fa-broom"></i>
+                                  <small>Limpieza</small>
+                                </div>
                               {% else %}
-                                <!-- Libre -->
+                                <!-- Box disponible -->
+                                <div class="box-content disponible">
+                                  <i class="fas fa-check-circle"></i>
+                                </div>
                               {% endif %}
                             </td>
                           {% endwith %}
@@ -65,12 +109,25 @@
             </table>
           </div>
         </div>
+        
+        <!-- ============================================= -->
+        <!-- PAGINACIÓN                                   -->
+        <!-- ============================================= -->
+        {% if is_paginated %}
+          <div class="d-flex w-100 mt-3">
+            <div class="page-info me-2" style="background:#fff;border-radius:10px;padding:8px 24px;box-shadow:0 2px 8px #eee;font-size:1.1em;">
+              {{ page_obj.start_index }}–{{ page_obj.end_index }} de {{ paginator.count }}
+            </div>
+          </div>
+        {% endif %}
       </div>
 
-      <!-- Información del Pasillo -->
+      <!-- ============================================= -->
+      <!-- PANEL DE INFORMACIÓN                         -->
+      <!-- ============================================= -->
       <div style="max-width:350px; min-width:220px;" class="ms-2 mt-4 mt-lg-0">
-        <div class="card">
-          <div class="card-header">
+        <div class="card shadow-sm">
+          <div class="card-header bg-primary text-white">
             <h5 class="card-title mb-0">
               <i class="fas fa-info-circle me-2"></i>
               Información del Pasillo
@@ -78,33 +135,133 @@
           </div>
           <div class="card-body">
             {% if pasillo_actual %}
-              <h6 class="text-primary">{{ pasillo_actual.pasillo }}</h6>
-              {% if is_paginated %}
-                <p class="mb-2"><strong>Mostrando:</strong> {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ paginator.count }} boxes</p>
-                <p class="mb-2"><strong>Página:</strong> {{ page_obj.number }} de {{ paginator.num_pages }}</p>
-              {% else %}
-                <p class="mb-2"><strong>Total de boxes:</strong> {{ boxes|length }}</p>
-              {% endif %}
-              <p class="mb-2"><strong>Fecha:</strong> {{ fecha|date:"d/m/Y" }}</p>
+              <div class="text-center mb-3">
+                <h6 class="text-primary">
+                  <i class="fas fa-hospital me-1"></i>
+                  {{ pasillo_actual.pasillo }}
+                </h6>
+              </div>
               
+              <!-- Información de paginación -->
+              <div class="row mb-3">
+                <div class="col-12">
+                  {% if is_paginated %}
+                    <small class="text-muted">Mostrando boxes:</small>
+                    <div><strong>{{ page_obj.start_index }}-{{ page_obj.end_index }}</strong> de {{ paginator.count }}</div>
+                    <nav aria-label="Paginación de boxes" class="mt-2">
+                      <ul class="pagination pagination-sm mb-0 justify-content-center">
+                        {% if page_obj.has_previous %}
+                          <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" aria-label="Página anterior">
+                              <span aria-hidden="true">&laquo;</span>
+                            </a>
+                          </li>
+                        {% else %}
+                          <li class="page-item disabled">
+                            <span class="page-link" aria-hidden="true">&laquo;</span>
+                          </li>
+                        {% endif %}
+                        {% for num in paginator.page_range %}
+                          {% if num == page_obj.number %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                          {% else %}
+                            <li class="page-item"><a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a></li>
+                          {% endif %}
+                        {% endfor %}
+                        {% if page_obj.has_next %}
+                          <li class="page-item">
+                            <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" aria-label="Página siguiente">
+                              <span aria-hidden="true">&raquo;</span>
+                            </a>
+                          </li>
+                        {% else %}
+                          <li class="page-item disabled">
+                            <span class="page-link" aria-hidden="true">&raquo;</span>
+                          </li>
+                        {% endif %}
+                      </ul>
+                    </nav>
+                  {% else %}
+                    <small class="text-muted">Total de boxes:</small>
+                    <div><strong>{{ boxes|length }}</strong></div>
+                  {% endif %}
+                </div>
+              </div>
+              
+              <!-- Fecha actual -->
+              <div class="row mb-3">
+                <div class="col-12">
+                  <small class="text-muted">Fecha:</small>
+                  <div><strong>{{ fecha|date:"d/m/Y" }}</strong></div>
+                </div>
+              </div>
+              
+              <!-- Contadores de estado -->
               <div class="row text-center">
                 <div class="col-6">
-                  <div class="border rounded p-2">
-                    <div class="h4 text-success mb-1" id="boxes-libres">0</div>
+                  <div class="border rounded p-2 bg-light">
+                    <div class="h4 text-success mb-1" id="boxes-libres">
+                      <i class="fas fa-check-circle"></i>
+                      <span>0</span>
+                    </div>
                     <small class="text-muted">Libres</small>
                   </div>
                 </div>
                 <div class="col-6">
-                  <div class="border rounded p-2">
-                    <div class="h4 text-danger mb-1" id="boxes-ocupados">0</div>
+                  <div class="border rounded p-2 bg-light">
+                    <div class="h4 text-danger mb-1" id="boxes-ocupados">
+                      <i class="fas fa-user-md"></i>
+                      <span>0</span>
+                    </div>
                     <small class="text-muted">Ocupados</small>
                   </div>
                 </div>
               </div>
+              
+              <!-- Información adicional -->
+              <div class="mt-3 pt-3 border-top">
+                <small class="text-muted">
+                  <i class="fas fa-clock me-1"></i>
+                  Actualizado: <span id="ultima-actualizacion">{{ hora_actual|time:"H:i" }}</span>
+                </small>
+              </div>
+              
             {% else %}
-              <p class="text-muted">Seleccione un pasillo para ver la información.</p>
+              <div class="text-center text-muted">
+                <i class="fas fa-arrow-left fa-2x mb-2"></i>
+                <p>Seleccione un pasillo para ver la información detallada.</p>
+              </div>
             {% endif %}
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- ============================================= -->
+  <!-- MODAL PARA MOSTRAR DETALLES                  -->
+  <!-- ============================================= -->
+  <div class="modal fade" id="detalleModal" tabindex="-1" aria-labelledby="detalleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title" id="detalleModalLabel">
+            <i class="fas fa-info-circle me-2"></i>
+            Detalle del Box
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="modalContent">
+          <!-- Contenido dinámico cargado por JavaScript -->
+          <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-2"></i>Cerrar
+          </button>
         </div>
       </div>
     </div>
@@ -112,146 +269,134 @@
 {% endblock %}
 
 {% block scripts %}
+  <!-- Configuración global para JavaScript -->
   <script>
-    // Configurar URLs para JavaScript
+    // URLs para las llamadas AJAX
+    window.detalleBoxUrl = "{% url 'visualizacionBoxes:detalle_box' %}";
     window.medicosUrls = {
         buscar_medicos: "{% url 'visualizacionBoxes:buscar_medicos' %}"
     };
+    
+    // Configuración específica del pasillo
+    window.pasilloConfig = {
+      HORA_ACTUAL: '{{ hora_actual|time:"H:i" }}',
+      FECHA_ACTUAL: '{{ fecha|date:"Y-m-d" }}',
+      PASILLO_ID: {{ pasillo_seleccionado|default:'null' }},
+      PASILLO_NOMBRE: '{{ pasillo_actual.pasillo|default:"" }}',
+      TOTAL_BOXES: {{ boxes|length }},
+      ACTUALIZAR_CADA: 30000, // 30 segundos
+      DEBUG: false
+    };
   </script>
-  <script src="{% static 'js/visualizacionPasillo.js' %}"></script>
   
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Configuración de la vista
-      const config = {
-        HORA_ACTUAL: '{{ hora_actual|time:"H:i" }}',
-        FECHA_ACTUAL: '{{ fecha|date:"Y-m-d" }}',
-        PASILLO_ID: {{ pasillo_seleccionado|default:'null' }},
-        ACTUALIZAR_CADA: 30000
-      };
-      
-      // Inicializar funcionalidades específicas del template
-      initializarVisualizacionPasillo(config);
-    });
-    
-    /**
-     * Inicializa las funcionalidades específicas del template
-     */
-    function initializarVisualizacionPasillo(config) {
-      // Marcar hora actual en la tabla
-      marcarHoraActual(config.HORA_ACTUAL);
-      
-      // Actualizar contadores de boxes
-      actualizarContadores();
-      
-      // Configurar eventos de celdas
-      configurarEventosCeldas();
-    }
-    
-    /**
-     * Marca la hora actual en la tabla
-     */
-    function marcarHoraActual(horaActual) {
-      // Remover marcas previas
-      document.querySelectorAll('.fila-horario.hora-actual').forEach(fila => {
-        fila.classList.remove('hora-actual');
-      });
-      
-      // Marcar nueva hora actual
-      document.querySelectorAll('.fila-horario').forEach(fila => {
-        if (fila.dataset.hora === horaActual) {
-          fila.classList.add('hora-actual');
-          
-          // Scroll suave hacia la hora actual
-          fila.scrollIntoView({ 
-            behavior: 'smooth', 
-            block: 'center' 
-          });
-        }
-      });
-    }
-    
-    /**
-     * Actualiza los contadores de boxes libres y ocupados
-     */
-    function actualizarContadores() {
-      const slots = document.querySelectorAll('.time-slot');
-      const libres = document.querySelectorAll('.time-slot.libre').length;
-      const ocupados = document.querySelectorAll('.time-slot.ocupado').length;
-      const inhabilitados = document.querySelectorAll('.time-slot.inhabilitado').length;
-      const mantencion = document.querySelectorAll('.time-slot.mantencion').length;
-      const limpieza = document.querySelectorAll('.time-slot.limpieza').length;
-      
-      // Actualizar contadores en la UI
-      const contadorLibres = document.getElementById('boxes-libres');
-      const contadorOcupados = document.getElementById('boxes-ocupados');
-      
-      if (contadorLibres) {
-        contadorLibres.textContent = libres;
-        contadorLibres.parentElement.setAttribute('title', `${libres} boxes libres`);
-      }
-      
-      if (contadorOcupados) {
-        contadorOcupados.textContent = ocupados;
-        contadorOcupados.parentElement.setAttribute('title', `${ocupados} boxes ocupados`);
-      }
-      
-      // Log para depuración
-      console.log('📊 Contadores actualizados:', {
-        libres, ocupados, inhabilitados, mantencion, limpieza,
-        total: slots.length
-      });
-    }
-    
-    /**
-     * Configura los eventos de click en las celdas
-     */
-    function configurarEventosCeldas() {
-      document.querySelectorAll('.time-slot').forEach(celda => {
-        celda.addEventListener('click', function(event) {
-          const box = this.dataset.box;
-          const hora = this.dataset.hora;
-          const pasillo = this.dataset.pasillo;
-          
-          // Determinar estado del box
-          let estado = 'libre';
-          if (this.classList.contains('ocupado')) estado = 'ocupado';
-          else if (this.classList.contains('inhabilitado')) estado = 'inhabilitado';
-          else if (this.classList.contains('mantencion')) estado = 'mantenimiento';
-          else if (this.classList.contains('limpieza')) estado = 'limpieza';
-          
-          // Información del box
-          const info = this.textContent.trim();
-          
-          // Mostrar información detallada
-          mostrarDetalleBox(box, hora, pasillo, estado, info);
-        });
-      });
-    }
-    
-    /**
-     * Muestra el detalle de un box en un modal o alert
-     */
-    function mostrarDetalleBox(box, hora, pasillo, estado, info) {
-      const detalles = [
-        `🏥 Box: ${box}`,
-        `🕒 Hora: ${hora}`,
-        `🏢 Pasillo: ${pasillo}`,
-        `📋 Estado: ${estado}`,
-        info ? `ℹ️ Info: ${info}` : ''
-      ].filter(Boolean).join('\n');
-      
-      // Por ahora usamos alert, pero se puede reemplazar con un modal
-      alert(detalles);
-      
-      // Log para depuración
-      console.log('🔍 Detalle del box:', { box, hora, pasillo, estado, info });
-    }
-  </script>
+  <!-- Archivo principal de JavaScript -->
+  <script src="{% static 'js/visualizacionPasillo.js' %}"></script>
 {% endblock %}
 
 {% block styles %}
+  <!-- Estilos CSS específicos -->
   <link rel="stylesheet" href="{% static 'css/leyendaBoxes.css' %}">
   <link rel="stylesheet" href="{% static 'css/visualizacionPasillo.css' %}">
   <link rel="stylesheet" href="{% static 'css/filtrosSuperioresPasillo.css' %}">
+  
+  <!-- Estilos inline para mejorar la visualización -->
+  <style>
+    .box-header {
+      font-size: 0.85rem;
+      padding: 2px 0;
+    }
+    
+    .box-content {
+      padding: 4px 2px;
+      font-size: 0.75rem;
+      line-height: 1.2;
+    }
+    
+    .time-slot {
+      min-height: 40px;
+      vertical-align: middle;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .time-slot:hover {
+      transform: scale(1.05);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      z-index: 1;
+    }
+    
+    .celda-hora {
+      background-color: #f8f9fa;
+      font-weight: bold;
+      min-width: 60px;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+    
+    .fila-horario.hora-actual {
+      background-color: rgba(255, 193, 7, 0.1);
+      border-left: 3px solid #ffc107;
+    }
+    
+    .fila-horario.hora-actual .celda-hora {
+      background-color: #fff3cd;
+      border-left: 3px solid #ffc107;
+    }
+    
+    /* Estados de boxes */
+    .libre {
+      background-color: #d1edff;
+      color: #0f5132;
+    }
+    
+    .ocupado {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    .inhabilitado {
+      background-color: #f1f3f4;
+      color: #6c757d;
+    }
+    
+    .mantencion {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    .limpieza {
+      background-color: #cff4fc;
+      color: #055160;
+    }
+    
+    /* Línea de hora actual */
+    #linea-hora-actual {
+      box-shadow: 0 0 3px rgba(220, 53, 69, 0.5);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .visualizacion-pasillo .d-flex {
+        flex-direction: column;
+      }
+      
+      .leyenda-lateral {
+        order: 2;
+        min-width: auto !important;
+        margin-top: 1rem;
+      }
+      
+      .flex-fill {
+        order: 1;
+      }
+      
+      div[style*="max-width:350px"] {
+        order: 3;
+        max-width: none !important;
+        min-width: auto !important;
+        margin: 1rem 0 0 0 !important;
+      }
+    }
+  </style>
 {% endblock %}

@@ -3,603 +3,814 @@
 // ============================================================================
 
 /**
- * Configuración global de la aplicación de pasillos
+ * Configuración global y funcionalidad principal para la visualización de pasillos
  */
-const CONFIG_PASILLO = {
-    DEBUG: false,           // Debug deshabilitado en producción
-    BOXES_POR_PAGINA: 8,    // Boxes por página para paginación
-    UPDATE_INTERVAL: 30000, // Actualización automática cada 30 segundos
-    DATE_FORMAT: "Y-m-d",
-    LOCALE: "es"
-};
+const PasilloVisualizador = {
+    // ========================================================================
+    // CONFIGURACIÓN
+    // ========================================================================
+    config: {
+        DEBUG: false,
+        UPDATE_INTERVAL: 30000, // 30 segundos
+        BOXES_POR_PAGINA: 8,
+        LOCALE: "es"
+    },
 
-// ============================================================================
-// FUNCIONES DE FILTROS Y BÚSQUEDA
-// ============================================================================
+    // URLs de la aplicación
+    urls: {
+        detalleBox: null,
+        buscarMedicos: null
+    },
 
-/**
- * Aplica todos los filtros seleccionados y navega a la página
- */
-function aplicarFiltrosPasillo() {
-    const filtros = _obtenerFiltrosActivosPasillo();
-    const url = _construirUrlConFiltrosPasillo(filtros);
-    window.location.href = url;
-}
+    // Estado interno
+    estado: {
+        inicializado: false,
+        intervalId: null,
+        fechaActual: null,
+        horaActual: null
+    },
 
-/**
- * Busca por nombre de médico
- */
-function buscarPorMedicoPasillo() {
-    const nombreMedico = document.getElementById('nombreMedico')?.value.trim();
-    
-    if (!nombreMedico) {
-        _mostrarErrorPasillo('Por favor, ingrese un nombre de médico válido');
-        return;
-    }
-    
-    const filtros = _obtenerFiltrosActivosPasillo();
-    filtros.medico = nombreMedico;
-    filtros.page = '1'; // Reset página en nueva búsqueda
-    
-    const url = _construirUrlConFiltrosPasillo(filtros);
-    window.location.href = url;
-}
+    // ========================================================================
+    // INICIALIZACIÓN
+    // ========================================================================
 
-/**
- * Busca por código de box
- */
-function buscarPorBoxPasillo() {
-    const codigoBox = document.getElementById('codigoBox')?.value.trim();
-    
-    if (!codigoBox) {
-        _mostrarErrorPasillo('Por favor, ingrese un código de box válido');
-        return;
-    }
-    
-    const filtros = _obtenerFiltrosActivosPasillo();
-    filtros.box = codigoBox;
-    filtros.page = '1'; // Reset página en nueva búsqueda
-    
-    const url = _construirUrlConFiltrosPasillo(filtros);
-    window.location.href = url;
-}
+    /**
+     * Inicializa toda la funcionalidad del visualizador
+     */
+    init() {
+        if (this.estado.inicializado) return;
 
-/**
- * Limpia la búsqueda de médico
- */
-function limpiarBusquedaMedicoPasillo() {
-    const url = new URL(window.location);
-    url.searchParams.delete('medico');
-    url.searchParams.set('page', '1');
-    
-    // Limpiar campo de input
-    const inputMedico = document.getElementById('nombreMedico');
-    if (inputMedico) {
-        inputMedico.value = '';
-    }
-    
-    // Ocultar dropdown de sugerencias
-    _ocultarDropdownMedicosPasillo();
-    
-    window.location.href = url.toString();
-}
+        document.addEventListener('DOMContentLoaded', () => {
+            this.configurarUrls();
+            this.configurarEventos();
+            this.inicializarVisualizacion();
+            this.iniciarActualizacionAutomatica();
+            
+            this.estado.inicializado = true;
+            this.log('Visualizador de pasillos inicializado');
+        });
+    },
 
-/**
- * Limpia la búsqueda de box
- */
-function limpiarBusquedaBoxPasillo() {
-    const url = new URL(window.location);
-    url.searchParams.delete('box');
-    url.searchParams.set('page', '1');
-    
-    // Limpiar campo de input
-    const inputBox = document.getElementById('codigoBox');
-    if (inputBox) {
-        inputBox.value = '';
-    }
-    
-    window.location.href = url.toString();
-}
+    /**
+     * Configura las URLs desde las variables globales
+     */
+    configurarUrls() {
+        this.urls.detalleBox = window.detalleBoxUrl;
+        if (window.medicosUrls) {
+            this.urls.buscarMedicos = window.medicosUrls.buscar_medicos;
+        }
+    },
 
-// ============================================================================
-// FUNCIONES DE PAGINACIÓN
-// ============================================================================
+    /**
+     * Configura todos los eventos necesarios
+     */
+    configurarEventos() {
+        this.configurarEventosCeldas();
+        this.configurarEventosModal();
+    },
 
-/**
- * Navega a la página anterior
- */
-function paginaAnteriorPasillo() {
-    const params = new URLSearchParams(window.location.search);
-    const paginaActual = parseInt(params.get('page') || '1');
-    
-    if (paginaActual > 1) {
-        params.set('page', paginaActual - 1);
-        window.location.href = window.location.pathname + '?' + params.toString();
-    }
-}
+    /**
+     * Inicializa elementos visuales
+     */
+    inicializarVisualizacion() {
+        this.obtenerConfiguracion();
+        this.marcarHoraActual();
+        this.inicializarLineaHoraActual();
+        this.actualizarContadores();
+    },
 
-/**
- * Navega a la página siguiente
- */
-function paginaSiguientePasillo() {
-    const params = new URLSearchParams(window.location.search);
-    const paginaActual = parseInt(params.get('page') || '1');
-    
-    // Obtener total de páginas del DOM
-    const infoPagina = document.querySelector('.info-pagina span');
-    if (infoPagina) {
-        const match = infoPagina.textContent.match(/Página (\d+) de (\d+)/);
-        if (match) {
-            const totalPaginas = parseInt(match[2]);
-            if (paginaActual < totalPaginas) {
-                params.set('page', paginaActual + 1);
-                window.location.href = window.location.pathname + '?' + params.toString();
-            }
+    /**
+     * Obtiene configuración desde variables globales
+     */
+    obtenerConfiguracion() {
+        if (window.pasilloConfig) {
+            this.estado.horaActual = window.pasilloConfig.HORA_ACTUAL;
+            this.estado.fechaActual = window.pasilloConfig.FECHA_ACTUAL;
+        }
+        
+        // Fallback a meta tag
+        if (!this.estado.fechaActual) {
+            const metaFecha = document.querySelector('meta[name="fecha"]');
+            this.estado.fechaActual = metaFecha?.content || new Date().toISOString().split('T')[0];
+        }
+    },
+
+    // ========================================================================
+    // GESTIÓN DE EVENTOS
+    // ========================================================================
+
+    /**
+     * Configura eventos de click en las celdas de la tabla
+     */
+    configurarEventosCeldas() {
+        document.querySelectorAll('.time-slot').forEach(celda => {
+            celda.addEventListener('click', (event) => {
+                const { box, hora, pasillo } = celda.dataset;
+                const disponible = this.determinarDisponibilidad(celda);
+                
+                this.mostrarDetalleBox(box, disponible, hora, pasillo);
+            });
+        });
+    },
+
+    /**
+     * Configura eventos del modal
+     */
+    configurarEventosModal() {
+        const modal = document.getElementById('detalleModal');
+        if (modal) {
+            modal.addEventListener('hidden.bs.modal', () => {
+                this.limpiarModal();
+            });
+        }
+    },
+
+    /**
+     * Determina si un box está disponible basado en las clases CSS
+     */
+    determinarDisponibilidad(celda) {
+        const clasesOcupado = ['ocupado', 'inhabilitado', 'mantencion', 'limpieza'];
+        return !clasesOcupado.some(clase => celda.classList.contains(clase));
+    },
+
+    // ========================================================================
+    // FUNCIONALIDAD DE DETALLE DE BOXES
+    // ========================================================================
+
+    /**
+     * Muestra el modal con detalles de un box específico
+     */
+    async mostrarDetalleBox(boxId, disponible, hora = null, pasillo = null) {
+        if (!this.urls.detalleBox) {
+            this.mostrarError('URL de detalle no configurada');
             return;
         }
-    }
-    
-    // Fallback: intentar navegar
-    params.set('page', paginaActual + 1);
-    window.location.href = window.location.pathname + '?' + params.toString();
-}
 
-// ============================================================================
-// FUNCIONES DE GESTIÓN DE FILTROS
-// ============================================================================
+        try {
+            this.mostrarLoader();
+            
+            const url = this.construirUrlDetalle(boxId);
+            const response = await fetch(url);
+            const data = await response.json();
+            
+            this.ocultarLoader();
+            
+            if (data.error) {
+                this.mostrarError('Error al cargar detalles: ' + data.error);
+                return;
+            }
+            
+            const contenido = this.generarContenidoModal(data, hora, pasillo);
+            this.mostrarModal(contenido);
+            
+        } catch (error) {
+            this.ocultarLoader();
+            this.log('Error en petición de detalle:', error);
+            this.mostrarError('Error de conexión al obtener los detalles del box');
+        }
+    },
 
-/**
- * Remueve un filtro específico
- * @param {string} tipoFiltro - Tipo de filtro a remover
- */
-function removerFiltroPasillo(tipoFiltro) {
-    const url = new URL(window.location);
-    
-    switch(tipoFiltro) {
-        case 'pasillo':
-            url.searchParams.delete('pasillo');
-            break;
-        case 'jornada':
-            url.searchParams.delete('jornada');
-            break;
-        case 'fecha':
-            url.searchParams.delete('fecha');
-            break;
-        case 'medico':
-            url.searchParams.delete('medico');
-            // Limpiar campo de input
-            const inputMedico = document.getElementById('nombreMedico');
-            if (inputMedico) inputMedico.value = '';
-            break;
-        case 'box':
-            url.searchParams.delete('box');
-            // Limpiar campo de input
-            const inputBox = document.getElementById('codigoBox');
-            if (inputBox) inputBox.value = '';
-            break;
-    }
-    
-    url.searchParams.set('page', '1');
-    window.location.href = url.toString();
-}
+    /**
+     * Construye la URL para obtener detalles de un box
+     */
+    construirUrlDetalle(boxId) {
+        const fecha = this.estado.fechaActual;
+        return `${this.urls.detalleBox}?box_id=${boxId}&fecha=${fecha}`;
+    },
 
-/**
- * Limpia todos los filtros
- */
-function limpiarTodosFiltrosPasillo() {
-    // Limpiar campos de input
-    const inputMedico = document.getElementById('nombreMedico');
-    const inputBox = document.getElementById('codigoBox');
-    
-    if (inputMedico) inputMedico.value = '';
-    if (inputBox) inputBox.value = '';
-    
-    window.location.href = window.location.pathname;
-}
+    /**
+     * Genera el contenido HTML del modal
+     */
+    generarContenidoModal(data, hora = null, pasillo = null) {
+        const fechaFormateada = new Date(this.estado.fechaActual).toLocaleDateString('es-ES');
+        
+        let contenido = `
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="fas fa-bed me-2"></i>Box ${data.box.id}</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Pasillo</small>
+                                    <div><strong>${data.box.pasillo}</strong></div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Capacidad</small>
+                                    <div><strong>${data.box.capacidad || 'No especificada'}</strong></div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <small class="text-muted">Fecha</small>
+                                    <div>${fechaFormateada}</div>
+                                </div>
+                                <div class="col-6">
+                                    <small class="text-muted">Hora consulta</small>
+                                    <div>${new Date().toLocaleTimeString('es-ES')}</div>
+                                </div>
+                            </div>
+                            
+                            <hr>
+        `;
+        
+        if (data.disponible) {
+            contenido += `
+                <div class="alert alert-success border-0">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-check-circle fa-2x text-success me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Box Disponible</h6>
+                            <p class="mb-0">Este box está libre en este momento.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else {
+            const iconoTipo = this.obtenerIconoTipoAgenda(data.agenda.tipo_agenda);
+            contenido += `
+                <div class="alert alert-warning border-0">
+                    <div class="d-flex align-items-center">
+                        <i class="${iconoTipo} fa-2x text-warning me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Box Ocupado</h6>
+                            <div class="row">
+                                <div class="col-12 mb-2">
+                                    <small class="text-muted">Profesional</small>
+                                    <div><strong>${data.agenda.profesional}</strong></div>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <small class="text-muted">Especialidad</small>
+                                    <div>${data.agenda.especialidad}</div>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <small class="text-muted">Tipo de Agenda</small>
+                                    <div>${data.agenda.tipo_agenda}</div>
+                                </div>
+                                <div class="col-12">
+                                    <small class="text-muted">Horario</small>
+                                    <div><strong>${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</strong></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        contenido += `
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return contenido;
+    },
 
-// ============================================================================
-// FUNCIONES AUXILIARES PRIVADAS
-// ============================================================================
+    /**
+     * Obtiene el icono apropiado según el tipo de agenda
+     */
+    obtenerIconoTipoAgenda(tipoAgenda) {
+        const tipo = tipoAgenda.toLowerCase();
+        
+        if (tipo.includes('limpieza')) return 'fas fa-broom';
+        if (tipo.includes('mantención') || tipo.includes('mantencion')) return 'fas fa-tools';
+        if (tipo.includes('inhabilitado')) return 'fas fa-ban';
+        
+        return 'fas fa-user-md';
+    },
 
-/**
- * Obtiene los filtros activos del formulario
- * @returns {Object} Objeto con los filtros activos
- * @private
- */
-function _obtenerFiltrosActivosPasillo() {
-    const pasillo = document.getElementById('pasillo')?.value || '';
-    const fecha = document.getElementById('fecha')?.value || '';
-    const jornada = document.getElementById('jornada')?.value || '';
-    const medico = document.getElementById('nombreMedico')?.value.trim() || '';
-    const box = document.getElementById('codigoBox')?.value.trim() || '';
-    
-    return { pasillo, fecha, jornada, medico, box };
-}
+    // ========================================================================
+    // GESTIÓN DEL MODAL
+    // ========================================================================
 
-/**
- * Construye la URL con los filtros aplicados
- * @param {Object} filtros - Filtros a aplicar
- * @returns {string} URL con parámetros de filtro
- * @private
- */
-function _construirUrlConFiltrosPasillo(filtros) {
-    const params = new URLSearchParams();
-    
-    if (filtros.pasillo) params.set('pasillo', filtros.pasillo);
-    if (filtros.fecha) params.set('fecha', filtros.fecha);
-    if (filtros.jornada) params.set('jornada', filtros.jornada);
-    if (filtros.medico) params.set('medico', filtros.medico);
-    if (filtros.box) params.set('box', filtros.box);
-    if (filtros.page) params.set('page', filtros.page);
-    
-    const queryString = params.toString();
-    return window.location.pathname + (queryString ? '?' + queryString : '');
-}
+    /**
+     * Muestra el modal con el contenido proporcionado
+     */
+    mostrarModal(contenido) {
+        let modal = document.getElementById('detalleModal');
+        
+        if (!modal) {
+            modal = this.crearModal();
+            document.body.appendChild(modal);
+        }
+        
+        const modalBody = modal.querySelector('.modal-body');
+        if (modalBody) {
+            modalBody.innerHTML = contenido;
+        }
+        
+        // Mostrar modal usando Bootstrap
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const modalInstance = new bootstrap.Modal(modal);
+            modalInstance.show();
+        } else {
+            // Fallback manual
+            modal.style.display = 'block';
+            modal.classList.add('show');
+            document.body.classList.add('modal-open');
+        }
+    },
 
-/**
- * Muestra un mensaje de error al usuario
- * @param {string} mensaje - Mensaje de error a mostrar
- * @private
- */
-function _mostrarErrorPasillo(mensaje) {
-    if (CONFIG_PASILLO.DEBUG) {
-        console.error(mensaje);
-    }
-    alert('Error: ' + mensaje);
-}
+    /**
+     * Crea el elemento modal dinámicamente si no existe
+     */
+    crearModal() {
+        const modal = document.createElement('div');
+        modal.id = 'detalleModal';
+        modal.className = 'modal fade';
+        modal.setAttribute('tabindex', '-1');
+        modal.setAttribute('aria-labelledby', 'detalleModalLabel');
+        modal.setAttribute('aria-hidden', 'true');
+        
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="detalleModalLabel">
+                            <i class="fas fa-info-circle me-2"></i>Detalle del Box
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Contenido dinámico -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-2"></i>Cerrar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        return modal;
+    },
 
-// ============================================================================
-// INICIALIZACIÓN Y REGISTRO DE FUNCIONES
-// ============================================================================
+    /**
+     * Limpia el contenido del modal
+     */
+    limpiarModal() {
+        const modal = document.getElementById('detalleModal');
+        if (modal) {
+            const modalBody = modal.querySelector('.modal-body');
+            if (modalBody) {
+                modalBody.innerHTML = '';
+            }
+        }
+    },
+    // ========================================================================
+    // GESTIÓN DE LOADERS Y MENSAJES
+    // ========================================================================
 
-/**
- * Registra las funciones globalmente para uso en templates
- */
-function registrarFuncionesGlobales() {
-    window.aplicarFiltrosPasillo = aplicarFiltrosPasillo;
-    window.buscarPorMedicoPasillo = buscarPorMedicoPasillo;
-    window.buscarPorBoxPasillo = buscarPorBoxPasillo;
-    window.limpiarBusquedaMedicoPasillo = limpiarBusquedaMedicoPasillo;
-    window.limpiarBusquedaBoxPasillo = limpiarBusquedaBoxPasillo;
-    window.paginaAnteriorPasillo = paginaAnteriorPasillo;
-    window.paginaSiguientePasillo = paginaSiguientePasillo;
-    window.removerFiltroPasillo = removerFiltroPasillo;
-    window.limpiarTodosFiltrosPasillo = limpiarTodosFiltrosPasillo;
-}
+    /**
+     * Muestra un indicador de carga
+     */
+    mostrarLoader() {
+        this.log('Cargando detalle del box...');
+        
+        // Mostrar spinner en el modal si existe
+        const modalBody = document.querySelector('#detalleModal .modal-body');
+        if (modalBody) {
+            modalBody.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <div class="mt-2">
+                        <small class="text-muted">Cargando información del box...</small>
+                    </div>
+                </div>
+            `;
+        }
+    },
 
-/**
- * Inicializa la aplicación cuando el DOM esté listo
- */
-document.addEventListener('DOMContentLoaded', function() {
-    // Registrar funciones globalmente
-    registrarFuncionesGlobales();
-    
-    // Inicializar línea de hora actual
-    inicializarLineaHoraActual();
-    
-    // Configurar eventos de teclado
-    configurarEventosEnterPasillo();
-    
-    // Configurar autocompletado de médicos
-    configurarAutocompletadoMedicosPasillo();
-    
-    if (CONFIG_PASILLO.DEBUG) {
-        console.log('🏥 Visualización de Pasillo inicializada');
-    }
-});
+    /**
+     * Oculta el indicador de carga
+     */
+    ocultarLoader() {
+        this.log('Carga del detalle completada');
+    },
 
-// Registrar funciones inmediatamente para compatibilidad
-registrarFuncionesGlobales();
+    /**
+     * Muestra un mensaje de error al usuario
+     */
+    mostrarError(mensaje) {
+        this.log('Error: ' + mensaje);
+        
+        // Mostrar error en el modal si está abierto
+        const modalBody = document.querySelector('#detalleModal .modal-body');
+        if (modalBody && document.getElementById('detalleModal').classList.contains('show')) {
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-triangle fa-2x text-danger me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Error al cargar información</h6>
+                            <p class="mb-0">${mensaje}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Mostrar con SweetAlert si está disponible, sino usar alert
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: mensaje,
+                confirmButtonText: 'Entendido'
+            });
+        } else {
+            alert('Error: ' + mensaje);
+        }
+    },
 
-/**
- * Configura eventos de teclado para los campos de búsqueda
- */
-function configurarEventosEnterPasillo() {
-    const nombreMedicoInput = document.getElementById('nombreMedico');
-    const codigoBoxInput = document.getElementById('codigoBox');
-    
-    if (nombreMedicoInput) {
-        nombreMedicoInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                buscarPorMedicoPasillo();
+    // ========================================================================
+    // VISUALIZACIÓN Y ESTADO
+    // ========================================================================
+
+    /**
+     * Marca la hora actual en la tabla
+     */
+    marcarHoraActual() {
+        if (!this.estado.horaActual) return;
+
+        // Remover marcas previas
+        document.querySelectorAll('.fila-horario.hora-actual').forEach(fila => {
+            fila.classList.remove('hora-actual');
+        });
+        
+        // Marcar nueva hora actual
+        document.querySelectorAll('.fila-horario').forEach(fila => {
+            if (fila.dataset.hora === this.estado.horaActual) {
+                fila.classList.add('hora-actual');
+                // Scroll suave a la hora actual
+                fila.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
             }
         });
-    }
-    
-    if (codigoBoxInput) {
-        codigoBoxInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                buscarPorBoxPasillo();
+    },
+
+    /**
+     * Actualiza los contadores de boxes libres y ocupados
+     */
+    actualizarContadores() {
+        const horaActual = this.estado.horaActual;
+        if (!horaActual) {
+            // Si no hay hora actual, contar todos los boxes visibles
+            this.contarTodosLosBoxes();
+            return;
+        }
+
+        // Contar boxes en la hora actual
+        const celdasHoraActual = document.querySelectorAll(`.fila-horario[data-hora="${horaActual}"] .time-slot`);
+        
+        let libres = 0;
+        let ocupados = 0;
+        
+        celdasHoraActual.forEach(celda => {
+            if (this.determinarDisponibilidad(celda)) {
+                libres++;
+            } else {
+                ocupados++;
             }
         });
-    }
-}
+        
+        this.actualizarContadoresUI(libres, ocupados);
+    },
 
-// ============================================================================
-// FUNCIONES DE LÍNEA DE HORA ACTUAL
-// ============================================================================
-/**
- * Inicializa y gestiona la línea roja que indica la hora actual en la matriz de boxes.
- */
-function inicializarLineaHoraActual() {
-    const grilla = document.querySelector('.contenedor-tabla');
-    if (!grilla) { return; }
-    const tableResponsive = grilla.querySelector('.table-responsive');
-    if (!tableResponsive) { return; }
-    const tabla = tableResponsive.querySelector('.table-boxes');
-    if (!tabla) { return; }
+    /**
+     * Cuenta todos los boxes cuando no hay hora específica
+     */
+    contarTodosLosBoxes() {
+        const todasLasCeldas = document.querySelectorAll('.time-slot');
+        let libres = 0;
+        let ocupados = 0;
+        
+        todasLasCeldas.forEach(celda => {
+            if (this.determinarDisponibilidad(celda)) {
+                libres++;
+            } else {
+                ocupados++;
+            }
+        });
+        
+        // Promedio por hora
+        const totalHoras = document.querySelectorAll('.fila-horario').length;
+        if (totalHoras > 0) {
+            libres = Math.round(libres / totalHoras);
+            ocupados = Math.round(ocupados / totalHoras);
+        }
+        
+        this.actualizarContadoresUI(libres, ocupados);
+    },
 
-    // Asegura que la tabla tenga position: relative
-    tabla.style.position = 'relative';
+    /**
+     * Actualiza los elementos UI de contadores
+     */
+    actualizarContadoresUI(libres, ocupados) {
+        const contadorLibres = document.getElementById('boxes-libres');
+        const contadorOcupados = document.getElementById('boxes-ocupados');
+        
+        if (contadorLibres) {
+            const spanLibres = contadorLibres.querySelector('span') || contadorLibres;
+            spanLibres.textContent = libres;
+        }
+        if (contadorOcupados) {
+            const spanOcupados = contadorOcupados.querySelector('span') || contadorOcupados;
+            spanOcupados.textContent = ocupados;
+        }
+        
+        // Actualizar hora de última actualización
+        const ultimaActualizacion = document.getElementById('ultima-actualizacion');
+        if (ultimaActualizacion) {
+            ultimaActualizacion.textContent = new Date().toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+    },
 
-    let linea = tabla.querySelector('#linea-hora-actual');
-    if (!linea) {
-        linea = crearLineaHoraActual();
-        tabla.appendChild(linea);
-    }
+    /**
+     * Inicializa la línea indicadora de hora actual
+     */
+    inicializarLineaHoraActual() {
+        const grilla = document.querySelector('.contenedor-tabla');
+        if (!grilla) return;
+        
+        const tabla = grilla.querySelector('.table-boxes');
+        if (!tabla) return;
 
-    function obtenerMinutosActuales(horaInicio) {
-        const ahora = new Date();
-        return (ahora.getHours() - horaInicio) * 60 + ahora.getMinutes();
-    }
+        tabla.style.position = 'relative';
 
-    function obtenerAlturaFila(tabla) {
-        const filas = tabla.querySelectorAll('tbody tr');
-        if (filas.length === 0) return 0;
-        return filas[0].offsetHeight;
-    }
+        let linea = tabla.querySelector('#linea-hora-actual');
+        if (!linea) {
+            linea = this.crearLineaHoraActual();
+            tabla.appendChild(linea);
+        }
 
-    function calcularPosicionLinea({horaInicio, horaFin, tabla, grillaHeight}) {
+        const actualizarLinea = () => {
+            const top = this.calcularPosicionLinea(tabla);
+            if (top >= 0) {
+                linea.style.top = top + 'px';
+                linea.style.display = 'block';
+            } else {
+                linea.style.display = 'none';
+            }
+        };
+
+        actualizarLinea();
+        
+        // Actualizar cada minuto
+        setInterval(actualizarLinea, 60000);
+    },
+
+    /**
+     * Crea el elemento visual de la línea roja de hora actual
+     */
+    crearLineaHoraActual() {
+        const linea = document.createElement('div');
+        linea.id = 'linea-hora-actual';
+        linea.style.cssText = `
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #dc3545;
+            z-index: 10;
+            box-shadow: 0 0 3px rgba(220, 53, 69, 0.5);
+            display: none;
+        `;
+        return linea;
+    },
+
+    /**
+     * Calcula la posición de la línea de hora actual
+     */
+    calcularPosicionLinea(tabla) {
         const ahora = new Date();
         const horaActual = ahora.getHours();
         const minutosActual = ahora.getMinutes();
-        // Filtra solo filas visibles
-        const filas = Array.from(tabla.querySelectorAll('tbody tr')).filter(fila => fila.offsetParent !== null);
-        let horasFilas = filas.map(fila => {
+        
+        const filas = Array.from(tabla.querySelectorAll('tbody tr')).filter(fila => 
+            fila.offsetParent !== null
+        );
+        
+        if (filas.length === 0) return -1;
+        
+        const horasFilas = filas.map(fila => {
             const celdaHora = fila.querySelector('.celda-hora');
             if (!celdaHora) return null;
-            let texto = '';
-            const strong = celdaHora.querySelector('strong');
-            if (strong) {
-                texto = strong.textContent.trim();
-            } else {
-                texto = celdaHora.textContent.trim();
-            }
+            
+            const texto = celdaHora.textContent.trim();
             const match = texto.match(/(\d{1,2}):(\d{2})/);
             if (!match) return null;
-            const h = Number(match[1]);
-            const m = Number(match[2]);
+            
+            const h = parseInt(match[1], 10);
+            const m = parseInt(match[2], 10);
             return h + m / 60;
         });
+        
         const horaDecimal = horaActual + minutosActual / 60;
         let idx = -1;
+        
+        // Encontrar la fila de hora más cercana
         for (let i = 0; i < horasFilas.length; i++) {
             if (horasFilas[i] !== null && horasFilas[i] <= horaDecimal) {
                 idx = i;
             }
         }
-        let top = 0;
-        if (idx === -1) {
-            top = 0;
-        } else {
-            // Interpolación dentro del bloque horario
-            const filaActual = filas[idx];
-            const alturaFila = filaActual.offsetHeight;
-            // ¿Cuántos minutos han pasado desde el inicio del bloque?
-            const minutosEnBloque = (horaDecimal - horasFilas[idx]) * 60;
-            // ¿Cuántos minutos dura el bloque?
-            let minutosBloque = 30;
-            if (idx + 1 < horasFilas.length) {
-                minutosBloque = (horasFilas[idx + 1] - horasFilas[idx]) * 60;
-            }
-            // Calcula el desplazamiento proporcional
-            const desplazamiento = Math.max(0, Math.min(alturaFila, (minutosEnBloque / minutosBloque) * alturaFila));
-            top = filaActual.offsetTop + desplazamiento;
+        
+        if (idx === -1) return -1;
+        
+        const filaActual = filas[idx];
+        const alturaFila = filaActual.offsetHeight;
+        const minutosEnBloque = (horaDecimal - horasFilas[idx]) * 60;
+        
+        let minutosBloque = 30; // Por defecto 30 minutos
+        if (idx + 1 < horasFilas.length && horasFilas[idx + 1] !== null) {
+            minutosBloque = (horasFilas[idx + 1] - horasFilas[idx]) * 60;
         }
-        top = Math.max(0, Math.min(tabla.offsetHeight - 2, top));
-        return top;
+        
+        const desplazamiento = Math.max(0, Math.min(alturaFila, 
+            (minutosEnBloque / minutosBloque) * alturaFila
+        ));
+        
+        const top = filaActual.offsetTop + desplazamiento;
+        return Math.max(0, Math.min(tabla.offsetHeight - 2, top));
+    },
+
+    // ========================================================================
+    // ACTUALIZACIÓN AUTOMÁTICA
+    // ========================================================================
+
+    /**
+     * Inicia la actualización automática de la visualización
+     */
+    iniciarActualizacionAutomatica() {
+        // Actualizar cada 30 segundos
+        this.estado.intervalId = setInterval(() => {
+            this.actualizarVisualizacion();
+        }, this.config.UPDATE_INTERVAL);
+    },
+
+    /**
+     * Actualiza la visualización sin recargar la página
+     */
+    actualizarVisualizacion() {
+        this.estado.horaActual = new Date().toTimeString().substr(0, 5);
+        this.marcarHoraActual();
+        this.actualizarContadores();
+        
+        this.log('Visualización actualizada automáticamente');
+    },
+
+    /**
+     * Detiene la actualización automática
+     */
+    detenerActualizacionAutomatica() {
+        if (this.estado.intervalId) {
+            clearInterval(this.estado.intervalId);
+            this.estado.intervalId = null;
+        }
+    },
+
+    // ========================================================================
+    // UTILIDADES
+    // ========================================================================
+
+    /**
+     * Función de logging condicional
+     */
+    log(...args) {
+        if (this.config.DEBUG) {
+            console.log('[PasilloVisualizador]', ...args);
+        }
+    },
+
+    /**
+     * Limpia recursos al salir
+     */
+    destruir() {
+        this.detenerActualizacionAutomatica();
+        this.limpiarModal();
+        this.estado.inicializado = false;
+        this.log('Visualizador destruido');
     }
-
-    function actualizarLinea() {
-        const horaInicio = 8; // Ajusta según tu sistema
-        const horaFin = 20;  // Ajusta según tu sistema
-        const top = calcularPosicionLinea({horaInicio, horaFin, tabla, grillaHeight: tabla.offsetHeight});
-        linea.style.top = top + 'px';
-    }
-
-    actualizarLinea();
-    setInterval(actualizarLinea, 60000);
-}
-
-/**
- * Crea el elemento visual de la línea roja de hora actual.
- */
-function crearLineaHoraActual() {
-    const linea = document.createElement('div');
-    linea.id = 'linea-hora-actual';
-    linea.style.position = 'absolute';
-    linea.style.left = '0';
-    linea.style.right = '0';
-    linea.style.height = '2px';
-    linea.style.background = 'red';
-    linea.style.zIndex = '10';
-    return linea;
-}
+};
 
 // ============================================================================
-// FUNCIONES DE AUTOCOMPLETADO DE MÉDICOS - PASILLO
+// INICIALIZACIÓN Y EXPORTACIÓN GLOBAL
 // ============================================================================
 
-/**
- * Configura el autocompletado para búsqueda de médicos en pasillo
- */
-function configurarAutocompletadoMedicosPasillo() {
-    const input = document.getElementById('nombreMedico');
-    if (!input) return;
-    
-    let timeoutId;
-    
-    input.addEventListener('input', function(e) {
-        clearTimeout(timeoutId);
-        const termino = e.target.value.trim();
-        
-        if (termino.length < 2) {
-            _ocultarDropdownMedicosPasillo();
-            return;
-        }
-        
-        // Debounce de 300ms para evitar muchas peticiones
-        timeoutId = setTimeout(() => {
-            _buscarMedicosPasillo(termino);
-        }, 300);
-    });
-    
-    // Ocultar dropdown al perder foco
-    input.addEventListener('blur', function() {
-        setTimeout(_ocultarDropdownMedicosPasillo, 200);
-    });
-    
-    // Manejar navegación con teclado
-    input.addEventListener('keydown', function(e) {
-        _manejarTecladoDropdownPasillo(e);
-    });
-}
+// Inicializar automáticamente
+PasilloVisualizador.init();
 
-/**
- * Busca médicos por nombre mediante AJAX para pasillo
- * @param {string} termino - Término de búsqueda
- * @private
- */
-function _buscarMedicosPasillo(termino) {
-    if (!window.medicosUrls || !window.medicosUrls.buscar_medicos) {
-        console.error('URL de búsqueda de médicos no configurada');
-        return;
-    }
-    
-    const url = `${window.medicosUrls.buscar_medicos}?q=${encodeURIComponent(termino)}`;
-    
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            _mostrarDropdownMedicosPasillo(data.medicos);
-        })
-        .catch(error => {
-            console.error('Error al buscar médicos:', error);
-            _ocultarDropdownMedicosPasillo();
-        });
-}
+// Exportar funciones para compatibilidad con código existente
+window.mostrarDetalle = (boxId, disponible) => {
+    PasilloVisualizador.mostrarDetalleBox(boxId, disponible);
+};
 
-/**
- * Muestra el dropdown con las sugerencias de médicos para pasillo
- * @param {Array} medicos - Lista de médicos encontrados
- * @private
- */
-function _mostrarDropdownMedicosPasillo(medicos) {
-    const dropdown = document.getElementById('medicosDropdownPasillo');
-    if (!dropdown || !medicos.length) {
-        _ocultarDropdownMedicosPasillo();
-        return;
-    }
-    
-    dropdown.innerHTML = '';
-    
-    medicos.forEach((medico, index) => {
-        const option = document.createElement('div');
-        option.className = 'medico-option';
-        option.dataset.index = index;
-        option.innerHTML = `
-            <div class="medico-nombre">${medico.nombre}</div>
-            <div class="medico-especialidad">${medico.especialidad}</div>
-        `;
-        
-        option.addEventListener('click', () => {
-            _seleccionarMedicoPasillo(medico.nombre);
-        });
-        
-        dropdown.appendChild(option);
-    });
-    
-    dropdown.style.display = 'block';
-}
+// Exportar el objeto principal
+window.PasilloVisualizador = PasilloVisualizador;
 
-/**
- * Oculta el dropdown de médicos para pasillo
- * @private
- */
-function _ocultarDropdownMedicosPasillo() {
-    const dropdown = document.getElementById('medicosDropdownPasillo');
-    if (dropdown) {
-        dropdown.style.display = 'none';
-        dropdown.innerHTML = '';
-    }
-}
+// Limpieza al cerrar la página
+window.addEventListener('beforeunload', () => {
+    PasilloVisualizador.destruir();
+});
 
-/**
- * Selecciona un médico del dropdown para pasillo
- * @param {string} nombreMedico - Nombre del médico seleccionado
- * @private
- */
-function _seleccionarMedicoPasillo(nombreMedico) {
-    const input = document.getElementById('nombreMedico');
-    if (input) {
-        input.value = nombreMedico;
-        _ocultarDropdownMedicosPasillo();
-        buscarPorMedicoPasillo();
-    }
-}
+// ============================================================================
+// FUNCIONES DE FILTROS SUPERIORES
+// ============================================================================
 
-/**
- * Maneja la navegación del dropdown con teclado para pasillo
- * @param {KeyboardEvent} e - Evento de teclado
- * @private
- */
-function _manejarTecladoDropdownPasillo(e) {
-    const dropdown = document.getElementById('medicosDropdownPasillo');
-    if (!dropdown || dropdown.style.display === 'none') return;
-    
-    const opciones = dropdown.querySelectorAll('.medico-option');
-    const actual = dropdown.querySelector('.medico-option.selected');
-    let indice = actual ? parseInt(actual.dataset.index) : -1;
-    
-    switch (e.key) {
-        case 'ArrowDown':
-            e.preventDefault();
-            indice = Math.min(indice + 1, opciones.length - 1);
-            _resaltarOpcionPasillo(opciones, indice);
-            break;
-            
-        case 'ArrowUp':
-            e.preventDefault();
-            indice = Math.max(indice - 1, 0);
-            _resaltarOpcionPasillo(opciones, indice);
-            break;
-            
-        case 'Enter':
-            e.preventDefault();
-            if (actual) {
-                const nombre = actual.querySelector('.medico-nombre').textContent;
-                _seleccionarMedicoPasillo(nombre);
-            }
-            break;
-            
-        case 'Escape':
-            _ocultarDropdownMedicosPasillo();
-            break;
-    }
-}
+// Función global para aplicar los filtros superiores
+window.aplicarFiltrosPasillo = function() {
+  var pasillo = document.getElementById('pasillo').value;
+  var jornada = document.getElementById('jornada').value;
+  var fecha = document.getElementById('fecha').value;
+  var nombreMedico = document.getElementById('nombreMedico') ? document.getElementById('nombreMedico').value : '';
 
-/**
- * Resalta una opción específica del dropdown para pasillo
- * @param {NodeList} opciones - Lista de opciones
- * @param {number} indice - Índice a resaltar
- * @private
- */
-function _resaltarOpcionPasillo(opciones, indice) {
-    opciones.forEach((opcion, i) => {
-        if (i === indice) {
-            opcion.classList.add('selected');
-        } else {
-            opcion.classList.remove('selected');
-        }
-    });
-}
+  var params = [];
+  if (pasillo) params.push('pasillo=' + encodeURIComponent(pasillo));
+  if (jornada) params.push('jornada=' + encodeURIComponent(jornada));
+  if (fecha) params.push('fecha=' + encodeURIComponent(fecha));
+  if (nombreMedico) params.push('medico=' + encodeURIComponent(nombreMedico));
+
+  var queryString = params.length ? ('?' + params.join('&')) : '';
+  window.location.href = window.location.pathname + queryString;
+};
+
+// Función para buscar por médico
+window.buscarPorMedicoPasillo = function() {
+  const nombreMedico = document.getElementById('nombreMedico').value.trim();
+  if (nombreMedico) {
+    aplicarFiltrosPasillo();
+  }
+};
+
+// Función para buscar por código de box
+window.buscarPorBoxPasillo = function() {
+  const codigoBox = document.getElementById('codigoBox').value.trim();
+  if (codigoBox) {
+    // Agregar parámetro de código box a la URL
+    var pasillo = document.getElementById('pasillo').value;
+    var jornada = document.getElementById('jornada').value;
+    var fecha = document.getElementById('fecha').value;
+    var nombreMedico = document.getElementById('nombreMedico') ? document.getElementById('nombreMedico').value : '';
+
+    var params = [];
+    if (pasillo) params.push('pasillo=' + encodeURIComponent(pasillo));
+    if (jornada) params.push('jornada=' + encodeURIComponent(jornada));
+    if (fecha) params.push('fecha=' + encodeURIComponent(fecha));
+    if (nombreMedico) params.push('medico=' + encodeURIComponent(nombreMedico));
+    if (codigoBox) params.push('box=' + encodeURIComponent(codigoBox));
+
+    var queryString = params.length ? ('?' + params.join('&')) : '';
+    window.location.href = window.location.pathname + queryString;
+  }
+};
+
+// Función para limpiar todos los filtros
+window.limpiarTodosFiltrosPasillo = function() {
+  // Mantener solo la fecha actual
+  const fecha = document.getElementById('fecha').value;
+  var queryString = fecha ? ('?fecha=' + encodeURIComponent(fecha)) : '';
+  window.location.href = window.location.pathname + queryString;
+};
+
+// Función para limpiar búsqueda de médico
+window.limpiarBusquedaMedicoPasillo = function() {
+  document.getElementById('nombreMedico').value = '';
+  aplicarFiltrosPasillo();
+};
+
+// Función para limpiar búsqueda de box
+window.limpiarBusquedaBoxPasillo = function() {
+  document.getElementById('codigoBox').value = '';
+  aplicarFiltrosPasillo();
+};
+
+// Función para remover un filtro específico
+window.removerFiltroPasillo = function(tipo) {
+  switch(tipo) {
+    case 'pasillo':
+      document.getElementById('pasillo').value = '';
+      break;
+    case 'medico':
+      document.getElementById('nombreMedico').value = '';
+      break;
+    case 'box':
+      document.getElementById('codigoBox').value = '';
+      break;
+  }
+  aplicarFiltrosPasillo();
+};

@@ -102,20 +102,24 @@
           
           <!-- Controles de Navegación -->
           <div class="controles-navegacion">
-            <button type="button" class="btn-nav {% if not page_obj.has_previous %}disabled{% endif %}" 
-                    onclick="paginaAnteriorPasillo()" 
-                    {% if not page_obj.has_previous %}disabled{% endif %}
-                    aria-label="Página anterior"
-                    title="Página anterior">
-              <i class="bi bi-chevron-left" aria-hidden="true"></i>
-            </button>
-            <button type="button" class="btn-nav {% if not page_obj.has_next %}disabled{% endif %}" 
-                    onclick="paginaSiguientePasillo()" 
-                    {% if not page_obj.has_next %}disabled{% endif %}
-                    aria-label="Página siguiente"
-                    title="Página siguiente">
-              <i class="bi bi-chevron-right" aria-hidden="true"></i>
-            </button>
+            {% if page_obj.has_previous %}
+              <a class="btn-nav" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" aria-label="Página anterior" title="Página anterior">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+              </a>
+            {% else %}
+              <span class="btn-nav disabled" aria-label="Página anterior" title="Página anterior">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+              </span>
+            {% endif %}
+            {% if page_obj.has_next %}
+              <a class="btn-nav" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" aria-label="Página siguiente" title="Página siguiente">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+              </a>
+            {% else %}
+              <span class="btn-nav disabled" aria-label="Página siguiente" title="Página siguiente">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+              </span>
+            {% endif %}
           </div>
         {% else %}
           <!-- Información sin Paginación -->
@@ -130,7 +134,7 @@
   </div>
 
   <!-- Indicadores de Filtros Activos -->
-  {% if pasillo_seleccionado or codigo_medico or codigo_box %}
+  {% if pasillo_seleccionado or nombre_medico or codigo_box %}
   <div class="filtros-activos">
     <span class="filtros-activos-label">Filtros activos:</span>
     {% if pasillo_seleccionado %}
@@ -139,9 +143,9 @@
       <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('pasillo')">×</button>
     </span>
     {% endif %}
-    {% if codigo_medico %}
+    {% if nombre_medico %}
     <span class="filtro-activo-badge">
-      Médico: {{ codigo_medico }}
+      Médico: {{ nombre_medico }}
       <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('medico')">×</button>
     </span>
     {% endif %}

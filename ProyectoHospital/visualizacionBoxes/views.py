@@ -237,7 +237,7 @@ def visualizacion_pasillo(request):
     - pasillo: ID del pasillo a visualizar
     - fecha: Fecha en formato YYYY-MM-DD (por defecto: fecha actual)
     - jornada: 'AM', 'PM' o vacío para horario completo
-    - medico: ID del profesional para filtrar
+    - medico: Nombre del profesional para filtrar
     - box: Código del box para filtrar
     - page: Número de página para paginación
     
@@ -245,7 +245,12 @@ def visualizacion_pasillo(request):
         HttpResponse: Template con datos de boxes, horarios y paginación
     """
     # ===============================
-    # OBTENER PARÁMETROS DE FILTROS
+    # CONSTANTES Y CONFIGURACIÓN
+    # ===============================
+    BOXES_POR_PAGINA = 8
+    
+    # ===============================
+    # OBTENER Y VALIDAR PARÁMETROS
     # ===============================
     filtros = {
         'pasillo': request.GET.get('pasillo', None),
@@ -256,14 +261,7 @@ def visualizacion_pasillo(request):
         'page': request.GET.get('page', 1)
     }
     
-    print(f"DEBUG PASILLO: Received filters: {filtros}")
-    
-    # Constantes optimizadas
-    BOXES_POR_PAGINA = 8
-    
-    # ===============================
-    # VALIDAR Y PROCESAR FECHA
-    # ===============================
+    # Validar y procesar fecha
     try:
         fecha_procesada = datetime.strptime(filtros['fecha'], '%Y-%m-%d').date()
     except ValueError:
@@ -281,13 +279,9 @@ def visualizacion_pasillo(request):
     # ===============================
     boxes = _obtener_boxes_filtrados(filtros['pasillo'], filtros['box'])
     
-    # ===============================
-    # FILTRAR POR MÉDICO
-    # ===============================
+    # Filtrar por médico si se especifica
     if filtros['medico']:
-        print(f"DEBUG PASILLO: Filtering by medico: '{filtros['medico']}'")
         boxes = _aplicar_filtro_medico(boxes, filtros['medico'], fecha_procesada)
-        print(f"DEBUG PASILLO: Boxes after medico filter: {boxes.count()}")
     
     # ===============================
     # CONFIGURAR PAGINACIÓN
@@ -310,99 +304,37 @@ def visualizacion_pasillo(request):
     estado_datos = _generar_estado_boxes_pasillo(boxes_list, fecha_procesada, horas, filtros['medico'])
     
     # ===============================
+    # OBTENER INFORMACIÓN DEL PASILLO
+    # ===============================
+    pasillo_actual = None
+    if filtros['pasillo']:
+        try:
+            pasillo_actual = Pasillo.objects.get(idpasillo=filtros['pasillo'])
+        except Pasillo.DoesNotExist:
+            pasillo_actual = None
+    
+    # ===============================
     # PREPARAR CONTEXTO DE RESPUESTA
     # ===============================
-    pasillo_actual = None
-    if filtros['pasillo']:
-        try:
-            pasillo_actual = Pasillo.objects.get(idpasillo=filtros['pasillo'])
-        except Pasillo.DoesNotExist:
-            pasillo_actual = None
-    
     context = {
+        # Datos principales
         'boxes': boxes_list,
         'horas': horas,
         'fecha': fecha_procesada,
         'hora_actual': hora_actual,
+        
+        # Datos para filtros
         'pasillos': pasillos,
         'pasillo_seleccionado': filtros['pasillo'],
         'pasillo_actual': pasillo_actual,
         'jornada_seleccionada': filtros['jornada'],
-        'codigo_medico': filtros['medico'],
+        'nombre_medico': filtros['medico'],
         'codigo_box': filtros['box'],
+        
+        # Estado de boxes
         'estado_por_box_y_hora': estado_datos['estado'],
         'info_por_box_y_hora': estado_datos['info'],
-        # Datos de paginación
-        'boxes_page': boxes_page,
-        'paginator': paginator,
-        'page_obj': boxes_page,
-        'is_paginated': paginator.num_pages > 1,
-        'page_range': paginator.get_elided_page_range(boxes_page.number),
-    }
-    
-    return render(request, 'visualizacionBoxes/visualizacionPasillo.html', context)
-    
-    hora_actual = datetime.now().time()
-    
-    # ===============================
-    # OBTENER DATOS BASE
-    # ===============================
-    pasillos = Pasillo.objects.all().order_by('pasillo')
-    
-    # ===============================
-    # APLICAR FILTROS A BOXES
-    # ===============================
-    boxes = _obtener_boxes_filtrados(filtros['pasillo'], filtros['box'])
-    
-    # ===============================
-    # FILTRAR POR MÉDICO
-    # ===============================
-    if filtros['medico']:
-        boxes = _aplicar_filtro_medico(boxes, filtros['medico'], fecha_procesada)
-    
-    # ===============================
-    # PAGINACIÓN
-    # ===============================
-    paginator = Paginator(boxes, BOXES_POR_PAGINA)
-    
-    try:
-        boxes_page = paginator.page(filtros['page'])
-    except PageNotAnInteger:
-        boxes_page = paginator.page(1)
-    except EmptyPage:
-        boxes_page = paginator.page(paginator.num_pages)
-    
-    boxes_list = list(boxes_page)
-    
-    # ===============================
-    # GENERAR HORARIOS Y ESTADO
-    # ===============================
-    horas = _generar_horarios_por_jornada(filtros['jornada'])
-    estado_datos = _generar_estado_boxes_pasillo(boxes_list, fecha_procesada, horas, filtros['medico'])
-    
-    # ===============================
-    # CONTEXTO DE RESPUESTA
-    # ===============================
-    pasillo_actual = None
-    if filtros['pasillo']:
-        try:
-            pasillo_actual = Pasillo.objects.get(idpasillo=filtros['pasillo'])
-        except Pasillo.DoesNotExist:
-            pasillo_actual = None
-    
-    context = {
-        'boxes': boxes_list,
-        'horas': horas,
-        'fecha': fecha_procesada,
-        'hora_actual': hora_actual,
-        'pasillos': pasillos,
-        'pasillo_seleccionado': filtros['pasillo'],
-        'pasillo_actual': pasillo_actual,
-        'jornada_seleccionada': filtros['jornada'],
-        'codigo_medico': filtros['medico'],
-        'codigo_box': filtros['box'],
-        'estado_por_box_y_hora': estado_datos['estado'],
-        'info_por_box_y_hora': estado_datos['info'],
+        
         # Datos de paginación
         'boxes_page': boxes_page,
         'paginator': paginator,
@@ -501,8 +433,8 @@ def _generar_horarios_por_jornada(jornada=''):
 
 def validar_horario_24h(hora_inicio, hora_fin):
     """
-    Valida que los horarios sean correctos sin restricciones de rango.
-    Permite horarios de 00:00 a 23:59.
+    Valida que los horarios sean correctos para horario de 24 horas.
+    Permite horarios de 00:00 a 23:59, incluyendo horarios que cruzan medianoche.
     
     Args:
         hora_inicio (time): Hora de inicio
@@ -511,12 +443,19 @@ def validar_horario_24h(hora_inicio, hora_fin):
     Returns:
         bool: True si es válido, False en caso contrario
     """
-    # Permitir cualquier horario válido de 00:00 a 23:59
+    # Verificar que son objetos time válidos
     if not isinstance(hora_inicio, time) or not isinstance(hora_fin, time):
         return False
     
-    # Solo verificar que la hora de inicio sea menor que la de fin
-    return hora_inicio < hora_fin
+    # Verificar que las horas están en rango válido (00:00 a 23:59)
+    if not (time(0, 0) <= hora_inicio <= time(23, 59)):
+        return False
+    if not (time(0, 0) <= hora_fin <= time(23, 59)):
+        return False
+    
+    # Permitir horarios que cruzan medianoche o son del mismo día
+    # Solo verificar que no sean exactamente iguales
+    return hora_inicio != hora_fin
 
 
 # ==================== FUNCIONES AUXILIARES PARA VISUALIZACIÓN DE PASILLO ====================
@@ -530,12 +469,12 @@ def _obtener_boxes_filtrados(pasillo_id, codigo_box):
         codigo_box: Código del box a filtrar (None para todos)
         
     Returns:
-        QuerySet: Boxes filtrados
+        QuerySet: Boxes filtrados ordenados por ID
     """
+    boxes = Box.objects.all().order_by('idbox')
+    
     if pasillo_id:
-        boxes = Box.objects.filter(idpasillo=pasillo_id).order_by('idbox')
-    else:
-        boxes = Box.objects.all().order_by('idbox')
+        boxes = boxes.filter(idpasillo=pasillo_id)
     
     if codigo_box:
         boxes = boxes.filter(idbox__icontains=codigo_box)
@@ -553,7 +492,7 @@ def _aplicar_filtro_medico(boxes, nombre_medico, fecha):
         fecha: Fecha para buscar agendas
         
     Returns:
-        QuerySet: Boxes filtrados por médico
+        QuerySet: Boxes filtrados por médico o QuerySet vacío si no hay coincidencias
     """
     if not nombre_medico:
         return boxes
@@ -579,7 +518,7 @@ def _aplicar_filtro_medico(boxes, nombre_medico, fecha):
         return Box.objects.none()
 
 
-def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, nombre_medico):
+def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, nombre_medico=None):
     """
     Genera el estado de los boxes para la visualización de pasillo.
     
@@ -587,10 +526,10 @@ def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, nombre_medico):
         boxes_list: Lista de boxes a procesar
         fecha: Fecha para buscar agendas
         horas: Lista de horas a procesar
-        nombre_medico: Nombre del médico para filtrar (búsqueda parcial)
+        nombre_medico: Nombre del médico para filtrar (opcional)
         
     Returns:
-        dict: Diccionario con estado e info de cada box por hora
+        dict: Diccionario con 'estado' e 'info' de cada box por hora
     """
     # Obtener agendas del día
     agendas = Agenda.objects.filter(
@@ -599,7 +538,6 @@ def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, nombre_medico):
     
     # Aplicar filtro por médico si existe
     if nombre_medico:
-        # Buscar médicos que coincidan con el nombre
         medicos_encontrados = Profesional.objects.filter(
             nombre__icontains=nombre_medico
         ).values_list('idprofesional', flat=True)
@@ -641,19 +579,9 @@ def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, nombre_medico):
             
             if agenda_en_horario:
                 # Determinar el tipo de estado basado en el tipo de agenda
-                tipo_agenda = agenda_en_horario.idtipoagenda.tipoagenda.lower()
-                if 'limpieza' in tipo_agenda:
-                    estado_por_box_y_hora[key] = "Limpieza"
-                    info_por_box_y_hora[key] = "Limpieza"
-                elif 'mantencion' in tipo_agenda or 'mantención' in tipo_agenda:
-                    estado_por_box_y_hora[key] = "En mantención"
-                    info_por_box_y_hora[key] = "En mantenimiento"
-                elif 'inhabilitado' in tipo_agenda:
-                    estado_por_box_y_hora[key] = "Inhabilitado"
-                    info_por_box_y_hora[key] = "Inhabilitado"
-                else:
-                    estado_por_box_y_hora[key] = "Reservado"
-                    info_por_box_y_hora[key] = agenda_en_horario.idprofesional.idprofesional
+                estado_tipo, info_texto = _determinar_estado_agenda(agenda_en_horario)
+                estado_por_box_y_hora[key] = estado_tipo
+                info_por_box_y_hora[key] = info_texto
             else:
                 estado_por_box_y_hora[key] = "Disponible"
                 info_por_box_y_hora[key] = ""
@@ -662,6 +590,28 @@ def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, nombre_medico):
         'estado': estado_por_box_y_hora,
         'info': info_por_box_y_hora
     }
+
+
+def _determinar_estado_agenda(agenda):
+    """
+    Determina el estado y la información a mostrar basado en el tipo de agenda.
+    
+    Args:
+        agenda: Objeto Agenda con la información de la cita
+        
+    Returns:
+        tuple: (estado, info) donde estado es el tipo y info es el texto a mostrar
+    """
+    tipo_agenda = agenda.idtipoagenda.tipoagenda.lower()
+    
+    if 'limpieza' in tipo_agenda:
+        return "Limpieza", "Limpieza"
+    elif 'mantencion' in tipo_agenda or 'mantención' in tipo_agenda:
+        return "En mantención", "En mantenimiento"
+    elif 'inhabilitado' in tipo_agenda:
+        return "Inhabilitado", "Inhabilitado"
+    else:
+        return "Reservado", agenda.idprofesional.idprofesional
 
 
 # ==================== FUNCIONES AUXILIARES GENERALES ====================

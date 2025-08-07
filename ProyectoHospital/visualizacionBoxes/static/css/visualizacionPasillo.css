@@ -1,13 +1,7 @@
-/* ============================================================================
-   VISUALIZACIÓN DE PASILLOS - ESTILOS OPTIMIZADOS Y LIMPIOS
-   ============================================================================ */
-
-/* -------- VARIABLES CSS -------- */
-:root {
-  --ancho-celda-hora: 80px;
-  --ancho-columna-box: 120px;
-  --alto-celda: 50px;
-  --color-borde-tabla: #dee2e6;
+/* -------- PAGINACIÓN ESTILO BLANCO LIMPIO -------- */
+.custom-pagination {
+  background: #fff;
+  border-radius: 8px;
   --color-hora-actual: #dc3545;
   
   /* Colores exactos de leyendaBoxes.css */
