@@ -38,15 +38,16 @@
 .table-boxes {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 3px;
+  border-spacing: 2px;
   background-color: #f8f9fa;
   border-radius: 8px;
   font-size: 12px;
   margin: 0;
   animation: fadeIn 0.5s ease-in-out;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   table-layout: fixed;
   position: relative;
+  border: 1px solid #e0e0e0;
 }
 
 /* -------- ENCABEZADOS -------- */
@@ -55,58 +56,64 @@
   color: #333;
   font-size: 12px;
   font-weight: 600;
-  padding: 8px 6px;
+  padding: 10px 8px;
   text-align: center;
-  border: 1px solid var(--color-borde-tabla);
+  border: 1px solid #d1d5db;
   vertical-align: middle;
-  height: var(--alto-celda);
+  height: 45px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* -------- COLUMNA DE HORA -------- */
 .table-boxes .celda-hora {
-  width: var(--ancho-celda-hora);
-  min-width: var(--ancho-celda-hora);
-  max-width: var(--ancho-celda-hora);
+  width: 80px;
+  min-width: 80px;
+  max-width: 80px;
   background-color: #ffffff !important;
   font-weight: 700;
   position: sticky;
   left: 0;
   z-index: 10;
   color: #333;
-  border: 1px solid var(--color-borde-tabla);
+  border: 1px solid #d1d5db;
+  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
+  padding: 8px;
+  height: 50px;
 }
 
 /* -------- COLUMNAS DE BOXES -------- */
 .table-boxes .columna-box {
-  width: var(--ancho-columna-box);
-  min-width: var(--ancho-columna-box);
-  max-width: var(--ancho-columna-box);
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
   background-color: #ffffff !important;
-  border: 1px solid var(--color-borde-tabla);
+  border: 1px solid #d1d5db;
   text-align: center !important;
   vertical-align: middle !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* -------- CELDAS DE TIME-SLOT -------- */
 .visualizacion-pasillo .table-boxes .time-slot,
 .visualizacion-pasillo .table-boxes td.time-slot,
 .table-boxes .time-slot {
-  width: var(--ancho-columna-box) !important;
-  min-width: var(--ancho-columna-box) !important;
-  max-width: var(--ancho-columna-box) !important;
-  height: var(--alto-celda) !important;
+  width: 120px !important;
+  min-width: 120px !important;
+  max-width: 120px !important;
+  height: 50px !important;
   cursor: pointer !important;
-  transition: all 0.3s ease !important;
+  transition: all 0.2s ease !important;
   position: relative !important;
-  font-size: 0.85rem !important;
-  font-weight: bold !important;
-  padding: 6px !important;
-  border: none !important;
-  border-radius: 8px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  padding: 8px 4px !important;
+  border: 1px solid #d1d5db !important;
   text-align: center !important;
   vertical-align: middle !important;
   outline: none !important;
   color: white !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 4px !important;
 }
 
 /* -------- ESTADOS DE BOXES -------- */
@@ -115,7 +122,7 @@
 .table-boxes .time-slot.libre {
   background-color: var(--color-disponible) !important;
   color: white !important;
-  border-radius: 8px !important;
+  border: 1px solid #7CB342 !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.ocupado,
@@ -123,8 +130,8 @@
 .table-boxes .time-slot.ocupado {
   background-color: var(--color-hora-medica) !important;
   color: white !important;
-  font-weight: bold !important;
-  border-radius: 8px !important;
+  font-weight: 600 !important;
+  border: 1px solid #E64A19 !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.inhabilitado,
@@ -132,7 +139,7 @@
 .table-boxes .time-slot.inhabilitado {
   background-color: var(--color-deshabilitado) !important;
   color: white !important;
-  border-radius: 8px !important;
+  border: 1px solid #757575 !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.mantencion,
@@ -140,7 +147,7 @@
 .table-boxes .time-slot.mantencion {
   background-color: var(--color-mantencion) !important;
   color: white !important;
-  border-radius: 8px !important;
+  border: 1px solid #0097A7 !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.limpieza,
@@ -148,32 +155,34 @@
 .table-boxes .time-slot.limpieza {
   background-color: var(--color-limpieza) !important;
   color: white !important;
-  border-radius: 8px !important;
+  border: 1px solid #C2185B !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.desconocido,
 .visualizacion-pasillo .table-boxes td.time-slot.desconocido,
 .table-boxes .time-slot.desconocido {
   background-color: var(--color-hora-no-medica) !important;
-  color: #333 !important;
-  border-radius: 8px !important;
+  color: white !important;
+  border: 1px solid #F57C00 !important;
 }
 
 /* -------- EFECTOS HOVER -------- */
 .visualizacion-pasillo .table-boxes .time-slot:hover,
 .visualizacion-pasillo .table-boxes td.time-slot:hover,
 .table-boxes .time-slot:hover {
-  opacity: 0.9 !important;
+  opacity: 0.85 !important;
   cursor: pointer !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
   z-index: 15 !important;
+  border-width: 2px !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.libre:hover,
 .visualizacion-pasillo .table-boxes td.time-slot.libre:hover,
 .table-boxes .time-slot.libre:hover {
-  opacity: 0.85 !important;
+  opacity: 0.8 !important;
+  border-color: #689F38 !important;
 }
 
 .fila-horario:hover {
@@ -251,15 +260,23 @@
 
 /* -------- RESPONSIVIDAD -------- */
 @media (max-width: 768px) {
-  :root {
-    --ancho-celda-hora: 60px;
-    --ancho-columna-box: 90px;
-    --alto-celda: 40px;
+  .table-boxes .celda-hora {
+    width: 60px;
+    min-width: 60px;
+    max-width: 60px;
+  }
+  
+  .table-boxes .columna-box,
+  .table-boxes .time-slot {
+    width: 90px !important;
+    min-width: 90px !important;
+    max-width: 90px !important;
+    height: 40px !important;
   }
   
   .table-boxes {
     font-size: 10px;
-    border-spacing: 2px;
+    border-spacing: 1px;
   }
   
   .table-boxes th,
@@ -268,17 +285,24 @@
   }
   
   .time-slot {
-    font-size: 0.75rem !important;
-    padding: 2px 4px !important;
-    border-radius: 6px !important;
+    font-size: 10px !important;
+    padding: 4px 2px !important;
   }
 }
 
 @media (max-width: 480px) {
-  :root {
-    --ancho-celda-hora: 50px;
-    --ancho-columna-box: 70px;
-    --alto-celda: 35px;
+  .table-boxes .celda-hora {
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+  }
+  
+  .table-boxes .columna-box,
+  .table-boxes .time-slot {
+    width: 70px !important;
+    min-width: 70px !important;
+    max-width: 70px !important;
+    height: 35px !important;
   }
   
   .table-boxes {
@@ -287,22 +311,22 @@
   }
   
   .time-slot {
-    font-size: 0.7rem !important;
-    padding: 1px 3px !important;
-    border-radius: 4px !important;
+    font-size: 9px !important;
+    padding: 2px 1px !important;
   }
 }
 
 /* -------- FORZAR ESTILO CONSISTENTE PARA VISUALIZACIÓN DE PASILLOS -------- */
-/* Reglas específicas para mantener consistencia con visualizacionGeneral.css */
+/* Reglas específicas para mantener consistencia con el nuevo diseño */
 .visualizacion-pasillo .time-slot,
 .visualizacion-pasillo td.time-slot,
 .visualizacion-pasillo .table-boxes .time-slot,
 .visualizacion-pasillo .table-boxes td.time-slot {
-  border-radius: 8px !important;
-  border: none !important;
-  font-weight: bold !important;
+  border-radius: 4px !important;
+  border: 1px solid #d1d5db !important;
+  font-weight: 600 !important;
   color: white !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
 /* Asegurar que el hover también mantenga el estilo consistente */
@@ -310,11 +334,11 @@
 .visualizacion-pasillo td.time-slot:hover,
 .visualizacion-pasillo .table-boxes .time-slot:hover,
 .visualizacion-pasillo .table-boxes td.time-slot:hover {
-  border-radius: 8px !important;
-  border: none !important;
-  opacity: 0.9 !important;
-  transform: translateY(-1px) !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+  border-radius: 4px !important;
+  opacity: 0.85 !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+  border-width: 2px !important;
 }
 
 /* Regla para todas las clases de estado dentro de visualización de pasillos */
@@ -324,6 +348,6 @@
 .visualizacion-pasillo .time-slot.mantencion,
 .visualizacion-pasillo .time-slot.limpieza,
 .visualizacion-pasillo .time-slot.desconocido {
-  border-radius: 8px !important;
-  border: none !important;
+  border-radius: 4px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
