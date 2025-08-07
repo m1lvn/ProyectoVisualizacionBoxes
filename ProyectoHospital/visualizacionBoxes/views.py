@@ -76,7 +76,7 @@ def visualizacion_general(request):
     # ===============================
     # OBTENER Y FILTRAR AGENDAS
     # ===============================
-    agendas = Agenda.objects.filter(fecha=fecha)
+    agendas = Agenda.objects.filter(fecha=fecha).select_related('idprofesional', 'idtipoagenda', 'idprofesional__idespecialidad')
     
     if nombre_medico:
         # Buscar médicos que coincidan con el nombre
@@ -611,7 +611,7 @@ def _determinar_estado_agenda(agenda):
     elif 'inhabilitado' in tipo_agenda:
         return "Inhabilitado", "Inhabilitado"
     else:
-        return "Reservado", agenda.idprofesional.idprofesional
+        return "Reservado", agenda.idprofesional.nombre
 
 
 # ==================== FUNCIONES AUXILIARES GENERALES ====================
