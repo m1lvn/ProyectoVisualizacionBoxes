@@ -398,5 +398,60 @@
         margin: 1rem 0 0 0 !important;
       }
     }
+
+    /* ============================================================================ */
+    /* OVERRIDE MODAL - MÁXIMA PRIORIDAD - IDÉNTICO A VISUALIZACIÓN GENERAL */
+    /* ============================================================================ */
+    #detalleModal .modal-content {
+      border-radius: 10px !important;
+      border: none !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+    }
+
+    #detalleModal .modal-header {
+      background-color: #f8f9fa !important;
+      border-bottom: 1px solid #dee2e6 !important;
+      border-radius: 10px 10px 0 0 !important;
+      padding: 1rem 1.5rem !important;
+    }
+
+    #detalleModal .modal-title {
+      color: #495057 !important;
+      font-weight: 600 !important;
+      font-size: 1.25rem !important;
+    }
+
+    #detalleModal .modal-body {
+      padding: 20px !important;
+      background: white !important;
+    }
+
+    #detalleModal .btn-close {
+      filter: none !important;
+      opacity: 0.5 !important;
+    }
+
+    #detalleModal .btn-close:hover {
+      opacity: 0.75 !important;
+    }
+
+    #detalleModal .alert {
+      border-radius: 10px !important;
+      border: none !important;
+      margin-bottom: 0 !important;
+      padding: 1rem !important;
+    }
+
+    #detalleModal .alert-success {
+      background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%) !important;
+      color: #155724 !important;
+      border: none !important;
+    }
+
+    #detalleModal .alert-warning {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+      color: #721c24 !important;
+      border: none !important;
+    }
   </style>
 {% endblock %}

@@ -26,42 +26,45 @@
 
 .contenedor-tabla {
   background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
   max-width: 100%;
   margin: 0 auto;
   position: relative;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
 /* -------- TABLA PRINCIPAL -------- */
 .table-boxes {
   width: 100%;
   border-collapse: separate;
-  border-spacing: 2px;
+  border-spacing: 8px;
   background-color: #f8f9fa;
-  border-radius: 8px;
+  border-radius: 12px;
   font-size: 12px;
   margin: 0;
   animation: fadeIn 0.5s ease-in-out;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   table-layout: fixed;
   position: relative;
-  border: 1px solid #e0e0e0;
+  border: none;
+  padding: 12px;
 }
 
 /* -------- ENCABEZADOS -------- */
 .table-boxes th {
   background-color: #ffffff;
-  color: #333;
+  color: #374151;
   font-size: 12px;
   font-weight: 600;
-  padding: 10px 8px;
+  padding: 12px 8px;
   text-align: center;
-  border: 1px solid #d1d5db;
+  border: 1px solid #e5e7eb;
   vertical-align: middle;
-  height: 45px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  height: 48px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 /* -------- COLUMNA DE HORA -------- */
@@ -74,11 +77,12 @@
   position: sticky;
   left: 0;
   z-index: 10;
-  color: #333;
-  border: 1px solid #d1d5db;
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.05);
-  padding: 8px;
-  height: 50px;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
+  padding: 10px 8px;
+  height: 52px;
 }
 
 /* -------- COLUMNAS DE BOXES -------- */
@@ -87,10 +91,11 @@
   min-width: 120px;
   max-width: 120px;
   background-color: #ffffff !important;
-  border: 1px solid #d1d5db;
+  border: 1px solid #e5e7eb;
   text-align: center !important;
   vertical-align: middle !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 /* -------- CELDAS DE TIME-SLOT -------- */
@@ -100,19 +105,19 @@
   width: 120px !important;
   min-width: 120px !important;
   max-width: 120px !important;
-  height: 50px !important;
+  height: 52px !important;
   cursor: pointer !important;
   transition: all 0.2s ease !important;
   position: relative !important;
   font-size: 11px !important;
   font-weight: 600 !important;
-  padding: 8px 4px !important;
-  border: 1px solid #d1d5db !important;
+  padding: 10px 6px !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   text-align: center !important;
   vertical-align: middle !important;
   outline: none !important;
   color: white !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15) !important;
   border-radius: 8px !important;
 }
 
@@ -122,7 +127,7 @@
 .table-boxes .time-slot.libre {
   background-color: var(--color-disponible) !important;
   color: white !important;
-  border: 1px solid #7CB342 !important;
+  border: none !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.ocupado,
@@ -131,7 +136,7 @@
   background-color: var(--color-hora-medica) !important;
   color: white !important;
   font-weight: 600 !important;
-  border: 1px solid #E64A19 !important;
+  border: none !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.inhabilitado,
@@ -139,7 +144,7 @@
 .table-boxes .time-slot.inhabilitado {
   background-color: var(--color-deshabilitado) !important;
   color: white !important;
-  border: 1px solid #757575 !important;
+  border: none !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.mantencion,
@@ -147,7 +152,7 @@
 .table-boxes .time-slot.mantencion {
   background-color: var(--color-mantencion) !important;
   color: white !important;
-  border: 1px solid #0097A7 !important;
+  border: none !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.limpieza,
@@ -155,7 +160,7 @@
 .table-boxes .time-slot.limpieza {
   background-color: var(--color-limpieza) !important;
   color: white !important;
-  border: 1px solid #C2185B !important;
+  border: none !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.desconocido,
@@ -163,30 +168,28 @@
 .table-boxes .time-slot.desconocido {
   background-color: var(--color-hora-no-medica) !important;
   color: white !important;
-  border: 1px solid #F57C00 !important;
+  border: none !important;
 }
 
 /* -------- EFECTOS HOVER -------- */
 .visualizacion-pasillo .table-boxes .time-slot:hover,
 .visualizacion-pasillo .table-boxes td.time-slot:hover,
 .table-boxes .time-slot:hover {
-  opacity: 0.85 !important;
+  opacity: 0.9 !important;
   cursor: pointer !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
   z-index: 15 !important;
-  border-width: 2px !important;
 }
 
 .visualizacion-pasillo .table-boxes .time-slot.libre:hover,
 .visualizacion-pasillo .table-boxes td.time-slot.libre:hover,
 .table-boxes .time-slot.libre:hover {
-  opacity: 0.8 !important;
-  border-color: #689F38 !important;
+  opacity: 0.85 !important;
 }
 
 .fila-horario:hover {
-  background-color: rgba(0, 123, 255, 0.02);
+  background-color: rgba(0, 123, 255, 0.01);
 }
 
 /* -------- HORA ACTUAL -------- */
@@ -323,10 +326,10 @@
 .visualizacion-pasillo .table-boxes .time-slot,
 .visualizacion-pasillo .table-boxes td.time-slot {
   border-radius: 8px !important;
-  border: 1px solid #d1d5db !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
   font-weight: 600 !important;
   color: white !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15) !important;
 }
 
 /* Asegurar que el hover también mantenga el estilo consistente */
@@ -335,10 +338,9 @@
 .visualizacion-pasillo .table-boxes .time-slot:hover,
 .visualizacion-pasillo .table-boxes td.time-slot:hover {
   border-radius: 8px !important;
-  opacity: 0.85 !important;
-  transform: translateY(-2px) !important;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15) !important;
-  border-width: 2px !important;
+  opacity: 0.9 !important;
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
 }
 
 /* Regla para todas las clases de estado dentro de visualización de pasillos */
@@ -349,5 +351,79 @@
 .visualizacion-pasillo .time-slot.limpieza,
 .visualizacion-pasillo .time-slot.desconocido {
   border-radius: 8px !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+/* -------- OVERRIDE COMPLETO DEL MODAL PARA VISUALIZACIÓN PASILLO -------- */
+/* Estos estilos replican exactamente los de visualizacionGeneral.css */
+body .modal#detalleModal .modal-content,
+.visualizacion-pasillo .modal .modal-content,
+div.modal-dialog .modal-content {
+  border-radius: 10px !important;
+  border: none !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
+  overflow: hidden !important;
+}
+
+body .modal#detalleModal .modal-header,
+.visualizacion-pasillo .modal .modal-header,
+div.modal-dialog .modal-header {
+  background-color: #f8f9fa !important;
+  border-bottom: 1px solid #dee2e6 !important;
+  border-radius: 10px 10px 0 0 !important;
+  padding: 1rem 1.5rem !important;
+}
+
+body .modal#detalleModal .modal-title,
+.visualizacion-pasillo .modal .modal-title,
+div.modal-dialog .modal-title {
+  color: #495057 !important;
+  font-weight: 600 !important;
+  font-size: 1.25rem !important;
+}
+
+body .modal#detalleModal .modal-body,
+.visualizacion-pasillo .modal .modal-body,
+div.modal-dialog .modal-body {
+  padding: 20px !important;
+  background: white !important;
+}
+
+body .modal#detalleModal .btn-close,
+.visualizacion-pasillo .modal .btn-close,
+div.modal-dialog .btn-close {
+  filter: none !important;
+  opacity: 0.5 !important;
+}
+
+body .modal#detalleModal .btn-close:hover,
+.visualizacion-pasillo .modal .btn-close:hover,
+div.modal-dialog .btn-close:hover {
+  opacity: 0.75 !important;
+}
+
+body .modal#detalleModal .alert,
+.visualizacion-pasillo .modal .alert,
+div.modal-dialog .alert {
+  border-radius: 10px !important;
+  border: none !important;
+  margin-bottom: 0 !important;
+  padding: 1rem !important;
+}
+
+body .modal#detalleModal .alert-success,
+.visualizacion-pasillo .modal .alert-success,
+div.modal-dialog .alert-success {
+  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%) !important;
+  color: #155724 !important;
+  border: none !important;
+}
+
+body .modal#detalleModal .alert-warning,
+.visualizacion-pasillo .modal .alert-warning,
+div.modal-dialog .alert-warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+  color: #721c24 !important;
+  border: none !important;
 }

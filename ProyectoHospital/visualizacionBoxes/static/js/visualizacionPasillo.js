@@ -138,7 +138,7 @@ const PasilloVisualizador = {
     // ========================================================================
 
     /**
-     * Muestra el modal con detalles de un box específico
+     * Muestra el modal con detalles de un box específico (versión unificada)
      */
     async mostrarDetalleBox(boxId, disponible, hora = null, pasillo = null) {
         if (!this.urls.detalleBox) {
@@ -160,7 +160,8 @@ const PasilloVisualizador = {
                 return;
             }
             
-            const contenido = this.generarContenidoModal(data, hora, pasillo);
+            // Usar la función unificada idéntica a visualizacionGeneral
+            const contenido = this.generarContenidoModalUnificado(data);
             this.mostrarModal(contenido);
             
         } catch (error) {
@@ -179,109 +180,42 @@ const PasilloVisualizador = {
     },
 
     /**
-     * Genera el contenido HTML del modal
+     * Genera el contenido HTML del modal (versión unificada igual a visualizacionGeneral)
      */
-    generarContenidoModal(data, hora = null, pasillo = null) {
-        const fechaFormateada = new Date(this.estado.fechaActual).toLocaleDateString('es-ES');
-        
+    generarContenidoModalUnificado(data) {
+        const fecha = this.estado.fechaActual;
         let contenido = `
             <div class="row">
                 <div class="col-12">
-                    <div class="card border-0">
-                        <div class="card-header bg-light">
-                            <h6 class="mb-0"><i class="fas fa-bed me-2"></i>Box ${data.box.id}</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <small class="text-muted">Pasillo</small>
-                                    <div><strong>${data.box.pasillo}</strong></div>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Capacidad</small>
-                                    <div><strong>${data.box.capacidad || 'No especificada'}</strong></div>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-6">
-                                    <small class="text-muted">Fecha</small>
-                                    <div>${fechaFormateada}</div>
-                                </div>
-                                <div class="col-6">
-                                    <small class="text-muted">Hora consulta</small>
-                                    <div>${new Date().toLocaleTimeString('es-ES')}</div>
-                                </div>
-                            </div>
-                            
-                            <hr>
+                    <h6><strong>Box ${data.box.id}</strong></h6>
+                    <p><strong>Pasillo:</strong> ${data.box.pasillo}</p>
+                    <p><strong>Capacidad:</strong> ${data.box.capacidad || 'No especificada'}</p>
+                    <p><strong>Fecha:</strong> ${fecha}</p>
+                    <p><strong>Estado actual:</strong> ${new Date().toLocaleTimeString()}</p>
+                    <hr>
         `;
         
         if (data.disponible) {
             contenido += `
-                <div class="alert alert-success border-0">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-check-circle fa-2x text-success me-3"></i>
-                        <div>
-                            <h6 class="mb-1">Box Disponible</h6>
-                            <p class="mb-0">Este box está libre en este momento.</p>
-                        </div>
-                    </div>
+                <div class="alert alert-success">
+                    <h6><i class="bi bi-check-circle"></i> Box Disponible</h6>
+                    <p>Este box está libre en este momento.</p>
                 </div>
             `;
         } else {
-            const iconoTipo = this.obtenerIconoTipoAgenda(data.agenda.tipo_agenda);
             contenido += `
-                <div class="alert alert-warning border-0">
-                    <div class="d-flex align-items-center">
-                        <i class="${iconoTipo} fa-2x text-warning me-3"></i>
-                        <div>
-                            <h6 class="mb-1">Box Ocupado</h6>
-                            <div class="row">
-                                <div class="col-12 mb-2">
-                                    <small class="text-muted">Profesional</small>
-                                    <div><strong>${data.agenda.profesional}</strong></div>
-                                </div>
-                                <div class="col-12 mb-2">
-                                    <small class="text-muted">Especialidad</small>
-                                    <div>${data.agenda.especialidad}</div>
-                                </div>
-                                <div class="col-12 mb-2">
-                                    <small class="text-muted">Tipo de Agenda</small>
-                                    <div>${data.agenda.tipo_agenda}</div>
-                                </div>
-                                <div class="col-12">
-                                    <small class="text-muted">Horario</small>
-                                    <div><strong>${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</strong></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-clock"></i> Box Ocupado</h6>
+                    <p><strong>Profesional:</strong> ${data.agenda.profesional}</p>
+                    <p><strong>Especialidad:</strong> ${data.agenda.especialidad}</p>
+                    <p><strong>Tipo de Agenda:</strong> ${data.agenda.tipo_agenda}</p>
+                    <p><strong>Horario:</strong> ${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</p>
                 </div>
             `;
         }
         
-        contenido += `
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
+        contenido += `</div></div>`;
         return contenido;
-    },
-
-    /**
-     * Obtiene el icono apropiado según el tipo de agenda
-     */
-    obtenerIconoTipoAgenda(tipoAgenda) {
-        const tipo = tipoAgenda.toLowerCase();
-        
-        if (tipo.includes('limpieza')) return 'fas fa-broom';
-        if (tipo.includes('mantención') || tipo.includes('mantencion')) return 'fas fa-tools';
-        if (tipo.includes('inhabilitado')) return 'fas fa-ban';
-        
-        return 'fas fa-user-md';
     },
 
     // ========================================================================
@@ -317,37 +251,28 @@ const PasilloVisualizador = {
     },
 
     /**
-     * Crea el elemento modal dinámicamente si no existe
+     * Crea el elemento modal dinámicamente si no existe (versión unificada)
      */
     crearModal() {
         const modal = document.createElement('div');
         modal.id = 'detalleModal';
         modal.className = 'modal fade';
-        modal.setAttribute('tabindex', '-1');
-        modal.setAttribute('aria-labelledby', 'detalleModalLabel');
-        modal.setAttribute('aria-hidden', 'true');
-        
         modal.innerHTML = `
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="detalleModalLabel">
-                            <i class="fas fa-info-circle me-2"></i>Detalle del Box
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                        <h5 class="modal-title">Detalle del Box</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <!-- Contenido dinámico -->
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-2"></i>Cerrar
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </div>
             </div>
         `;
-        
         return modal;
     },
 
