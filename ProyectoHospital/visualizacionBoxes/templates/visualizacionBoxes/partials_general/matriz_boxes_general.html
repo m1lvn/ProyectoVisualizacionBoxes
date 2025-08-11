@@ -1,0 +1,24 @@
+{% load box_filters %}
+
+<!-- ============================= -->
+<!-- MATRIZ DE BOXES - GENERAL      -->
+<!-- ============================= -->
+<div class="boxes-grid">
+  {% for box in boxes %}
+    {% with estado=estado_boxes|lookup:box.idbox %}
+      {% if estado.disponible %}
+        <div class="box-item disponible" 
+             onclick="mostrarDetalle('{{ box.idbox }}', true)" 
+             title="Box {{ box.idbox }} - {{ box.idpasillo.pasillo }} - Disponible">
+          {{ box.idbox }}
+        </div>
+      {% else %}
+        <div class="box-item tipo-agenda-{{ estado.tipo_agenda_id }}" 
+             onclick="mostrarDetalle('{{ box.idbox }}', false)" 
+             title="Box {{ box.idbox }} - {{ box.idpasillo.pasillo }} - {{ estado.tipo_agenda }}">
+          {{ box.idbox }}
+        </div>
+      {% endif %}
+    {% endwith %}
+  {% endfor %}
+</div>

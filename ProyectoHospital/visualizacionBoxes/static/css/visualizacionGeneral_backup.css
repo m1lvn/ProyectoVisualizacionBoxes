@@ -1,89 +1,55 @@
-/* ============================================================================ */
-/* VISUALIZACIÓN GENERAL - CSS ORGANIZADO                                     */
-/* ============================================================================ */
+/* Estilos para la Visualización General de Boxes */
 
-/* ========================================================================== */
-/* 1. VARIABLES CSS (AGREGADAS PARA MEJOR ORGANIZACIÓN)                       */
-/* ========================================================================== */
-:root {
-  /* Dimensiones de Grid y Boxes */
-  --box-width: 120px;
-  --box-height: 80px;
-  --grid-gap: 10px;
-  --grid-columns: 8;
-  
-  /* Layout */
-  --leyenda-width: 200px;
-  --contenedor-gap: 20px;
-  --contenedor-padding: 20px;
-  --matriz-padding: 20px;
-  
-  /* Bordes y Sombras */
-  --border-radius: 8px;
-  --border-radius-lg: 12px;
-  --box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  --box-shadow-hover: 0 4px 8px rgba(0, 0, 0, 0.2);
-  --grid-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  
-  /* Transiciones */
-  --transition-medium: 0.3s ease;
-}
+/*
+ * NOTA: Los colores para tipos de agenda y leyenda están definidos
+ * en el archivo leyendaBoxes.css para mantener la organización modular.
+ */
 
-/* ========================================================================== */
-/* 2. CONTENEDOR PRINCIPAL (FUNCIONALIDAD ORIGINAL)                          */
-/* ========================================================================== */
+/* Contenedor principal con layout de la imagen */
 .contenedor-principal {
     display: flex;
-    gap: var(--contenedor-gap);
-    padding: 10px var(--contenedor-padding) var(--contenedor-padding) var(--contenedor-padding);
+    gap: 20px;
+    padding: 10px 20px 20px 20px; /* Menos padding arriba */
     min-height: 70vh;
 }
 
-/* ========================================================================== */
-/* 3. LEYENDA LATERAL (FUNCIONALIDAD ORIGINAL)                               */
-/* ========================================================================== */
+/* Leyenda lateral fija */
 .leyenda-lateral {
-    flex: 0 0 var(--leyenda-width);
+    flex: 0 0 200px;
 }
 
-/* ========================================================================== */
-/* 4. CONTENEDOR DE MATRIZ (FUNCIONALIDAD ORIGINAL)                          */
-/* ========================================================================== */
+/* Contenedor de la matriz de boxes */
 .contenedor-matriz {
     flex: 1;
     background: white;
-    border-radius: var(--border-radius-lg);
-    padding: var(--matriz-padding);
-    box-shadow: var(--box-shadow);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-/* ========================================================================== */
-/* 5. GRID DE BOXES (FUNCIONALIDAD ORIGINAL)                                 */
-/* ========================================================================== */
+/* Grid de boxes como matriz */
 .boxes-grid {
     display: grid;
-    grid-template-columns: repeat(var(--grid-columns), 1fr);
-    gap: var(--grid-gap);
-    padding: var(--matriz-padding);
+    grid-template-columns: repeat(8, 1fr);
+    gap: 10px;
+    padding: 20px;
     background-color: #f8f9fa;
     border-radius: 10px;
-    box-shadow: var(--grid-shadow);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* ========================================================================== */
-/* 6. BOXES INDIVIDUALES (FUNCIONALIDAD ORIGINAL)                            */
-/* ========================================================================== */
+/* Estilo para cada box individual */
 .box-item {
-    width: var(--box-width);
-    height: var(--box-height);
+    width: 120px;
+    height: 80px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--border-radius);
+    border-radius: 8px;
     font-weight: bold;
     color: white;
     cursor: pointer;
-    transition: all var(--transition-medium);
+    transition: all 0.3s ease;
     text-align: center;
     font-size: 14px;
     border: 2px solid transparent;
@@ -91,145 +57,12 @@
 
 .box-item:hover {
     transform: translateY(-2px);
-    box-shadow: var(--box-shadow-hover);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     border: 2px solid #ffffff;
 }
 
-/* ========================================================================== */
-/* 7. TIPOS DE AGENDA (FUNCIONALIDAD ORIGINAL MANTENIDA)                     */
-/* ========================================================================== */
 .tipo-agenda-8 {
     background: linear-gradient(135deg, #6c757d, #5a6268);
-}
-
-/* ========================================================================== */
-/* 8. MODAL (FUNCIONALIDAD ORIGINAL)                                         */
-/* ========================================================================== */
-.modal-content {
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    border-radius: 15px 15px 0 0;
-}
-
-.modal-body {
-    padding: 20px;
-}
-
-.alert {
-    border-radius: 10px;
-    border: none;
-}
-
-.alert-success {
-    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-    color: #2c3e50;
-}
-
-.alert-danger {
-    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-    color: #2c3e50;
-}
-
-/* ========================================================================== */
-/* 9. PAGINACIÓN Y TRANSICIONES (FUNCIONALIDAD ORIGINAL)                     */
-/* ========================================================================== */
-.boxes-grid {
-    transition: opacity 0.3s ease;
-}
-
-.box-item[style*="display: none"] {
-    display: none !important;
-}
-
-.contenedor-matriz {
-    min-height: 400px;
-    display: flex;
-    flex-direction: column;
-}
-
-.boxes-grid {
-    flex: 1;
-    min-height: 300px;
-}
-
-/* ========================================================================== */
-/* 10. RESPONSIVE DESIGN (FUNCIONALIDAD ORIGINAL)                            */
-/* ========================================================================== */
-@media (max-width: 1200px) {
-    .boxes-grid {
-        grid-template-columns: repeat(6, 1fr);
-    }
-}
-
-@media (max-width: 992px) {
-    .boxes-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-    
-    .box-item {
-        width: 100px;
-        height: 70px;
-        font-size: 12px;
-    }
-}
-
-@media (max-width: 768px) {
-    .boxes-grid {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 8px;
-        padding: 15px;
-    }
-    
-    .box-item {
-        width: 80px;
-        height: 60px;
-        font-size: 11px;
-    }
-}
-
-@media (max-width: 576px) {
-    .boxes-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-/* ========================================================================== */
-/* 11. ELEMENTOS ADICIONALES (FUNCIONALIDAD ORIGINAL)                        */
-/* ========================================================================== */
-.cabecera-box {
-    background-color: #f1f1f1;
-    font-weight: bold;
-}
-
-.hora {
-    background-color: #e9ecef;
-    font-weight: bold;
-    min-width: 80px;
-}
-
-.time-slot {
-    width: 100px;
-    height: 40px;
-    border-radius: var(--border-radius);
-    color: white;
-    font-weight: bold;
-    border: none;
-    transition: all var(--transition-medium);
-    font-size: 0.85rem;
-}
-
-.libre:hover {
-    opacity: 0.85;
-}
-
-.time-slot:not(.libre):not([class*="tipo-agenda-"]) {
-    background-color: #6c757d;
-    color: white;
 }
 
 /* Estilos para el modal */

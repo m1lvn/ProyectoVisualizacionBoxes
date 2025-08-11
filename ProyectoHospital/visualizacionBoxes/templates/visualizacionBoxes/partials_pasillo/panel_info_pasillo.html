@@ -1,0 +1,69 @@
+<!-- ============================= -->
+<!-- PANEL DE INFORMACIÓN LATERAL  -->
+<!-- ============================= -->
+<div class="card shadow-sm">
+  <div class="card-header bg-primary text-white">
+    <h5 class="card-title mb-0">
+      <i class="fas fa-info-circle me-2"></i>
+      Información del Pasillo
+    </h5>
+  </div>
+  <div class="card-body">
+    {% if pasillo_actual %}
+      <!-- Nombre del pasillo -->
+      <div class="text-center mb-3">
+        <h6 class="text-primary">
+          <i class="fas fa-hospital me-1"></i>
+          {{ pasillo_actual.pasillo }}
+        </h6>
+      </div>
+      
+      <!-- Información de paginación -->
+      {% include "visualizacionBoxes/partials_pasillo/info_paginacion.html" %}
+      
+      <!-- Fecha actual -->
+      <div class="row mb-3">
+        <div class="col-12">
+          <small class="text-muted">Fecha:</small>
+          <div><strong>{{ fecha|date:"d/m/Y" }}</strong></div>
+        </div>
+      </div>
+      
+      <!-- Contadores de estado -->
+      <div class="row text-center">
+        <div class="col-6">
+          <div class="border rounded p-2 bg-light">
+            <div class="h4 text-success mb-1" id="boxes-libres">
+              <i class="fas fa-check-circle"></i>
+              <span>0</span>
+            </div>
+            <small class="text-muted">Libres</small>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="border rounded p-2 bg-light">
+            <div class="h4 text-danger mb-1" id="boxes-ocupados">
+              <i class="fas fa-user-md"></i>
+              <span>0</span>
+            </div>
+            <small class="text-muted">Ocupados</small>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Información adicional -->
+      <div class="mt-3 pt-3 border-top">
+        <small class="text-muted">
+          <i class="fas fa-clock me-1"></i>
+          Actualizado: <span id="ultima-actualizacion">{{ hora_actual|time:"H:i" }}</span>
+        </small>
+      </div>
+      
+    {% else %}
+      <div class="text-center text-muted">
+        <i class="fas fa-arrow-left fa-2x mb-2"></i>
+        <p>Seleccione un pasillo para ver la información detallada.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>

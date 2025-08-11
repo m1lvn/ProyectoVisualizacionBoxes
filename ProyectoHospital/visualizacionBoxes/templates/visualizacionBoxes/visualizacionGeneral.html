@@ -1,15 +1,19 @@
 {% extends 'visualizacionBoxes/base.html' %}
-
 {% load static %}
 {% load box_filters %}
 
 {% block title %}Visualización General{% endblock %}
 
+{% block styles %}
+    <link rel="stylesheet" href="{% static 'css/filtrosSuperioresGeneral.css' %}">
+    <link rel="stylesheet" href="{% static 'css/leyendaBoxes.css' %}">
+    <link rel="stylesheet" href="{% static 'css/visualizacionGeneral.css' %}">
+{% endblock %}
 
 {% block content %}
 
 <!-- Meta tag para JavaScript -->
-<meta name="fecha" content="{{ fecha|date:'Y-m-d' }}">
+{% include "visualizacionBoxes/partials_general/meta_tags_general.html" %}
 
 {% include "visualizacionBoxes/filtrosSuperioresGeneral.html" %}
 
@@ -22,47 +26,12 @@
   </div>
   
   <!-- Matriz de boxes principal -->
-  <div class="contenedor-matriz">
-    <div class="boxes-grid">
-      {% for box in boxes %}
-        {% with estado=estado_boxes|lookup:box.idbox %}
-          {% if estado.disponible %}
-            <div class="box-item disponible" 
-                 onclick="mostrarDetalle('{{ box.idbox }}', true)" 
-                 title="Box {{ box.idbox }} - {{ box.idpasillo.pasillo }} - Disponible">
-              {{ box.idbox }}
-            </div>
-          {% else %}
-            <div class="box-item tipo-agenda-{{ estado.tipo_agenda_id }}" 
-                 onclick="mostrarDetalle('{{ box.idbox }}', false)" 
-                 title="Box {{ box.idbox }} - {{ box.idpasillo.pasillo }} - {{ estado.tipo_agenda }}">
-              {{ box.idbox }}
-            </div>
-          {% endif %}
-        {% endwith %}
-      {% endfor %}
-    </div>
-  </div>
+  {% include "visualizacionBoxes/partials_general/contenedor_matriz_general.html" %}
   
 </div>
 
 <!-- Modal para mostrar detalles -->
-<div class="modal fade" id="detalleModal" tabindex="-1" aria-labelledby="detalleModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="detalleModalLabel">Detalle del Box</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="modalContent">
-        <!-- Contenido dinámico -->
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-      </div>
-    </div>
-  </div>
-</div>
+{% include "visualizacionBoxes/partials_general/modal_detalle_general.html" %}
 {% endblock %}
 
 {% block scripts %}
@@ -74,10 +43,4 @@
     };
 </script>
 <script src="{% static 'js/visualizacionGeneral.js' %}"></script>
-{% endblock %}
-
-{% block styles %}
-<link rel="stylesheet" href="{% static 'css/filtrosSuperioresGeneral.css' %}">
-<link rel="stylesheet" href="{% static 'css/leyendaBoxes.css' %}">
-<link rel="stylesheet" href="{% static 'css/visualizacionGeneral.css' %}">
 {% endblock %}

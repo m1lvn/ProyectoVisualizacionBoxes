@@ -1,10 +1,12 @@
-/* -------- PAGINACIÓN ESTILO BLANCO LIMPIO -------- */
-.custom-pagination {
-  background: #fff;
-  border-radius: 8px;
-  --color-hora-actual: #dc3545;
-  
-  /* Colores exactos de leyendaBoxes.css */
+/* ============================================================================ */
+/* VISUALIZACIÓN PASILLO - CSS LIMPIO Y ORGANIZADO                            */
+/* ============================================================================ */
+
+/* ========================================================================== */
+/* 1. VARIABLES CSS                                                           */
+/* ========================================================================== */
+:root {
+  /* Colores de Estados de Boxes */
   --color-disponible: #8BC34A;
   --color-hora-medica: #FF5722;
   --color-hora-no-medica: #FF9800;
@@ -16,9 +18,34 @@
   --color-bloqueado-gestion: #607D8B;
   --color-bloqueo-admin: #795548;
   --color-urgencias: #FFC107;
+  --color-hora-actual: #dc3545;
+
+  /* Espaciado y Dimensiones */
+  --box-width: 120px;
+  --box-height: 52px;
+  --box-width-sm: 90px;
+  --box-height-sm: 40px;
+  --box-width-xs: 70px;
+  --box-height-xs: 35px;
+  --hora-width: 80px;
+  --hora-width-sm: 60px;
+  --hora-width-xs: 50px;
+
+  /* Bordes y Sombras */
+  --border-radius: 8px;
+  --border-radius-lg: 12px;
+  --box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  --box-shadow-hover: 0 6px 12px rgba(0, 0, 0, 0.2);
+  --container-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+
+  /* Transiciones */
+  --transition-fast: 0.2s ease;
+  --transition-medium: 0.3s ease-in-out;
 }
 
-/* -------- CONTENEDOR PRINCIPAL -------- */
+/* ========================================================================== */
+/* 2. CONTENEDOR PRINCIPAL                                                    */
+/* ========================================================================== */
 .visualizacion-pasillo {
   padding: 10px 20px 20px 20px;
   min-height: 70vh;
@@ -26,22 +53,24 @@
 
 .contenedor-tabla {
   background: white;
-  border-radius: 16px;
+  border-radius: var(--border-radius-lg);
   padding: 24px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  box-shadow: var(--container-shadow);
   max-width: 100%;
   margin: 0 auto;
   position: relative;
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-/* -------- TABLA PRINCIPAL -------- */
+/* ========================================================================== */
+/* 3. TABLA PRINCIPAL                                                         */
+/* ========================================================================== */
 .table-boxes {
   width: 100%;
   border-collapse: separate;
   border-spacing: 8px;
   background-color: #f8f9fa;
-  border-radius: 12px;
+  border-radius: var(--border-radius-lg);
   font-size: 12px;
   margin: 0;
   animation: fadeIn 0.5s ease-in-out;
@@ -52,7 +81,9 @@
   padding: 12px;
 }
 
-/* -------- ENCABEZADOS -------- */
+/* ========================================================================== */
+/* 4. ENCABEZADOS                                                             */
+/* ========================================================================== */
 .table-boxes th {
   background-color: #ffffff;
   color: #374151;
@@ -63,15 +94,19 @@
   border: 1px solid #e5e7eb;
   vertical-align: middle;
   height: 48px;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
-/* -------- COLUMNA DE HORA -------- */
+/* ========================================================================== */
+/* 5. COLUMNAS                                                                */
+/* ========================================================================== */
+
+/* Columna de Hora */
 .table-boxes .celda-hora {
-  width: 80px;
-  min-width: 80px;
-  max-width: 80px;
+  width: var(--hora-width);
+  min-width: var(--hora-width);
+  max-width: var(--hora-width);
   background-color: #ffffff !important;
   font-weight: 700;
   position: sticky;
@@ -79,35 +114,35 @@
   z-index: 10;
   color: #374151;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
   padding: 10px 8px;
-  height: 52px;
+  height: var(--box-height);
 }
 
-/* -------- COLUMNAS DE BOXES -------- */
+/* Columnas de Boxes */
 .table-boxes .columna-box {
-  width: 120px;
-  min-width: 120px;
-  max-width: 120px;
+  width: var(--box-width);
+  min-width: var(--box-width);
+  max-width: var(--box-width);
   background-color: #ffffff !important;
   border: 1px solid #e5e7eb;
   text-align: center !important;
   vertical-align: middle !important;
-  border-radius: 8px;
+  border-radius: var(--border-radius);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
-/* -------- CELDAS DE TIME-SLOT -------- */
-.visualizacion-pasillo .table-boxes .time-slot,
-.visualizacion-pasillo .table-boxes td.time-slot,
-.table-boxes .time-slot {
-  width: 120px !important;
-  min-width: 120px !important;
-  max-width: 120px !important;
-  height: 52px !important;
+/* ========================================================================== */
+/* 6. CELDAS TIME-SLOT                                                        */
+/* ========================================================================== */
+.time-slot {
+  width: var(--box-width) !important;
+  min-width: var(--box-width) !important;
+  max-width: var(--box-width) !important;
+  height: var(--box-height) !important;
   cursor: pointer !important;
-  transition: all 0.2s ease !important;
+  transition: all var(--transition-fast) !important;
   position: relative !important;
   font-size: 11px !important;
   font-weight: 600 !important;
@@ -117,74 +152,62 @@
   vertical-align: middle !important;
   outline: none !important;
   color: white !important;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15) !important;
-  border-radius: 8px !important;
+  box-shadow: var(--box-shadow) !important;
+  border-radius: var(--border-radius) !important;
 }
 
-/* -------- ESTADOS DE BOXES -------- */
-.visualizacion-pasillo .table-boxes .time-slot.libre,
-.visualizacion-pasillo .table-boxes td.time-slot.libre,
-.table-boxes .time-slot.libre {
+/* ========================================================================== */
+/* 7. ESTADOS DE BOXES                                                        */
+/* ========================================================================== */
+.time-slot.libre {
   background-color: var(--color-disponible) !important;
   color: white !important;
   border: none !important;
 }
 
-.visualizacion-pasillo .table-boxes .time-slot.ocupado,
-.visualizacion-pasillo .table-boxes td.time-slot.ocupado,
-.table-boxes .time-slot.ocupado {
+.time-slot.ocupado {
   background-color: var(--color-hora-medica) !important;
   color: white !important;
   font-weight: 600 !important;
   border: none !important;
 }
 
-.visualizacion-pasillo .table-boxes .time-slot.inhabilitado,
-.visualizacion-pasillo .table-boxes td.time-slot.inhabilitado,
-.table-boxes .time-slot.inhabilitado {
+.time-slot.inhabilitado {
   background-color: var(--color-deshabilitado) !important;
   color: white !important;
   border: none !important;
 }
 
-.visualizacion-pasillo .table-boxes .time-slot.mantencion,
-.visualizacion-pasillo .table-boxes td.time-slot.mantencion,
-.table-boxes .time-slot.mantencion {
+.time-slot.mantencion {
   background-color: var(--color-mantencion) !important;
   color: white !important;
   border: none !important;
 }
 
-.visualizacion-pasillo .table-boxes .time-slot.limpieza,
-.visualizacion-pasillo .table-boxes td.time-slot.limpieza,
-.table-boxes .time-slot.limpieza {
+.time-slot.limpieza {
   background-color: var(--color-limpieza) !important;
   color: white !important;
   border: none !important;
 }
 
-.visualizacion-pasillo .table-boxes .time-slot.desconocido,
-.visualizacion-pasillo .table-boxes td.time-slot.desconocido,
-.table-boxes .time-slot.desconocido {
+.time-slot.desconocido {
   background-color: var(--color-hora-no-medica) !important;
   color: white !important;
   border: none !important;
 }
 
-/* -------- EFECTOS HOVER -------- */
-.visualizacion-pasillo .table-boxes .time-slot:hover,
-.visualizacion-pasillo .table-boxes td.time-slot:hover,
-.table-boxes .time-slot:hover {
+/* ========================================================================== */
+/* 8. EFECTOS HOVER                                                           */
+/* ========================================================================== */
+.time-slot:hover {
   opacity: 0.9 !important;
   cursor: pointer !important;
   transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.15) !important;
+  box-shadow: var(--box-shadow-hover) !important;
   z-index: 15 !important;
 }
 
-.visualizacion-pasillo .table-boxes .time-slot.libre:hover,
-.visualizacion-pasillo .table-boxes td.time-slot.libre:hover,
-.table-boxes .time-slot.libre:hover {
+.time-slot.libre:hover {
   opacity: 0.85 !important;
 }
 
@@ -192,7 +215,9 @@
   background-color: rgba(0, 123, 255, 0.01);
 }
 
-/* -------- HORA ACTUAL -------- */
+/* ========================================================================== */
+/* 9. HORA ACTUAL                                                             */
+/* ========================================================================== */
 .fila-horario[data-hora="12:00"] {
   border-left: 4px solid var(--color-hora-actual);
   background-color: rgba(220, 53, 69, 0.05);
@@ -208,19 +233,64 @@
   box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
 }
 
-/* -------- ANIMACIONES -------- */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* ========================================================================== */
+/* 10. MODAL - ESTILOS UNIFICADOS                                            */
+/* ========================================================================== */
+#detalleModal .modal-content {
+  border-radius: 10px !important;
+  border: none !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
 }
 
-/* -------- COMPONENTES ADICIONALES -------- */
+#detalleModal .modal-header {
+  background-color: #f8f9fa !important;
+  border-bottom: 1px solid #dee2e6 !important;
+  border-radius: 10px 10px 0 0 !important;
+  padding: 1rem 1.5rem !important;
+}
+
+#detalleModal .modal-title {
+  color: #495057 !important;
+  font-weight: 600 !important;
+  font-size: 1.25rem !important;
+}
+
+#detalleModal .modal-body {
+  padding: 20px !important;
+  background: white !important;
+}
+
+#detalleModal .btn-close {
+  filter: none !important;
+  opacity: 0.5 !important;
+}
+
+#detalleModal .btn-close:hover {
+  opacity: 0.75 !important;
+}
+
+#detalleModal .alert {
+  border-radius: 10px !important;
+  border: none !important;
+  margin-bottom: 0 !important;
+  padding: 1rem !important;
+}
+
+#detalleModal .alert-success {
+  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%) !important;
+  color: #155724 !important;
+  border: none !important;
+}
+
+#detalleModal .alert-warning {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+  color: #721c24 !important;
+  border: none !important;
+}
+
+/* ========================================================================== */
+/* 11. COMPONENTES ADICIONALES                                               */
+/* ========================================================================== */
 .table-responsive {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -229,13 +299,13 @@
 }
 
 .fila-horario {
-  transition: background-color 0.2s ease-in-out;
+  transition: background-color var(--transition-fast);
 }
 
 .time-slot .status-text,
 .time-slot .patient-code {
   color: white;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
   font-size: 10px;
   font-weight: 500;
   line-height: 1.2;
@@ -244,9 +314,9 @@
 .leyenda-pasillo,
 .filtros-superiores-barra {
   background: white;
-  border-radius: 12px;
+  border-radius: var(--border-radius-lg);
   padding: 15px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
 }
 
@@ -261,20 +331,38 @@
   font-weight: 500;
 }
 
-/* -------- RESPONSIVIDAD -------- */
+/* ========================================================================== */
+/* 12. ANIMACIONES                                                           */
+/* ========================================================================== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================================================== */
+/* 13. RESPONSIVIDAD                                                          */
+/* ========================================================================== */
+
+/* Tablets */
 @media (max-width: 768px) {
   .table-boxes .celda-hora {
-    width: 60px;
-    min-width: 60px;
-    max-width: 60px;
+    width: var(--hora-width-sm);
+    min-width: var(--hora-width-sm);
+    max-width: var(--hora-width-sm);
   }
   
   .table-boxes .columna-box,
   .table-boxes .time-slot {
-    width: 90px !important;
-    min-width: 90px !important;
-    max-width: 90px !important;
-    height: 40px !important;
+    width: var(--box-width-sm) !important;
+    min-width: var(--box-width-sm) !important;
+    max-width: var(--box-width-sm) !important;
+    height: var(--box-height-sm) !important;
   }
   
   .table-boxes {
@@ -291,21 +379,44 @@
     font-size: 10px !important;
     padding: 4px 2px !important;
   }
+
+  /* Responsive layout */
+  .visualizacion-pasillo .d-flex {
+    flex-direction: column;
+  }
+  
+  .leyenda-lateral {
+    order: 2;
+    min-width: auto !important;
+    margin-top: 1rem;
+  }
+  
+  .flex-fill {
+    order: 1;
+  }
+  
+  div[style*="max-width:350px"] {
+    order: 3;
+    max-width: none !important;
+    min-width: auto !important;
+    margin: 1rem 0 0 0 !important;
+  }
 }
 
+/* Móviles */
 @media (max-width: 480px) {
   .table-boxes .celda-hora {
-    width: 50px;
-    min-width: 50px;
-    max-width: 50px;
+    width: var(--hora-width-xs);
+    min-width: var(--hora-width-xs);
+    max-width: var(--hora-width-xs);
   }
   
   .table-boxes .columna-box,
   .table-boxes .time-slot {
-    width: 70px !important;
-    min-width: 70px !important;
-    max-width: 70px !important;
-    height: 35px !important;
+    width: var(--box-width-xs) !important;
+    min-width: var(--box-width-xs) !important;
+    max-width: var(--box-width-xs) !important;
+    height: var(--box-height-xs) !important;
   }
   
   .table-boxes {
@@ -317,113 +428,4 @@
     font-size: 9px !important;
     padding: 2px 1px !important;
   }
-}
-
-/* -------- FORZAR ESTILO CONSISTENTE PARA VISUALIZACIÓN DE PASILLOS -------- */
-/* Reglas específicas para mantener consistencia con el nuevo diseño */
-.visualizacion-pasillo .time-slot,
-.visualizacion-pasillo td.time-slot,
-.visualizacion-pasillo .table-boxes .time-slot,
-.visualizacion-pasillo .table-boxes td.time-slot {
-  border-radius: 8px !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  font-weight: 600 !important;
-  color: white !important;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15) !important;
-}
-
-/* Asegurar que el hover también mantenga el estilo consistente */
-.visualizacion-pasillo .time-slot:hover,
-.visualizacion-pasillo td.time-slot:hover,
-.visualizacion-pasillo .table-boxes .time-slot:hover,
-.visualizacion-pasillo .table-boxes td.time-slot:hover {
-  border-radius: 8px !important;
-  opacity: 0.9 !important;
-  transform: translateY(-2px) scale(1.02) !important;
-  box-shadow: 0 6px 12px rgba(0,0,0,0.2) !important;
-}
-
-/* Regla para todas las clases de estado dentro de visualización de pasillos */
-.visualizacion-pasillo .time-slot.libre,
-.visualizacion-pasillo .time-slot.ocupado,
-.visualizacion-pasillo .time-slot.inhabilitado,
-.visualizacion-pasillo .time-slot.mantencion,
-.visualizacion-pasillo .time-slot.limpieza,
-.visualizacion-pasillo .time-slot.desconocido {
-  border-radius: 8px !important;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-
-/* -------- OVERRIDE COMPLETO DEL MODAL PARA VISUALIZACIÓN PASILLO -------- */
-/* Estos estilos replican exactamente los de visualizacionGeneral.css */
-body .modal#detalleModal .modal-content,
-.visualizacion-pasillo .modal .modal-content,
-div.modal-dialog .modal-content {
-  border-radius: 10px !important;
-  border: none !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
-  overflow: hidden !important;
-}
-
-body .modal#detalleModal .modal-header,
-.visualizacion-pasillo .modal .modal-header,
-div.modal-dialog .modal-header {
-  background-color: #f8f9fa !important;
-  border-bottom: 1px solid #dee2e6 !important;
-  border-radius: 10px 10px 0 0 !important;
-  padding: 1rem 1.5rem !important;
-}
-
-body .modal#detalleModal .modal-title,
-.visualizacion-pasillo .modal .modal-title,
-div.modal-dialog .modal-title {
-  color: #495057 !important;
-  font-weight: 600 !important;
-  font-size: 1.25rem !important;
-}
-
-body .modal#detalleModal .modal-body,
-.visualizacion-pasillo .modal .modal-body,
-div.modal-dialog .modal-body {
-  padding: 20px !important;
-  background: white !important;
-}
-
-body .modal#detalleModal .btn-close,
-.visualizacion-pasillo .modal .btn-close,
-div.modal-dialog .btn-close {
-  filter: none !important;
-  opacity: 0.5 !important;
-}
-
-body .modal#detalleModal .btn-close:hover,
-.visualizacion-pasillo .modal .btn-close:hover,
-div.modal-dialog .btn-close:hover {
-  opacity: 0.75 !important;
-}
-
-body .modal#detalleModal .alert,
-.visualizacion-pasillo .modal .alert,
-div.modal-dialog .alert {
-  border-radius: 10px !important;
-  border: none !important;
-  margin-bottom: 0 !important;
-  padding: 1rem !important;
-}
-
-body .modal#detalleModal .alert-success,
-.visualizacion-pasillo .modal .alert-success,
-div.modal-dialog .alert-success {
-  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%) !important;
-  color: #155724 !important;
-  border: none !important;
-}
-
-body .modal#detalleModal .alert-warning,
-.visualizacion-pasillo .modal .alert-warning,
-div.modal-dialog .alert-warning {
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
-  color: #721c24 !important;
-  border: none !important;
 }
