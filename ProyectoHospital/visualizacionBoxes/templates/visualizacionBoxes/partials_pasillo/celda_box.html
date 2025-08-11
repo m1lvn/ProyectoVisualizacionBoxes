@@ -12,7 +12,9 @@
     data-box="{{ box.idbox }}" 
     data-hora="{{ hora }}"
     data-estado="{{ estado }}"
-    title="Box {{ box.idbox }} - {{ hora }} - {{ estado }}">
+    onclick="mostrarDetalle('{{ box.idbox }}', {% if estado == 'Disponible' %}true{% else %}false{% endif %})"
+    style="cursor: pointer;"
+    title="Box {{ box.idbox }} - {{ hora }} - {{ estado }} - Click para ver detalles">
   
   <!-- Contenido según estado -->
   {% if estado == 'Reservado' %}

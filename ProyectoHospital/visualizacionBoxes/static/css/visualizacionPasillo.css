@@ -218,19 +218,48 @@
 /* ========================================================================== */
 /* 9. HORA ACTUAL                                                             */
 /* ========================================================================== */
-.fila-horario[data-hora="12:00"] {
+.fila-horario.hora-actual {
   border-left: 4px solid var(--color-hora-actual);
-  background-color: rgba(220, 53, 69, 0.05);
+  background-color: rgba(220, 53, 69, 0.08);
+}
+
+.fila-horario.hora-actual .celda-hora {
+  background-color: rgba(220, 53, 69, 0.15);
+  font-weight: bold;
+  color: var(--color-hora-actual);
 }
 
 #linea-hora-actual {
   position: absolute;
   left: 0;
   right: 0;
-  height: 2px;
+  height: 3px;
   background-color: var(--color-hora-actual);
   z-index: 20;
   box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+  pointer-events: none;
+  transition: top 0.3s ease-in-out;
+}
+
+/* Efecto de pulso para la línea */
+#linea-hora-actual::before {
+  content: '';
+  position: absolute;
+  left: -5px;
+  top: -2px;
+  width: calc(100% + 10px);
+  height: 7px;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(220, 53, 69, 0.3), 
+    transparent
+  );
+  animation: pulse-line 2s ease-in-out infinite;
+}
+
+@keyframes pulse-line {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 /* ========================================================================== */

@@ -46,6 +46,7 @@ const PasilloVisualizador = {
     state: {
         initialized: false,
         intervalId: null,
+        timeLineIntervalId: null,
         currentDate: null,
         currentTime: null,
         modalInstance: null,
@@ -354,16 +355,14 @@ const PasilloVisualizador = {
             throw new Error('URL de detalle no configurada');
         }
 
-        const url = new URL(this.urls.detalleBox, window.location.origin);
-        Object.keys(boxData).forEach(key => {
-            url.searchParams.append(key, boxData[key]);
-        });
+        // Usar el mismo formato que la visualización general
+        const url = `${this.urls.detalleBox}?box_id=${boxData.box}&fecha=${boxData.fecha}`;
 
         const response = await fetch(url, {
             method: 'GET',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'text/html,application/json'
+                'Accept': 'application/json'
             }
         });
 
@@ -371,7 +370,14 @@ const PasilloVisualizador = {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
 
-        return await response.text();
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+
+        // Generar el contenido HTML usando la misma función que visualización general
+        return this._generarContenidoModal(data, boxData.fecha);
     },
 
     /**
@@ -389,6 +395,48 @@ const PasilloVisualizador = {
                 <p class="mt-2 text-muted">Cargando detalles del box...</p>
             </div>
         `;
+    },
+
+    /**
+     * Genera el contenido HTML del modal con la información del box (igual que visualización general)
+     * @param {Object} data - Datos del box y agenda
+     * @param {string} fecha - Fecha actual
+     * @returns {string} HTML del contenido del modal
+     * @private
+     */
+    _generarContenidoModal(data, fecha) {
+        let contenido = `
+            <div class="row">
+                <div class="col-12">
+                    <h6><strong>Box ${data.box.id}</strong></h6>
+                    <p><strong>Pasillo:</strong> ${data.box.pasillo}</p>
+                    <p><strong>Capacidad:</strong> ${data.box.capacidad || 'No especificada'}</p>
+                    <p><strong>Fecha:</strong> ${fecha}</p>
+                    <p><strong>Estado actual:</strong> ${new Date().toLocaleTimeString()}</p>
+                    <hr>
+        `;
+        
+        if (data.disponible) {
+            contenido += `
+                <div class="alert alert-success">
+                    <h6><i class="bi bi-check-circle"></i> Box Disponible</h6>
+                    <p>Este box está libre en este momento.</p>
+                </div>
+            `;
+        } else {
+            contenido += `
+                <div class="alert alert-warning">
+                    <h6><i class="bi bi-clock"></i> Box Ocupado</h6>
+                    <p><strong>Profesional:</strong> ${data.agenda.profesional}</p>
+                    <p><strong>Especialidad:</strong> ${data.agenda.especialidad}</p>
+                    <p><strong>Tipo de Agenda:</strong> ${data.agenda.tipo_agenda}</p>
+                    <p><strong>Horario:</strong> ${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</p>
+                </div>
+            `;
+        }
+        
+        contenido += `</div></div>`;
+        return contenido;
     },
 
     /**
@@ -521,13 +569,141 @@ const PasilloVisualizador = {
      * @private
      */
     _highlightCurrentTime() {
-        if (!this.state.currentTime) return;
+        try {
+            // Limpiar marcadores anteriores
+            document.querySelectorAll('.hora-actual').forEach(el => {
+                el.classList.remove('hora-actual');
+            });
+            
+            // Remover línea anterior si existe
+            const lineaAnterior = document.getElementById('linea-hora-actual');
+            if (lineaAnterior) {
+                lineaAnterior.remove();
+            }
 
-        // Buscar fila de la hora actual
-        const currentTimeRow = document.querySelector(`[data-hora="${this.state.currentTime}"]`);
-        if (currentTimeRow) {
-            currentTimeRow.classList.add('hora-actual');
+            // Obtener hora actual
+            const now = new Date();
+            const horaActual = now.getHours().toString().padStart(2, '0') + ':' + 
+                             now.getMinutes().toString().padStart(2, '0');
+            
+            // Buscar la tabla de boxes
+            const tabla = document.querySelector('.table-boxes');
+            if (!tabla) {
+                this.log('Tabla de boxes no encontrada');
+                return;
+            }
+
+            // Buscar todas las filas de horario
+            const filasHorario = tabla.querySelectorAll('.fila-horario');
+            if (filasHorario.length === 0) {
+                this.log('No se encontraron filas de horario');
+                return;
+            }
+
+            // Encontrar la posición de inserción para la línea
+            let filaAnterior = null;
+            let filaSiguiente = null;
+            let posicionExacta = false;
+
+            for (let i = 0; i < filasHorario.length; i++) {
+                const fila = filasHorario[i];
+                const horaFila = fila.dataset.hora;
+                
+                if (horaFila === horaActual) {
+                    // Hora exacta encontrada
+                    fila.classList.add('hora-actual');
+                    posicionExacta = true;
+                    this._crearLineaHoraActual(fila, 0);
+                    break;
+                } else if (horaFila < horaActual) {
+                    filaAnterior = fila;
+                } else if (horaFila > horaActual && !filaSiguiente) {
+                    filaSiguiente = fila;
+                    break;
+                }
+            }
+
+            // Si no hay hora exacta, calcular posición entre dos horas
+            if (!posicionExacta && filaAnterior && filaSiguiente) {
+                const porcentaje = this._calcularPorcentajeEntreHoras(
+                    filaAnterior.dataset.hora, 
+                    filaSiguiente.dataset.hora, 
+                    horaActual
+                );
+                this._crearLineaHoraActual(filaAnterior, porcentaje);
+            } else if (!posicionExacta && filaAnterior) {
+                // Hora actual está después de la última hora mostrada
+                this._crearLineaHoraActual(filaAnterior, 100);
+            }
+
+            this.log(`Hora actual resaltada: ${horaActual}`);
+
+        } catch (error) {
+            this.error('Error al resaltar hora actual:', error);
         }
+    },
+
+    /**
+     * Crea la línea roja de hora actual
+     * @param {HTMLElement} filaReferencia - Fila de referencia
+     * @param {number} porcentaje - Porcentaje de offset (0-100)
+     * @private
+     */
+    _crearLineaHoraActual(filaReferencia, porcentaje) {
+        const contenedorTabla = document.querySelector('.contenedor-tabla');
+        if (!contenedorTabla) return;
+
+        // Crear la línea
+        const linea = document.createElement('div');
+        linea.id = 'linea-hora-actual';
+        linea.style.position = 'absolute';
+        linea.style.left = '0';
+        linea.style.right = '0';
+        linea.style.height = '3px';
+        linea.style.backgroundColor = 'var(--color-hora-actual, #dc3545)';
+        linea.style.zIndex = '20';
+        linea.style.boxShadow = '0 0 10px rgba(220, 53, 69, 0.5)';
+        linea.style.pointerEvents = 'none';
+
+        // Calcular posición
+        const rectFila = filaReferencia.getBoundingClientRect();
+        const rectContenedor = contenedorTabla.getBoundingClientRect();
+        
+        const alturaFila = rectFila.height;
+        const offsetTop = rectFila.top - rectContenedor.top + contenedorTabla.scrollTop;
+        const posicionFinal = offsetTop + (alturaFila * porcentaje / 100);
+
+        linea.style.top = `${posicionFinal}px`;
+
+        // Insertar la línea
+        contenedorTabla.style.position = 'relative';
+        contenedorTabla.appendChild(linea);
+
+        this.log(`Línea de hora actual creada en posición: ${posicionFinal}px`);
+    },
+
+    /**
+     * Calcula el porcentaje entre dos horas donde se encuentra la hora actual
+     * @param {string} horaAnterior - Hora anterior (HH:MM)
+     * @param {string} horaSiguiente - Hora siguiente (HH:MM)
+     * @param {string} horaActual - Hora actual (HH:MM)
+     * @returns {number} Porcentaje (0-100)
+     * @private
+     */
+    _calcularPorcentajeEntreHoras(horaAnterior, horaSiguiente, horaActual) {
+        const parseHora = (hora) => {
+            const [h, m] = hora.split(':').map(Number);
+            return h * 60 + m; // Convertir a minutos
+        };
+
+        const minutosAnterior = parseHora(horaAnterior);
+        const minutosSiguiente = parseHora(horaSiguiente);
+        const minutosActual = parseHora(horaActual);
+
+        const totalMinutos = minutosSiguiente - minutosAnterior;
+        const minutosTranscurridos = minutosActual - minutosAnterior;
+
+        return (minutosTranscurridos / totalMinutos) * 100;
     },
 
     /**
@@ -557,12 +733,22 @@ const PasilloVisualizador = {
         if (this.state.intervalId) {
             clearInterval(this.state.intervalId);
         }
+        if (this.state.timeLineIntervalId) {
+            clearInterval(this.state.timeLineIntervalId);
+        }
 
+        // Actualización general (contadores, etc.)
         this.state.intervalId = setInterval(() => {
             this._performAutoUpdate();
         }, this.config.UPDATE_INTERVAL);
 
+        // Actualización más frecuente para la línea de hora (cada minuto)
+        this.state.timeLineIntervalId = setInterval(() => {
+            this._highlightCurrentTime();
+        }, 60000); // 60 segundos
+
         this.log(`Actualización automática iniciada cada ${this.config.UPDATE_INTERVAL}ms`);
+        this.log('Actualización de línea de hora cada 60 segundos');
     },
 
     /**
@@ -575,6 +761,7 @@ const PasilloVisualizador = {
 
         this.log('Realizando actualización automática...');
         this._updateCounters();
+        this._highlightCurrentTime(); // Actualizar línea de hora actual
     },
 
     // ========================================================================
@@ -589,6 +776,11 @@ const PasilloVisualizador = {
         if (this.state.intervalId) {
             clearInterval(this.state.intervalId);
             this.state.intervalId = null;
+        }
+        
+        if (this.state.timeLineIntervalId) {
+            clearInterval(this.state.timeLineIntervalId);
+            this.state.timeLineIntervalId = null;
         }
 
         this.log('Recursos limpiados');
@@ -653,8 +845,378 @@ const PasilloVisualizador = {
 PasilloVisualizador.init();
 
 // ============================================================================
-// EXPOSICIÓN GLOBAL PARA DEBUGGING
+// CONFIGURACIÓN ADICIONAL DE MODALES Y HORA ACTUAL
 // ============================================================================
-if (window.pasilloConfig?.DEBUG) {
-    window.PasilloVisualizador = PasilloVisualizador;
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar eventos de cierre del modal
+    const modal = document.getElementById('detalleModal');
+    if (modal) {
+        // Limpiar backdrop al cerrar modal
+        modal.addEventListener('hidden.bs.modal', function () {
+            // Limpiar cualquier backdrop que pueda quedar
+            document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+                backdrop.remove();
+            });
+            // Restaurar el scroll del body
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+        
+        // Manejar click en backdrop
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) {
+                cerrarModal();
+            }
+        });
+        
+        // Manejar tecla Escape
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && modal.classList.contains('show')) {
+                cerrarModal();
+            }
+        });
+    }
+    
+    // Ejecutar línea de hora actual después de un breve delay para asegurar que el DOM esté completamente cargado
+    setTimeout(() => {
+        if (window.PasilloVisualizador) {
+            window.PasilloVisualizador._highlightCurrentTime();
+        }
+    }, 500);
+});
+
+// ============================================================================
+// EXPOSICIÓN GLOBAL PARA DEBUGGING Y TEMPLATES
+// ============================================================================
+// Exponer siempre PasilloVisualizador para acceso a funciones internas
+window.PasilloVisualizador = PasilloVisualizador;
+
+// Exponer funciones necesarias para los templates
+window.mostrarDetalle = mostrarDetalle;
+window.cerrarModal = cerrarModal;
+window.aplicarFiltrosPasillo = aplicarFiltrosPasillo;
+window.actualizarLineaHoraActual = actualizarLineaHoraActual;
+
+// ============================================================================
+// FUNCIONES GLOBALES PARA FILTROS (REQUERIDAS POR TEMPLATES)
+// ============================================================================
+
+/**
+ * Función global para mostrar detalle del box (compatible con templates)
+ * @param {string} boxId - ID del box
+ * @param {boolean} disponible - Estado del box
+ */
+function mostrarDetalle(boxId, disponible) {
+    // Usar la misma lógica que visualización general
+    const fecha = document.querySelector('meta[name="fecha"]')?.content || 
+                  new Date().toISOString().split('T')[0];
+    const detalleUrl = window.detalleBoxUrl || '/detalle-box/';
+    const url = `${detalleUrl}?box_id=${boxId}&fecha=${fecha}`;
+    
+    // Obtener elementos del modal
+    const modal = document.getElementById('detalleModal');
+    const modalContent = document.getElementById('modalContent');
+    
+    if (!modal || !modalContent) {
+        console.error('Modal no encontrado');
+        return;
+    }
+    
+    // Mostrar loader en modal
+    modalContent.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2 text-muted">Cargando detalles del box...</p>
+        </div>
+    `;
+    
+    // Crear instancia del modal y configurar eventos de cierre
+    let modalInstance;
+    try {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            modalInstance = bootstrap.Modal.getOrCreateInstance(modal);
+            
+            // Configurar eventos de cierre del modal
+            modal.addEventListener('hidden.bs.modal', function () {
+                // Limpiar backdrop manualmente si queda
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
+                // Restaurar el scroll del body
+                document.body.classList.remove('modal-open');
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            });
+            
+            modalInstance.show();
+        } else {
+            // Fallback si Bootstrap no está disponible
+            modal.style.display = 'block';
+            modal.classList.add('show');
+            document.body.classList.add('modal-open');
+        }
+    } catch (error) {
+        console.error('Error al mostrar modal:', error);
+        return;
+    }
+    
+    // Cargar datos
+    fetch(url)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                throw new Error('Error al cargar detalles: ' + data.error);
+            }
+            
+            const contenido = _generarContenidoModalGlobal(data, fecha);
+            modalContent.innerHTML = contenido;
+        })
+        .catch(error => {
+            console.error('Error en la petición:', error);
+            modalContent.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6><i class="bi bi-exclamation-triangle"></i> Error</h6>
+                    <p>No se pudieron cargar los detalles del box.</p>
+                    <small>${error.message}</small>
+                </div>
+            `;
+        });
+}
+
+/**
+ * Función auxiliar para generar contenido del modal (versión global)
+ * @param {Object} data - Datos del box y agenda
+ * @param {string} fecha - Fecha actual
+ * @returns {string} HTML del contenido del modal
+ * @private
+ */
+function _generarContenidoModalGlobal(data, fecha) {
+    let contenido = `
+        <div class="row">
+            <div class="col-12">
+                <h6><strong>Box ${data.box.id}</strong></h6>
+                <p><strong>Pasillo:</strong> ${data.box.pasillo}</p>
+                <p><strong>Capacidad:</strong> ${data.box.capacidad || 'No especificada'}</p>
+                <p><strong>Fecha:</strong> ${fecha}</p>
+                <p><strong>Estado actual:</strong> ${new Date().toLocaleTimeString()}</p>
+                <hr>
+    `;
+    
+    if (data.disponible) {
+        contenido += `
+            <div class="alert alert-success">
+                <h6><i class="bi bi-check-circle"></i> Box Disponible</h6>
+                <p>Este box está libre en este momento.</p>
+            </div>
+        `;
+    } else {
+        contenido += `
+            <div class="alert alert-warning">
+                <h6><i class="bi bi-clock"></i> Box Ocupado</h6>
+                <p><strong>Profesional:</strong> ${data.agenda.profesional}</p>
+                <p><strong>Especialidad:</strong> ${data.agenda.especialidad}</p>
+                <p><strong>Tipo de Agenda:</strong> ${data.agenda.tipo_agenda}</p>
+                <p><strong>Horario:</strong> ${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</p>
+            </div>
+        `;
+    }
+    
+    contenido += `</div></div>`;
+    return contenido;
+}
+
+/**
+ * Función para cerrar el modal manualmente
+ */
+function cerrarModal() {
+    const modal = document.getElementById('detalleModal');
+    if (!modal) return;
+    
+    try {
+        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+            const modalInstance = bootstrap.Modal.getInstance(modal);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+        } else {
+            // Fallback manual
+            modal.style.display = 'none';
+            modal.classList.remove('show');
+            document.body.classList.remove('modal-open');
+        }
+        
+        // Limpiar backdrop manualmente
+        const backdrop = document.querySelector('.modal-backdrop');
+        if (backdrop) {
+            backdrop.remove();
+        }
+        
+        // Restaurar el scroll del body
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+    } catch (error) {
+        console.error('Error al cerrar modal:', error);
+        // Forzar limpieza manual
+        modal.style.display = 'none';
+        modal.classList.remove('show');
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+        
+        // Limpiar todos los backdrops
+        document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
+            backdrop.remove();
+        });
+    }
+}
+
+/**
+ * Función global para actualizar la línea de hora actual manualmente
+ */
+function actualizarLineaHoraActual() {
+    if (window.PasilloVisualizador) {
+        window.PasilloVisualizador._highlightCurrentTime();
+    }
+}
+
+/**
+ * Aplica los filtros seleccionados y recarga la página
+ */
+function aplicarFiltrosPasillo() {
+    const filtros = _obtenerFiltrosActivosPasillo();
+    const url = _construirUrlConFiltrosPasillo(filtros);
+    window.location.href = url;
+}
+
+/**
+ * Busca boxes por nombre de médico
+ */
+function buscarPorMedicoPasillo() {
+    const nombreMedico = document.getElementById('nombreMedico')?.value?.trim();
+    if (nombreMedico) {
+        const url = new URL(window.location);
+        url.searchParams.set('medico', nombreMedico);
+        url.searchParams.delete('page'); // Reset pagination
+        window.location.href = url.toString();
+    }
+}
+
+/**
+ * Limpia la búsqueda de médico
+ */
+function limpiarBusquedaMedicoPasillo() {
+    const url = new URL(window.location);
+    url.searchParams.delete('medico');
+    url.searchParams.delete('page');
+    window.location.href = url.toString();
+}
+
+/**
+ * Busca boxes por código de box
+ */
+function buscarPorBoxPasillo() {
+    const codigoBox = document.getElementById('codigoBox')?.value?.trim();
+    if (codigoBox) {
+        const url = new URL(window.location);
+        url.searchParams.set('box', codigoBox);
+        url.searchParams.delete('page'); // Reset pagination
+        window.location.href = url.toString();
+    }
+}
+
+/**
+ * Limpia la búsqueda de box
+ */
+function limpiarBusquedaBoxPasillo() {
+    const url = new URL(window.location);
+    url.searchParams.delete('box');
+    url.searchParams.delete('page');
+    window.location.href = url.toString();
+}
+
+/**
+ * Remueve un filtro específico
+ * @param {string} tipoFiltro - Tipo de filtro a remover ('pasillo', 'medico', 'box')
+ */
+function removerFiltroPasillo(tipoFiltro) {
+    const url = new URL(window.location);
+    
+    switch(tipoFiltro) {
+        case 'pasillo':
+            url.searchParams.delete('pasillo');
+            break;
+        case 'medico':
+            url.searchParams.delete('medico');
+            break;
+        case 'box':
+            url.searchParams.delete('box');
+            break;
+    }
+    
+    url.searchParams.delete('page'); // Reset pagination
+    window.location.href = url.toString();
+}
+
+/**
+ * Limpia todos los filtros activos excepto la fecha
+ */
+function limpiarTodosFiltrosPasillo() {
+    const url = new URL(window.location);
+    const fecha = url.searchParams.get('fecha'); // Preservar la fecha
+    
+    // Limpiar todos los parámetros excepto fecha
+    url.search = '';
+    if (fecha) {
+        url.searchParams.set('fecha', fecha);
+    }
+    
+    window.location.href = url.toString();
+}
+
+// ============================================================================
+// FUNCIONES AUXILIARES PARA FILTROS
+// ============================================================================
+
+/**
+ * Obtiene los filtros activos del formulario
+ * @returns {Object} Objeto con los filtros activos
+ * @private
+ */
+function _obtenerFiltrosActivosPasillo() {
+    const fecha = document.getElementById('fecha')?.value || '';
+    const pasillo = document.getElementById('pasillo')?.value || '';
+    const jornada = document.getElementById('jornada')?.value || '';
+    const nombreMedico = document.getElementById('nombreMedico')?.value || '';
+    const codigoBox = document.getElementById('codigoBox')?.value || '';
+    
+    return { fecha, pasillo, jornada, medico: nombreMedico, box: codigoBox };
+}
+
+/**
+ * Construye la URL con los filtros aplicados
+ * @param {Object} filtros - Objeto con los filtros
+ * @returns {string} URL construida
+ * @private
+ */
+function _construirUrlConFiltrosPasillo(filtros) {
+    const url = new URL(window.location.origin + window.location.pathname);
+    
+    // Agregar filtros no vacíos
+    Object.keys(filtros).forEach(key => {
+        if (filtros[key]) {
+            url.searchParams.set(key, filtros[key]);
+        }
+    });
+    
+    return url.toString();
 }
