@@ -9,7 +9,7 @@ const CONFIG_GENERAL = {
     UPDATE_INTERVAL: 30000, // Actualización automática cada 30 segundos
     BOXES_POR_PAGINA: 40,   // Boxes por página para paginación
     DEBUG: false,           // Debug deshabilitado en producción
-    DATE_FORMAT: "Y-m-d",
+    DATE_FORMAT: "dd/mm/yyyy",
     LOCALE: "es"
 };
 
@@ -110,10 +110,10 @@ function _construirUrlDetalle(boxId, fecha) {
 function _obtenerFiltrosActivos() {
     const fecha = document.getElementById('fecha')?.value || '';
     const pasillo = document.getElementById('pasillo')?.value || '';
-    const nombreMedico = document.getElementById('nombreMedico')?.value || '';
+    const nombreProfesional = document.getElementById('nombreProfesional')?.value || '';
     const codigoBox = document.getElementById('codigoBox')?.value || '';
     
-    return { fecha, pasillo, medico: nombreMedico, box: codigoBox };
+    return { fecha, pasillo, medico: nombreProfesional, box: codigoBox };
 }
 
 /**
@@ -351,20 +351,20 @@ function paginaSiguiente() {
 // ============================================================================
 
 /**
- * Busca por nombre de médico con autocompletado
+ * Busca por nombre de profesional con autocompletado
  */
-function buscarPorMedico() {
-    const nombreMedico = document.getElementById('nombreMedico')?.value.trim();
+function buscarPorProfesional() {
+    const nombreProfesional = document.getElementById('nombreProfesional')?.value.trim();
     
-    if (!nombreMedico) {
-        _mostrarError('Por favor, ingrese un nombre de médico válido');
+    if (!nombreProfesional) {
+        _mostrarError('Por favor, ingrese un nombre de profesional válido');
         return;
     }
     
     _mostrarLoader();
     
     const url = new URL(window.location);
-    url.searchParams.set('medico', nombreMedico);
+    url.searchParams.set('medico', nombreProfesional);
     window.location.href = url.toString();
 }
 
@@ -393,13 +393,13 @@ function buscarPorBox() {
 }
 
 /**
- * Limpia la búsqueda de médico
+ * Limpia la búsqueda de profesional
  */
-function limpiarBusquedaMedico() {
+function limpiarBusquedaProfesional() {
     const url = new URL(window.location);
     url.searchParams.delete('medico');
-    document.getElementById('nombreMedico').value = '';
-    _ocultarDropdownMedicos();
+    document.getElementById('nombreProfesional').value = '';
+    _ocultarDropdownProfesionales();
     window.location.href = url.toString();
 }
 
@@ -426,7 +426,7 @@ function removerFiltro(tipoFiltro) {
             break;
         case 'medico':
             url.searchParams.delete('medico');
-            document.getElementById('nombreMedico').value = '';
+            document.getElementById('nombreProfesional').value = '';
             break;
         case 'box':
             url.searchParams.delete('box');
@@ -467,10 +467,10 @@ document.addEventListener('DOMContentLoaded', function() {
     window.actualizarEstadoBoxes = actualizarEstadoBoxes;
     window.paginaAnterior = paginaAnterior;
     window.paginaSiguiente = paginaSiguiente;
-    window.buscarPorMedico = buscarPorMedico;
+    window.buscarPorProfesional = buscarPorProfesional;
     window.buscarPorBox = buscarPorBox;
     window.buscarPorBoxMejorado = buscarPorBoxMejorado;
-    window.limpiarBusquedaMedico = limpiarBusquedaMedico;
+    window.limpiarBusquedaProfesional = limpiarBusquedaProfesional;
     window.limpiarBusquedaBox = limpiarBusquedaBox;
     window.removerFiltro = removerFiltro;
     window.limpiarTodosFiltros = limpiarTodosFiltros;
@@ -483,8 +483,8 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(actualizarEstadoBoxes, CONFIG_GENERAL.UPDATE_INTERVAL);
     }
     
-    // Configurar autocompletado de médicos
-    configurarAutocompletadoMedicos();
+    // Configurar autocompletado de profesionales
+    configurarAutocompletadoProfesionales();
     
     console.log('🏥 Visualización General de Boxes inicializada');
 });
@@ -494,13 +494,13 @@ document.addEventListener('DOMContentLoaded', function() {
  * Configura eventos de teclado para los campos de búsqueda
  */
 function configurarEventosEnter() {
-    const nombreMedicoInput = document.getElementById('nombreMedico');
+    const nombreProfesionalInput = document.getElementById('nombreProfesional');
     const codigoBoxInput = document.getElementById('codigoBox');
     
-    if (nombreMedicoInput) {
-        nombreMedicoInput.addEventListener('keypress', function(e) {
+    if (nombreProfesionalInput) {
+        nombreProfesionalInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                buscarPorMedico();
+                buscarPorProfesional();
             }
         });
     }
@@ -515,14 +515,14 @@ function configurarEventosEnter() {
 }
 
 // ============================================================================
-// FUNCIONES DE AUTOCOMPLETADO DE MÉDICOS
+// FUNCIONES DE AUTOCOMPLETADO DE PROFESIONALES
 // ============================================================================
 
 /**
- * Configura el autocompletado para búsqueda de médicos
+ * Configura el autocompletado para búsqueda de profesionales
  */
-function configurarAutocompletadoMedicos() {
-    const input = document.getElementById('nombreMedico');
+function configurarAutocompletadoProfesionales() {
+    const input = document.getElementById('nombreProfesional');
     if (!input) return;
     
     let timeoutId;
@@ -532,19 +532,19 @@ function configurarAutocompletadoMedicos() {
         const termino = e.target.value.trim();
         
         if (termino.length < 2) {
-            _ocultarDropdownMedicos();
+            _ocultarDropdownProfesionales();
             return;
         }
         
         // Debounce de 300ms para evitar muchas peticiones
         timeoutId = setTimeout(() => {
-            _buscarMedicos(termino);
+            _buscarProfesionales(termino);
         }, 300);
     });
     
     // Ocultar dropdown al perder foco
     input.addEventListener('blur', function() {
-        setTimeout(_ocultarDropdownMedicos, 200);
+        setTimeout(_ocultarDropdownProfesionales, 200);
     });
     
     // Manejar navegación con teclado
@@ -554,54 +554,54 @@ function configurarAutocompletadoMedicos() {
 }
 
 /**
- * Busca médicos por nombre mediante AJAX
+ * Busca profesionales por nombre mediante AJAX
  * @param {string} termino - Término de búsqueda
  * @private
  */
-function _buscarMedicos(termino) {
-    if (!window.medicosUrls || !window.medicosUrls.buscar_medicos) {
-        console.error('URL de búsqueda de médicos no configurada');
+function _buscarProfesionales(termino) {
+    if (!window.profesionalesUrls || !window.profesionalesUrls.buscar_medicos) {
+        console.error('URL de búsqueda de profesionales no configurada');
         return;
     }
     
-    const url = `${window.medicosUrls.buscar_medicos}?q=${encodeURIComponent(termino)}`;
+    const url = `${window.profesionalesUrls.buscar_medicos}?q=${encodeURIComponent(termino)}`;
     
     fetch(url)
         .then(response => response.json())
         .then(data => {
-            _mostrarDropdownMedicos(data.medicos);
+            _mostrarDropdownProfesionales(data.medicos);
         })
         .catch(error => {
-            console.error('Error al buscar médicos:', error);
-            _ocultarDropdownMedicos();
+            console.error('Error al buscar profesionales:', error);
+            _ocultarDropdownProfesionales();
         });
 }
 
 /**
- * Muestra el dropdown con las sugerencias de médicos
- * @param {Array} medicos - Lista de médicos encontrados
+ * Muestra el dropdown con las sugerencias de profesionales
+ * @param {Array} profesionales - Lista de profesionales encontrados
  * @private
  */
-function _mostrarDropdownMedicos(medicos) {
-    const dropdown = document.getElementById('medicosDropdown');
-    if (!dropdown || !medicos.length) {
-        _ocultarDropdownMedicos();
+function _mostrarDropdownProfesionales(profesionales) {
+    const dropdown = document.getElementById('profesionalesDropdown');
+    if (!dropdown || !profesionales.length) {
+        _ocultarDropdownProfesionales();
         return;
     }
     
     dropdown.innerHTML = '';
     
-    medicos.forEach((medico, index) => {
+    profesionales.forEach((profesional, index) => {
         const option = document.createElement('div');
-        option.className = 'medico-option';
+        option.className = 'profesional-option';
         option.dataset.index = index;
         option.innerHTML = `
-            <div class="medico-nombre">${medico.nombre}</div>
-            <div class="medico-especialidad">${medico.especialidad}</div>
+            <div class="profesional-nombre">${profesional.nombre}</div>
+            <div class="profesional-especialidad">${profesional.especialidad}</div>
         `;
         
         option.addEventListener('click', () => {
-            _seleccionarMedico(medico.nombre);
+            _seleccionarProfesional(profesional.nombre);
         });
         
         dropdown.appendChild(option);
@@ -611,11 +611,11 @@ function _mostrarDropdownMedicos(medicos) {
 }
 
 /**
- * Oculta el dropdown de médicos
+ * Oculta el dropdown de profesionales
  * @private
  */
-function _ocultarDropdownMedicos() {
-    const dropdown = document.getElementById('medicosDropdown');
+function _ocultarDropdownProfesionales() {
+    const dropdown = document.getElementById('profesionalesDropdown');
     if (dropdown) {
         dropdown.style.display = 'none';
         dropdown.innerHTML = '';
@@ -623,16 +623,16 @@ function _ocultarDropdownMedicos() {
 }
 
 /**
- * Selecciona un médico del dropdown
- * @param {string} nombreMedico - Nombre del médico seleccionado
+ * Selecciona un profesional del dropdown
+ * @param {string} nombreProfesional - Nombre del profesional seleccionado
  * @private
  */
-function _seleccionarMedico(nombreMedico) {
-    const input = document.getElementById('nombreMedico');
+function _seleccionarProfesional(nombreProfesional) {
+    const input = document.getElementById('nombreProfesional');
     if (input) {
-        input.value = nombreMedico;
-        _ocultarDropdownMedicos();
-        buscarPorMedico();
+        input.value = nombreProfesional;
+        _ocultarDropdownProfesionales();
+        buscarPorProfesional();
     }
 }
 

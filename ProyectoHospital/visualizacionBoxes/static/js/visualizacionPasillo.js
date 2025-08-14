@@ -1099,7 +1099,7 @@ function aplicarFiltrosPasillo() {
 }
 
 /**
- * Busca boxes por nombre de médico
+ * Busca boxes por nombre de profesional
  */
 function buscarPorMedicoPasillo() {
     const nombreMedico = document.getElementById('nombreMedico')?.value?.trim();
@@ -1112,7 +1112,7 @@ function buscarPorMedicoPasillo() {
 }
 
 /**
- * Limpia la búsqueda de médico
+ * Limpia la búsqueda de profesional
  */
 function limpiarBusquedaMedicoPasillo() {
     const url = new URL(window.location);

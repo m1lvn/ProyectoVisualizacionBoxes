@@ -371,14 +371,14 @@
 }
 
 /* ============================================================================
- * DROPDOWN DE AUTOCOMPLETADO PARA MÉDICOS
+ * DROPDOWN DE AUTOCOMPLETADO PARA PROFESIONALES
  * ============================================================================ */
 
 .search-input-group {
     position: relative;
 }
 
-.medicos-dropdown {
+.profesionales-dropdown {
     position: absolute;
     top: 100%;
     left: 0;
@@ -393,50 +393,50 @@
     z-index: 1000;
 }
 
-.medico-option {
+.profesional-option {
     padding: 10px 12px;
     cursor: pointer;
     border-bottom: 1px solid #f1f1f1;
     transition: background-color 0.2s ease;
 }
 
-.medico-option:last-child {
+.profesional-option:last-child {
     border-bottom: none;
 }
 
-.medico-option:hover {
+.profesional-option:hover {
     background-color: #f8f9fa;
 }
 
-.medico-option.selected {
+.profesional-option.selected {
     background-color: #e7f3ff;
 }
 
-.medico-nombre {
+.profesional-nombre {
     font-weight: 500;
     color: #333;
     font-size: 14px;
 }
 
-.medico-especialidad {
+.profesional-especialidad {
     font-size: 12px;
     color: #666;
     margin-top: 2px;
 }
 
-.medicos-dropdown::-webkit-scrollbar {
+.profesionales-dropdown::-webkit-scrollbar {
     width: 6px;
 }
 
-.medicos-dropdown::-webkit-scrollbar-track {
+.profesionales-dropdown::-webkit-scrollbar-track {
     background: #f1f1f1;
 }
 
-.medicos-dropdown::-webkit-scrollbar-thumb {
+.profesionales-dropdown::-webkit-scrollbar-thumb {
     background: #c1c1c1;
     border-radius: 3px;
 }
 
-.medicos-dropdown::-webkit-scrollbar-thumb:hover {
+.profesionales-dropdown::-webkit-scrollbar-thumb:hover {
     background: #a1a1a1;
 }

@@ -351,13 +351,13 @@ function paginaSiguiente() {
 // ============================================================================
 
 /**
- * Busca por nombre de médico con autocompletado
+ * Busca por nombre de profesional con autocompletado
  */
 function buscarPorMedico() {
     const nombreMedico = document.getElementById('nombreMedico')?.value.trim();
     
     if (!nombreMedico) {
-        _mostrarError('Por favor, ingrese un nombre de médico válido');
+        _mostrarError('Por favor, ingrese un nombre de profesional válido');
         return;
     }
     
@@ -393,7 +393,7 @@ function buscarPorBox() {
 }
 
 /**
- * Limpia la búsqueda de médico
+ * Limpia la búsqueda de profesional
  */
 function limpiarBusquedaMedico() {
     const url = new URL(window.location);

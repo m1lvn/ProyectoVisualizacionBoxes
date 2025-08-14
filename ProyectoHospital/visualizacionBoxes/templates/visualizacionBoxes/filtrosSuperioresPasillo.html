@@ -45,25 +45,25 @@
         <i class="bi bi-calendar3 dropdown-icon" aria-hidden="true"></i>
       </div>
 
-      <!-- Búsqueda por Nombre Médico -->
+      <!-- Búsqueda por Nombre Profesional -->
       <div class="search-input-group">
-        <label for="nombreMedico" class="visually-hidden">Buscar por nombre médico</label>
-        <input type="text" class="form-control search-input" placeholder="Nombre Médico..." 
+        <label for="nombreMedico" class="visually-hidden">Buscar por nombre profesional</label>
+        <input type="text" class="form-control search-input" placeholder="Nombre Profesional..." 
                id="nombreMedico" value="{{ nombre_medico|default:'' }}" 
                onkeypress="if(event.key==='Enter') buscarPorMedicoPasillo()" 
-               aria-label="Buscar por nombre médico"
+               aria-label="Buscar por nombre profesional"
                autocomplete="off">
         <button class="btn-search-inline" type="button" onclick="buscarPorMedicoPasillo()" 
-                title="Buscar médico" aria-label="Buscar médico">
+                title="Buscar profesional" aria-label="Buscar profesional">
           <i class="bi bi-search" aria-hidden="true"></i>
         </button>
         {% if nombre_medico %}
         <button class="btn-clear-inline" type="button" onclick="limpiarBusquedaMedicoPasillo()" 
-                title="Limpiar búsqueda" aria-label="Limpiar búsqueda de médico">
+                title="Limpiar búsqueda" aria-label="Limpiar búsqueda de profesional">
           <i class="bi bi-x-lg" aria-hidden="true"></i>
         </button>
         {% endif %}
-        <!-- Dropdown para sugerencias de médicos -->
+        <!-- Dropdown para sugerencias de profesionales -->
         <div id="medicosDropdownPasillo" class="medicos-dropdown" style="display: none;"></div>
       </div>
 
@@ -145,7 +145,7 @@
     {% endif %}
     {% if nombre_medico %}
     <span class="filtro-activo-badge">
-      Médico: {{ nombre_medico }}
+      Profesional: {{ nombre_medico }}
       <button type="button" class="btn-remove-filter" onclick="removerFiltroPasillo('medico')">×</button>
     </span>
     {% endif %}
