@@ -180,8 +180,13 @@ const PasilloVisualizador = {
      * @private
      */
     _setupBoxClickEvents() {
+        console.log('Configurando eventos para', this.dom.timeSlots.length, 'time slots');
+        
         this.dom.timeSlots.forEach(timeSlot => {
             timeSlot.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                console.log('Click detectado en time-slot:', timeSlot.dataset);
                 this._handleBoxClick(event.currentTarget);
             });
 
@@ -266,8 +271,8 @@ const PasilloVisualizador = {
                 return;
             }
 
+            console.log('Box clickeado con datos:', boxData);
             this.state.lastClickedBox = boxData;
-            this.log('Box clickeado:', boxData);
 
             // Mostrar modal con detalles
             this._showBoxDetails(boxData);
@@ -355,8 +360,11 @@ const PasilloVisualizador = {
             throw new Error('URL de detalle no configurada');
         }
 
-        // Usar el mismo formato que la visualización general
-        const url = `${this.urls.detalleBox}?box_id=${boxData.box}&fecha=${boxData.fecha}`;
+        // Incluir la hora específica del bloque clickeado
+        const url = `${this.urls.detalleBox}?box_id=${boxData.box}&fecha=${boxData.fecha}&hora=${boxData.hora}`;
+        
+        console.log('Cargando detalles con URL:', url);
+        console.log('Datos del box:', boxData);
 
         const response = await fetch(url, {
             method: 'GET',
@@ -376,8 +384,10 @@ const PasilloVisualizador = {
             throw new Error(data.error);
         }
 
-        // Generar el contenido HTML usando la misma función que visualización general
-        return this._generarContenidoModal(data, boxData.fecha);
+        console.log('Respuesta del servidor:', data);
+
+        // Generar el contenido HTML incluyendo la hora específica
+        return this._generarContenidoModal(data, boxData.fecha, boxData.hora);
     },
 
     /**
@@ -398,13 +408,14 @@ const PasilloVisualizador = {
     },
 
     /**
-     * Genera el contenido HTML del modal con la información del box (igual que visualización general)
+     * Genera el contenido HTML del modal con la información del box
      * @param {Object} data - Datos del box y agenda
      * @param {string} fecha - Fecha actual
+     * @param {string} hora - Hora específica del bloque
      * @returns {string} HTML del contenido del modal
      * @private
      */
-    _generarContenidoModal(data, fecha) {
+    _generarContenidoModal(data, fecha, hora = null) {
         let contenido = `
             <div class="row">
                 <div class="col-12">
@@ -412,7 +423,7 @@ const PasilloVisualizador = {
                     <p><strong>Pasillo:</strong> ${data.box.pasillo}</p>
                     <p><strong>Capacidad:</strong> ${data.box.capacidad || 'No especificada'}</p>
                     <p><strong>Fecha:</strong> ${fecha}</p>
-                    <p><strong>Estado actual:</strong> ${new Date().toLocaleTimeString()}</p>
+                    ${hora ? `<p><strong>Hora consultada:</strong> ${hora}</p>` : `<p><strong>Estado actual:</strong> ${new Date().toLocaleTimeString()}</p>`}
                     <hr>
         `;
         
@@ -420,7 +431,7 @@ const PasilloVisualizador = {
             contenido += `
                 <div class="alert alert-success">
                     <h6><i class="bi bi-check-circle"></i> Box Disponible</h6>
-                    <p>Este box está libre en este momento.</p>
+                    <p>Este box está libre en ${hora ? 'la hora consultada' : 'este momento'}.</p>
                 </div>
             `;
         } else {
@@ -892,8 +903,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // Exponer siempre PasilloVisualizador para acceso a funciones internas
 window.PasilloVisualizador = PasilloVisualizador;
 
-// Exponer funciones necesarias para los templates
-window.mostrarDetalle = mostrarDetalle;
+// Exponer funciones necesarias para los templates (sin duplicados)
 window.cerrarModal = cerrarModal;
 window.aplicarFiltrosPasillo = aplicarFiltrosPasillo;
 window.actualizarLineaHoraActual = actualizarLineaHoraActual;
@@ -901,138 +911,6 @@ window.actualizarLineaHoraActual = actualizarLineaHoraActual;
 // ============================================================================
 // FUNCIONES GLOBALES PARA FILTROS (REQUERIDAS POR TEMPLATES)
 // ============================================================================
-
-/**
- * Función global para mostrar detalle del box (compatible con templates)
- * @param {string} boxId - ID del box
- * @param {boolean} disponible - Estado del box
- */
-function mostrarDetalle(boxId, disponible) {
-    // Usar la misma lógica que visualización general
-    const fecha = document.querySelector('meta[name="fecha"]')?.content || 
-                  new Date().toISOString().split('T')[0];
-    const detalleUrl = window.detalleBoxUrl || '/detalle-box/';
-    const url = `${detalleUrl}?box_id=${boxId}&fecha=${fecha}`;
-    
-    // Obtener elementos del modal
-    const modal = document.getElementById('detalleModal');
-    const modalContent = document.getElementById('modalContent');
-    
-    if (!modal || !modalContent) {
-        console.error('Modal no encontrado');
-        return;
-    }
-    
-    // Mostrar loader en modal
-    modalContent.innerHTML = `
-        <div class="text-center py-4">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-            <p class="mt-2 text-muted">Cargando detalles del box...</p>
-        </div>
-    `;
-    
-    // Crear instancia del modal y configurar eventos de cierre
-    let modalInstance;
-    try {
-        if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-            modalInstance = bootstrap.Modal.getOrCreateInstance(modal);
-            
-            // Configurar eventos de cierre del modal
-            modal.addEventListener('hidden.bs.modal', function () {
-                // Limpiar backdrop manualmente si queda
-                const backdrop = document.querySelector('.modal-backdrop');
-                if (backdrop) {
-                    backdrop.remove();
-                }
-                // Restaurar el scroll del body
-                document.body.classList.remove('modal-open');
-                document.body.style.overflow = '';
-                document.body.style.paddingRight = '';
-            });
-            
-            modalInstance.show();
-        } else {
-            // Fallback si Bootstrap no está disponible
-            modal.style.display = 'block';
-            modal.classList.add('show');
-            document.body.classList.add('modal-open');
-        }
-    } catch (error) {
-        console.error('Error al mostrar modal:', error);
-        return;
-    }
-    
-    // Cargar datos
-    fetch(url)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            if (data.error) {
-                throw new Error('Error al cargar detalles: ' + data.error);
-            }
-            
-            const contenido = _generarContenidoModalGlobal(data, fecha);
-            modalContent.innerHTML = contenido;
-        })
-        .catch(error => {
-            console.error('Error en la petición:', error);
-            modalContent.innerHTML = `
-                <div class="alert alert-danger">
-                    <h6><i class="bi bi-exclamation-triangle"></i> Error</h6>
-                    <p>No se pudieron cargar los detalles del box.</p>
-                    <small>${error.message}</small>
-                </div>
-            `;
-        });
-}
-
-/**
- * Función auxiliar para generar contenido del modal (versión global)
- * @param {Object} data - Datos del box y agenda
- * @param {string} fecha - Fecha actual
- * @returns {string} HTML del contenido del modal
- * @private
- */
-function _generarContenidoModalGlobal(data, fecha) {
-    let contenido = `
-        <div class="row">
-            <div class="col-12">
-                <h6><strong>Box ${data.box.id}</strong></h6>
-                <p><strong>Pasillo:</strong> ${data.box.pasillo}</p>
-                <p><strong>Capacidad:</strong> ${data.box.capacidad || 'No especificada'}</p>
-                <p><strong>Fecha:</strong> ${fecha}</p>
-                <p><strong>Estado actual:</strong> ${new Date().toLocaleTimeString()}</p>
-                <hr>
-    `;
-    
-    if (data.disponible) {
-        contenido += `
-            <div class="alert alert-success">
-                <h6><i class="bi bi-check-circle"></i> Box Disponible</h6>
-                <p>Este box está libre en este momento.</p>
-            </div>
-        `;
-    } else {
-        contenido += `
-            <div class="alert alert-warning">
-                <h6><i class="bi bi-clock"></i> Box Ocupado</h6>
-                <p><strong>Profesional:</strong> ${data.agenda.profesional}</p>
-                <p><strong>Especialidad:</strong> ${data.agenda.especialidad}</p>
-                <p><strong>Tipo de Agenda:</strong> ${data.agenda.tipo_agenda}</p>
-                <p><strong>Horario:</strong> ${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</p>
-            </div>
-        `;
-    }
-    
-    contenido += `</div></div>`;
-    return contenido;
-}
 
 /**
  * Función para cerrar el modal manualmente

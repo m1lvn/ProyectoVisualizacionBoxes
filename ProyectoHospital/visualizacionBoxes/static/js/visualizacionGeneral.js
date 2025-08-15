@@ -14,39 +14,10 @@ const CONFIG_GENERAL = {
 };
 
 // ============================================================================
-// FUNCIONES PRINCIPALES
+// FUNCIONES PRINCIPALES (usando sistema unificado)
 // ============================================================================
 
-/**
- * Muestra el modal con detalles de un box específico
- * @param {string} boxId - ID del box a consultar
- * @param {boolean} disponible - Estado actual del box
- */
-function mostrarDetalle(boxId, disponible) {
-    const fecha = _obtenerFechaActual();
-    const url = _construirUrlDetalle(boxId, fecha);
-    
-    _mostrarLoader();
-    
-    fetch(url)
-        .then(response => response.json())
-        .then(data => {
-            _ocultarLoader();
-            
-            if (data.error) {
-                _mostrarError('Error al cargar detalles: ' + data.error);
-                return;
-            }
-            
-            const contenido = _generarContenidoModal(data, fecha);
-            _mostrarModal(contenido);
-        })
-        .catch(error => {
-            _ocultarLoader();
-            console.error('Error en la petición:', error);
-            _mostrarError('Error de conexión al obtener los detalles del box');
-        });
-}
+// La función mostrarDetalle ahora viene del archivo boxModal.js
 
 /**
  * Aplica los filtros seleccionados y recarga la página
@@ -77,30 +48,8 @@ function actualizarEstadoBoxes() {
 }
 
 // ============================================================================
-// FUNCIONES AUXILIARES PRIVADAS
+// FUNCIONES AUXILIARES PRIVADAS (no relacionadas con modal)
 // ============================================================================
-
-/**
- * Obtiene la fecha actual en formato ISO
- * @returns {string} Fecha en formato 'YYYY-MM-DD'
- * @private
- */
-function _obtenerFechaActual() {
-    return document.querySelector('meta[name="fecha"]')?.content || 
-           new Date().toISOString().split('T')[0];
-}
-
-/**
- * Construye la URL para obtener detalles de un box
- * @param {string} boxId - ID del box
- * @param {string} fecha - Fecha en formato ISO
- * @returns {string} URL completa
- * @private
- */
-function _construirUrlDetalle(boxId, fecha) {
-    const detalleUrl = window.detalleBoxUrl || '/detalle-box/';
-    return `${detalleUrl}?box_id=${boxId}&fecha=${fecha}`;
-}
 
 /**
  * Obtiene los filtros activos del formulario
@@ -203,104 +152,6 @@ function _ocultarLoader() {
 function _mostrarError(mensaje) {
     console.error(mensaje);
     alert('Error: ' + mensaje);
-}
-
-/**
- * Genera el contenido HTML del modal con la información del box
- * @param {Object} data - Datos del box y agenda
- * @param {string} fecha - Fecha actual
- * @returns {string} HTML del contenido del modal
- * @private
- */
-function _generarContenidoModal(data, fecha) {
-    let contenido = `
-        <div class="row">
-            <div class="col-12">
-                <h6><strong>Box ${data.box.id}</strong></h6>
-                <p><strong>Pasillo:</strong> ${data.box.pasillo}</p>
-                <p><strong>Capacidad:</strong> ${data.box.capacidad || 'No especificada'}</p>
-                <p><strong>Fecha:</strong> ${fecha}</p>
-                <p><strong>Estado actual:</strong> ${new Date().toLocaleTimeString()}</p>
-                <hr>
-    `;
-    
-    if (data.disponible) {
-        contenido += `
-            <div class="alert alert-success">
-                <h6><i class="bi bi-check-circle"></i> Box Disponible</h6>
-                <p>Este box está libre en este momento.</p>
-            </div>
-        `;
-    } else {
-        contenido += `
-            <div class="alert alert-warning">
-                <h6><i class="bi bi-clock"></i> Box Ocupado</h6>
-                <p><strong>Profesional:</strong> ${data.agenda.profesional}</p>
-                <p><strong>Especialidad:</strong> ${data.agenda.especialidad}</p>
-                <p><strong>Tipo de Agenda:</strong> ${data.agenda.tipo_agenda}</p>
-                <p><strong>Horario:</strong> ${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</p>
-            </div>
-        `;
-    }
-    
-    contenido += `</div></div>`;
-    return contenido;
-}
-
-/**
- * Muestra el modal con el contenido proporcionado
- * @param {string} contenido - HTML del contenido del modal
- * @private
- */
-function _mostrarModal(contenido) {
-    let modal = document.getElementById('detalleModal');
-    
-    if (!modal) {
-        modal = _crearModal();
-        document.body.appendChild(modal);
-    }
-    
-    const modalBody = modal.querySelector('.modal-body');
-    if (modalBody) {
-        modalBody.innerHTML = contenido;
-    }
-    
-    // Mostrar modal (Bootstrap)
-    if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-        const modalInstance = new bootstrap.Modal(modal);
-        modalInstance.show();
-    } else {
-        modal.style.display = 'block';
-        modal.classList.add('show');
-    }
-}
-
-/**
- * Crea el elemento modal dinámicamente
- * @returns {HTMLElement} Elemento modal creado
- * @private
- */
-function _crearModal() {
-    const modal = document.createElement('div');
-    modal.id = 'detalleModal';
-    modal.className = 'modal fade';
-    modal.innerHTML = `
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Detalle del Box</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Contenido dinámico -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    `;
-    return modal;
 }
 
 // ============================================================================

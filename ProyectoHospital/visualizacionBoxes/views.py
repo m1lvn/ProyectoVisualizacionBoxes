@@ -161,6 +161,7 @@ def obtener_detalle_box(request):
     # ===============================
     box_id = request.GET.get('box_id')
     fecha_str = request.GET.get('fecha', datetime.now().strftime('%Y-%m-%d'))
+    hora_str = request.GET.get('hora', None)  # Hora específica del bloque clickeado
     
     if not box_id:
         return JsonResponse({'error': 'ID del box requerido'}, status=400)
@@ -170,7 +171,12 @@ def obtener_detalle_box(request):
         # PROCESAR FECHA Y HORA
         # ===============================
         fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-        hora_actual = datetime.now().time()
+        
+        # Si se proporciona una hora específica, usarla; sino usar la hora actual
+        if hora_str:
+            hora_consulta = datetime.strptime(hora_str, '%H:%M').time()
+        else:
+            hora_consulta = datetime.now().time()
         
         # ===============================
         # OBTENER BOX
@@ -178,13 +184,13 @@ def obtener_detalle_box(request):
         box = get_object_or_404(Box, idbox=box_id)
         
         # ===============================
-        # BUSCAR AGENDA ACTIVA
+        # BUSCAR AGENDA EN LA HORA ESPECÍFICA
         # ===============================
         agenda = Agenda.objects.filter(
             idbox=box,
             fecha=fecha,
-            horainicio__lte=hora_actual,
-            horafin__gt=hora_actual
+            horainicio__lte=hora_consulta,
+            horafin__gt=hora_consulta
         ).first()
         
         # ===============================

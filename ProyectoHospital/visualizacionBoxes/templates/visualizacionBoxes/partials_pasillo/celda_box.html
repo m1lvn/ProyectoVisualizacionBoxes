@@ -12,7 +12,7 @@
     data-box="{{ box.idbox }}" 
     data-hora="{{ hora }}"
     data-estado="{{ estado }}"
-    onclick="mostrarDetalle('{{ box.idbox }}', {% if estado == 'Disponible' %}true{% else %}false{% endif %})"
+    onclick="mostrarDetallePasillo('{{ box.idbox }}', '{{ hora }}')"
     style="cursor: pointer;"
     title="Box {{ box.idbox }} - {{ hora }} - {{ estado }} - Click para ver detalles">
   
