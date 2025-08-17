@@ -10,11 +10,13 @@
      {% else %}libre{% endif %}" 
     data-pasillo="{{ box.idpasillo.pasillo|lower }}" 
     data-box="{{ box.idbox }}" 
+    data-box-id="{{ box.idbox }}"
+    data-codigo-box="{{ box.idbox }}"
     data-hora="{{ hora }}"
     data-estado="{{ estado }}"
     onclick="mostrarDetallePasillo('{{ box.idbox }}', '{{ hora }}')"
     style="cursor: pointer;"
-    title="Box {{ box.idbox }} - {{ hora }} - {{ estado }} - Click para ver detalles">
+    title="Box {{ box.idbox }} - {{ hora }} - {{ estado }} - Click para ver detalles o agendar">
   
   <!-- Contenido según estado -->
   {% if estado == 'Reservado' %}

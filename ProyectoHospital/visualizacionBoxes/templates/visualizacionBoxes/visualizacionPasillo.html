@@ -9,6 +9,32 @@
   <link rel="stylesheet" href="{% static 'css/leyendaBoxes.css' %}">
   <link rel="stylesheet" href="{% static 'css/filtrosSuperioresPasillo.css' %}">
   <link rel="stylesheet" href="{% static 'css/visualizacionPasillo.css' %}">
+  <!-- Estilos para agendamiento -->
+  <style>
+    .panel-agendamiento-container {
+      position: sticky;
+      top: 20px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    
+    .contenido-principal {
+      min-height: 70vh;
+    }
+    
+    .leyenda-lateral {
+      position: sticky;
+      top: 20px;
+    }
+    
+    @media (max-width: 1200px) {
+      .panel-agendamiento-container {
+        position: relative;
+        top: 0;
+        max-height: none;
+      }
+    }
+  </style>
 {% endblock %}
 
 {% block content %}
@@ -21,33 +47,49 @@
   {% include "visualizacionBoxes/filtrosSuperioresPasillo.html" %}
 
   <div class="container-fluid mt-3 px-4 visualizacion-pasillo">
-    <div class="d-flex align-items-start gap-4">
+    <div class="row">
       
       <!-- ============================= -->
       <!-- LEYENDA LATERAL               -->
       <!-- ============================= -->
-      <aside class="leyenda-lateral" style="min-width:200px;">
-        {% include "visualizacionBoxes/leyendaBoxes.html" %}
-      </aside>
+      <div class="col-xl-2 col-lg-3 mb-3">
+        <aside class="leyenda-lateral">
+          {% include "visualizacionBoxes/leyendaBoxes.html" %}
+        </aside>
+      </div>
 
       <!-- ============================= -->
       <!-- CONTENIDO PRINCIPAL           -->
       <!-- ============================= -->
-      <main class="flex-fill">
-        {% include "visualizacionBoxes/partials_pasillo/tabla_boxes_pasillo.html" %}
-        
-        <!-- Paginación si existe -->
-        {% if is_paginated %}
-          {% include "visualizacionBoxes/partials_pasillo/paginacion_pasillo.html" %}
-        {% endif %}
-      </main>
+      <div class="col-xl-7 col-lg-6">
+        <main class="contenido-principal">
+          {% include "visualizacionBoxes/partials_pasillo/tabla_boxes_pasillo.html" %}
+          
+          <!-- Paginación si existe -->
+          {% if is_paginated %}
+            {% include "visualizacionBoxes/partials_pasillo/paginacion_pasillo.html" %}
+          {% endif %}
+        </main>
+      </div>
 
       <!-- ============================= -->
-      <!-- PANEL DE INFORMACIÓN          -->
+      <!-- PANEL DE AGENDAMIENTO         -->
       <!-- ============================= -->
-      <aside class="info-panel" style="max-width:350px; min-width:220px;">
-        {% include "visualizacionBoxes/partials_pasillo/panel_info_pasillo.html" %}
-      </aside>
+      {% if user.is_authenticated %}
+      {# Temporalmente habilitado para todos los usuarios autenticados para pruebas #}
+      <div class="col-xl-3 col-lg-3">
+        <aside class="panel-agendamiento-container">
+          {% include "visualizacionBoxes/partials_agendamiento/panel_agendamiento.html" %}
+        </aside>
+      </div>
+      {% else %}
+      <!-- Panel de información para usuarios sin permisos de agendamiento -->
+      <div class="col-xl-3 col-lg-3">
+        <aside class="info-panel">
+          {% include "visualizacionBoxes/partials_pasillo/panel_info_pasillo.html" %}
+        </aside>
+      </div>
+      {% endif %}
     </div>
   </div>
 
@@ -80,4 +122,79 @@
   
   <script src="{% static 'js/boxModal.js' %}"></script>
   <script src="{% static 'js/visualizacionPasillo.js' %}"></script>
+  
+  <!-- Script para funcionalidad de agendamiento -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Inicializar funcionalidad de agendamiento
+      initAgendamiento();
+      
+      // Función para limpiar formulario
+      document.getElementById('btn-limpiar-form')?.addEventListener('click', function() {
+        document.getElementById('form-agendamiento').reset();
+        document.getElementById('input-fecha').value = '{{ fecha|date:"Y-m-d" }}';
+      });
+      
+      // Validación de horas
+      const horaInicio = document.getElementById('input-hora-inicio');
+      const horaFin = document.getElementById('input-hora-fin');
+      
+      if (horaInicio && horaFin) {
+        horaInicio.addEventListener('change', function() {
+          if (horaFin.value && horaInicio.value >= horaFin.value) {
+            const [hora, minuto] = horaInicio.value.split(':');
+            const nuevaHora = parseInt(hora) + 1;
+            horaFin.value = `${nuevaHora.toString().padStart(2, '0')}:${minuto}`;
+          }
+        });
+      }
+      
+      // Búsqueda de profesionales
+      const busquedaProfesional = document.getElementById('busqueda-profesional');
+      const selectProfesional = document.getElementById('select-profesional');
+      
+      if (busquedaProfesional && selectProfesional) {
+        busquedaProfesional.addEventListener('input', function() {
+          const termino = this.value.toLowerCase();
+          const opciones = selectProfesional.options;
+          
+          for (let i = 1; i < opciones.length; i++) {
+            const opcion = opciones[i];
+            const texto = opcion.textContent.toLowerCase();
+            
+            if (texto.includes(termino)) {
+              opcion.style.display = '';
+            } else {
+              opcion.style.display = 'none';
+            }
+          }
+        });
+      }
+    });
+    
+    function initAgendamiento() {
+      console.log('Agendamiento inicializado');
+      
+      // Seleccionar box desde tabla
+      document.addEventListener('click', function(e) {
+        if (e.target.closest('.time-slot')) {
+          const slot = e.target.closest('.time-slot');
+          const boxId = slot.dataset.boxId;
+          const hora = slot.dataset.hora;
+          const fecha = slot.dataset.fecha;
+          
+          // Prellenar formulario si el box está disponible
+          if (slot.dataset.disponible === 'true') {
+            const selectBox = document.getElementById('select-box');
+            const inputFecha = document.getElementById('input-fecha');
+            const inputHoraInicio = document.getElementById('input-hora-inicio');
+            
+            if (selectBox) selectBox.value = boxId;
+            if (inputFecha) inputFecha.value = fecha;
+            if (inputHoraInicio) inputHoraInicio.value = hora;
+          }
+        }
+      });
+    }
+  </script>
 {% endblock %}

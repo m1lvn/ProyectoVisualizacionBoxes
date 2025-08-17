@@ -1,0 +1,131 @@
+{% extends 'visualizacionBoxes/base.html' %}
+{% load socialaccount %}
+
+{% block title %}Iniciar Sesión - Hospital{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center">
+                    <h4><i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión</h4>
+                </div>
+                <div class="card-body p-4">
+                    {% if form.errors %}
+                        <div class="alert alert-danger">
+                            <ul class="mb-0">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>{{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    <!-- Login con Google -->
+                    <div class="text-center mb-4">
+                        <a href="{% provider_login_url 'google' %}" class="btn btn-danger btn-lg w-100">
+                            <i class="fab fa-google me-2"></i>
+                            Iniciar sesión con Google
+                        </a>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="d-inline-flex align-items-center">
+                            <div class="border-top flex-grow-1"></div>
+                            <span class="px-3 text-muted">o</span>
+                            <div class="border-top flex-grow-1"></div>
+                        </div>
+                    </div>
+
+                    <!-- Login tradicional -->
+                    <form method="post" class="mt-4">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="{{ form.login.id_for_label }}" class="form-label">
+                                <i class="fas fa-envelope me-1"></i>Email
+                            </label>
+                            {{ form.login }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.password.id_for_label }}" class="form-label">
+                                <i class="fas fa-lock me-1"></i>Contraseña
+                            </label>
+                            {{ form.password }}
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            {{ form.remember }}
+                            <label class="form-check-label" for="{{ form.remember.id_for_label }}">
+                                Recordarme
+                            </label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
+                        </button>
+                    </form>
+
+                    <div class="text-center mt-3">
+                        <a href="{% url 'account_reset_password' %}" class="text-decoration-none">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+                    </div>
+                </div>
+                <div class="card-footer text-center bg-light">
+                    <small class="text-muted">
+                        ¿No tienes cuenta? 
+                        <a href="{% url 'account_signup' %}" class="text-decoration-none">Registrarse</a>
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    border-radius: 10px;
+}
+
+.card-header {
+    border-radius: 10px 10px 0 0 !important;
+    border: none;
+}
+
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 12px;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn {
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: 500;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    border: none;
+}
+
+.shadow {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+</style>
+{% endblock %}

@@ -458,3 +458,236 @@
     padding: 2px 1px !important;
   }
 }
+
+/* ========================================================================== */
+/* PANEL DE AGENDAMIENTO                                                      */
+/* ========================================================================== */
+.panel-agendamiento {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--container-shadow);
+  padding: 20px;
+  margin-bottom: 20px;
+  position: sticky;
+  top: 100px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.panel-agendamiento .card-header {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  color: white;
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  padding: 15px 20px;
+  margin: -20px -20px 20px -20px;
+  border: none;
+}
+
+.panel-agendamiento .card-header h5 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-agendamiento .form-group {
+  margin-bottom: 20px;
+}
+
+.panel-agendamiento .form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.panel-agendamiento .form-control,
+.panel-agendamiento .form-select {
+  border: 2px solid #e9ecef;
+  border-radius: var(--border-radius);
+  padding: 12px 15px;
+  font-size: 14px;
+  transition: var(--transition-medium);
+  background-color: white;
+}
+
+.panel-agendamiento .form-control:focus,
+.panel-agendamiento .form-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+  outline: none;
+}
+
+.panel-agendamiento .form-control:invalid {
+  border-color: #dc3545;
+}
+
+.panel-agendamiento .form-control:valid {
+  border-color: #28a745;
+}
+
+/* Búsqueda de profesionales */
+.profesional-search-container {
+  position: relative;
+  margin-bottom: 10px;
+}
+
+.profesional-search-container .form-control {
+  padding-left: 40px;
+}
+
+.profesional-search-container .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  z-index: 2;
+}
+
+/* Botones del panel */
+.panel-agendamiento .btn-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 25px;
+}
+
+.panel-agendamiento .btn {
+  padding: 12px 20px;
+  font-weight: 600;
+  border-radius: var(--border-radius);
+  transition: var(--transition-medium);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  flex: 1;
+}
+
+.panel-agendamiento .btn-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border: none;
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.panel-agendamiento .btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 123, 255, 0.4);
+}
+
+.panel-agendamiento .btn-secondary {
+  background: #6c757d;
+  border: none;
+  color: white;
+}
+
+.panel-agendamiento .btn-secondary:hover {
+  background: #545b62;
+  transform: translateY(-2px);
+}
+
+.panel-agendamiento .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Alertas en el panel */
+.panel-agendamiento .alert {
+  border-radius: var(--border-radius);
+  border: none;
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-agendamiento .alert-info {
+  background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+  color: #0c5460;
+}
+
+.panel-agendamiento .alert-success {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  color: #155724;
+}
+
+.panel-agendamiento .alert-danger {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  color: #721c24;
+}
+
+/* Responsive para panel de agendamiento */
+@media (max-width: 1200px) {
+  .panel-agendamiento {
+    position: static;
+    max-height: none;
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .panel-agendamiento {
+    padding: 15px;
+    border-radius: var(--border-radius);
+  }
+  
+  .panel-agendamiento .card-header {
+    margin: -15px -15px 15px -15px;
+    padding: 12px 15px;
+  }
+  
+  .panel-agendamiento .btn-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .panel-agendamiento .btn {
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+}
+
+/* Indicador de box seleccionado */
+.time-slot.selected {
+  border: 3px solid #007bff !important;
+  box-shadow: 0 0 10px rgba(0, 123, 255, 0.5) !important;
+  animation: pulseSelection 1s ease-in-out infinite alternate;
+}
+
+@keyframes pulseSelection {
+  from {
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+  }
+  to {
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.8);
+  }
+}
+
+/* Mejoras de interacción */
+.time-slot:not(.ocupado):hover {
+  border-color: #007bff;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
+}
+
+.panel-agendamiento .form-control:focus + .form-label,
+.panel-agendamiento .form-select:focus + .form-label {
+  color: #007bff;
+}
+
+/* Loading spinner para botones */
+.btn .fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

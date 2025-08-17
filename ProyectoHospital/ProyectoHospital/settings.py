@@ -37,6 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  # Requerido por allauth
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'visualizacionBoxes',  # Asegúrate de que este es el nombre correcto de tu aplicación
 ]
 
@@ -46,6 +51,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # Middleware de allauth
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -134,3 +140,62 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Configuración de django-allauth
+import json
+import os
+
+# ID del sitio para django.contrib.sites
+SITE_ID = 1
+
+# Backends de autenticación
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# Configuración de allauth
+ACCOUNT_LOGIN_METHODS = {'email'}  # Método de login actualizado
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Campos de registro actualizados
+ACCOUNT_EMAIL_VERIFICATION = 'none'  # Cambiar a 'mandatory' para verificación de email
+ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+ACCOUNT_USER_MODEL_EMAIL_FIELD = 'email'
+
+# Redirecciones después del login/logout
+LOGIN_REDIRECT_URL = '/redirect-after-login/'
+LOGOUT_REDIRECT_URL = '/'
+
+# Cargar credenciales de Google desde el archivo JSON
+GOOGLE_OAUTH_FILE = os.path.join(BASE_DIR.parent, 'clavesGoogle.json')
+if os.path.exists(GOOGLE_OAUTH_FILE):
+    with open(GOOGLE_OAUTH_FILE, 'r') as f:
+        google_credentials = json.load(f)
+        GOOGLE_OAUTH_CLIENT_ID = google_credentials['web']['client_id']
+        GOOGLE_OAUTH_CLIENT_SECRET = google_credentials['web']['client_secret']
+else:
+    # Valores por defecto si no se encuentra el archivo
+    GOOGLE_OAUTH_CLIENT_ID = ''
+    GOOGLE_OAUTH_CLIENT_SECRET = ''
+
+# Configuración de proveedores sociales
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        },
+        'APP': {
+            'client_id': GOOGLE_OAUTH_CLIENT_ID,
+            'secret': GOOGLE_OAUTH_CLIENT_SECRET,
+            'key': ''
+        }
+    }
+}
+
+# Configuración adicional para manejar usuarios
+SOCIALACCOUNT_AUTO_SIGNUP = True
+ACCOUNT_ADAPTER = 'visualizacionBoxes.adapters.CustomAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'visualizacionBoxes.adapters.CustomSocialAccountAdapter'

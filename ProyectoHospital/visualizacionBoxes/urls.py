@@ -25,4 +25,12 @@ urlpatterns = [
     
     # API AJAX - Buscar médicos por nombre
     path('buscar-medicos/', views.buscar_medicos, name='buscar_medicos'),
+    
+    # URLs de autenticación y perfil de usuario
+    path('perfil/', views.perfil_usuario, name='perfil_usuario'),
+    path('dashboard/', views.dashboard_usuario, name='dashboard_usuario'),
+    path('redirect-after-login/', views.redirect_after_login, name='redirect_after_login'),
+    
+    # API AJAX - Crear nueva agenda
+    path('crear-agenda/', views.crear_agenda, name='crear_agenda'),
 ]

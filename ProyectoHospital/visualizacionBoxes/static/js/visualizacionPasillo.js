@@ -1098,3 +1098,358 @@ function _construirUrlConFiltrosPasillo(filtros) {
     
     return url.toString();
 }
+
+// ============================================================================
+// MÓDULO DE AGENDAMIENTO
+// ============================================================================
+const AgendamientoPanel = {
+    
+    // Configuración del panel
+    config: {
+        urls: {
+            crearAgenda: '/crear-agenda/',
+        },
+        selectors: {
+            panel: '#panel-agendamiento',
+            form: '#form-agendamiento',
+            boxSelect: '#agendamiento-box',
+            fechaInput: '#agendamiento-fecha',
+            horaInicioInput: '#agendamiento-hora-inicio',
+            horaFinInput: '#agendamiento-hora-fin',
+            profesionalSelect: '#agendamiento-profesional',
+            tipoAgendaSelect: '#agendamiento-tipo-agenda',
+            observacionesTextarea: '#agendamiento-observaciones',
+            submitBtn: '#btn-crear-agenda',
+            cancelBtn: '#btn-cancelar-agenda',
+            profesionalSearch: '#profesional-search'
+        }
+    },
+    
+    /**
+     * Inicializa el panel de agendamiento
+     */
+    init() {
+        this.bindEvents();
+        this.setupProfesionalSearch();
+        this.setupFormValidation();
+        console.log('Panel de agendamiento inicializado');
+    },
+    
+    /**
+     * Vincula los eventos del panel
+     */
+    bindEvents() {
+        // Click en boxes para seleccionar
+        $(document).on('click', '.time-slot', (e) => {
+            const element = $(e.currentTarget);
+            if (element.hasClass('ocupado')) return;
+            
+            this.seleccionarBox(element);
+        });
+        
+        // Submit del formulario
+        $(this.config.selectors.form).on('submit', (e) => {
+            e.preventDefault();
+            this.crearAgenda();
+        });
+        
+        // Botón cancelar
+        $(this.config.selectors.cancelBtn).on('click', () => {
+            this.limpiarFormulario();
+        });
+        
+        // Validación en tiempo real
+        $(this.config.selectors.horaInicioInput + ', ' + this.config.selectors.horaFinInput).on('change', () => {
+            this.validarHorarios();
+        });
+    },
+    
+    /**
+     * Selecciona un box desde la tabla
+     */
+    seleccionarBox(element) {
+        const boxId = element.data('box-id');
+        const codigoBox = element.data('codigo-box');
+        
+        if (boxId && codigoBox) {
+            $(this.config.selectors.boxSelect).val(boxId);
+            
+            // Mostrar información del box seleccionado
+            this.mostrarInfoBoxSeleccionado(codigoBox);
+            
+            // Scroll al panel
+            this.scrollToPanel();
+        }
+    },
+    
+    /**
+     * Muestra información del box seleccionado
+     */
+    mostrarInfoBoxSeleccionado(codigoBox) {
+        const infoHtml = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i>
+                Box seleccionado: <strong>${codigoBox}</strong>
+            </div>
+        `;
+        
+        // Insertar antes del formulario
+        $(this.config.selectors.form).prepend(infoHtml);
+        
+        // Remover después de 5 segundos
+        setTimeout(() => {
+            $(this.config.selectors.form + ' .alert').fadeOut();
+        }, 5000);
+    },
+    
+    /**
+     * Scroll al panel de agendamiento
+     */
+    scrollToPanel() {
+        $('html, body').animate({
+            scrollTop: $(this.config.selectors.panel).offset().top - 100
+        }, 500);
+    },
+    
+    /**
+     * Configura la búsqueda de profesionales
+     */
+    setupProfesionalSearch() {
+        const searchInput = $(this.config.selectors.profesionalSearch);
+        const selectElement = $(this.config.selectors.profesionalSelect);
+        
+        searchInput.on('input', function() {
+            const searchTerm = $(this).val().toLowerCase();
+            
+            selectElement.find('option').each(function() {
+                const optionText = $(this).text().toLowerCase();
+                const shouldShow = optionText.includes(searchTerm) || $(this).val() === '';
+                
+                $(this).toggle(shouldShow);
+            });
+        });
+    },
+    
+    /**
+     * Configura validación del formulario
+     */
+    setupFormValidation() {
+        // Establecer fecha mínima como hoy
+        const today = new Date().toISOString().split('T')[0];
+        $(this.config.selectors.fechaInput).attr('min', today);
+    },
+    
+    /**
+     * Valida los horarios ingresados
+     */
+    validarHorarios() {
+        const horaInicio = $(this.config.selectors.horaInicioInput).val();
+        const horaFin = $(this.config.selectors.horaFinInput).val();
+        
+        if (horaInicio && horaFin) {
+            if (horaFin <= horaInicio) {
+                this.mostrarError('La hora de fin debe ser posterior a la hora de inicio');
+                return false;
+            }
+        }
+        
+        return true;
+    },
+    
+    /**
+     * Crea una nueva agenda
+     */
+    async crearAgenda() {
+        if (!this.validarFormulario()) return;
+        
+        const formData = this.obtenerDatosFormulario();
+        const submitBtn = $('#btn-confirmar-reserva'); // Usar el ID correcto del botón
+        
+        // Mostrar loading
+        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Creando...');
+        
+        try {
+            const response = await fetch('/crear-agenda/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': this.getCsrfToken()
+                },
+                body: new URLSearchParams(formData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.mostrarExito('Agenda creada exitosamente');
+                this.limpiarFormulario();
+                // Recargar la página para mostrar la nueva agenda
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                this.mostrarError(result.error || 'Error al crear la agenda');
+            }
+            
+        } catch (error) {
+            console.error('Error al crear agenda:', error);
+            this.mostrarError('Error de conexión');
+        } finally {
+            submitBtn.prop('disabled', false).html('<i class="fas fa-check me-2"></i>Confirmar reserva');
+        }
+    },
+    
+    /**
+     * Obtiene los datos del formulario
+     */
+    obtenerDatosFormulario() {
+        return {
+            box: $('#select-box').val(),
+            fecha: $('#input-fecha').val(),
+            hora_inicio: $('#input-hora-inicio').val(),
+            hora_fin: $('#input-hora-fin').val(),
+            profesional: $('#select-profesional').val() || '',
+            tipo_agenda: $('#select-tipo-agenda').val()
+        };
+    },
+    
+    /**
+     * Valida el formulario antes del envío
+     */
+    validarFormulario() {
+        const datos = this.obtenerDatosFormulario();
+        
+        // Validar campos requeridos (según tus especificaciones)
+        const camposRequeridos = ['box', 'fecha', 'hora_inicio', 'hora_fin', 'tipo_agenda'];
+        
+        for (let campo of camposRequeridos) {
+            if (!datos[campo]) {
+                const nombres = {
+                    'box': 'Box',
+                    'fecha': 'Fecha',
+                    'hora_inicio': 'Hora de inicio',
+                    'hora_fin': 'Hora de fin',
+                    'tipo_agenda': 'Tipo de agenda'
+                };
+                this.mostrarError(`El campo ${nombres[campo]} es requerido`);
+                return false;
+            }
+        }
+        
+        // Validar horarios
+        if (!this.validarHorarios()) return false;
+        
+        return true;
+    },
+    
+    /**
+     * Limpia el formulario
+     */
+    limpiarFormulario() {
+        $('#form-agendamiento')[0].reset();
+        $('#form-agendamiento .alert').remove();
+        // Restablecer fecha actual
+        const today = new Date().toISOString().split('T')[0];
+        $('#input-fecha').val(today);
+    },
+    
+    /**
+     * Muestra mensaje de error
+     */
+    mostrarError(mensaje) {
+        this.mostrarMensaje(mensaje, 'danger');
+    },
+    
+    /**
+     * Obtiene los datos del formulario
+     */
+    obtenerDatosFormulario() {
+        return {
+            box: $(this.config.selectors.boxSelect).val(),
+            fecha: $(this.config.selectors.fechaInput).val(),
+            hora_inicio: $(this.config.selectors.horaInicioInput).val(),
+            hora_fin: $(this.config.selectors.horaFinInput).val(),
+            profesional: $(this.config.selectors.profesionalSelect).val(),
+            tipo_agenda: $(this.config.selectors.tipoAgendaSelect).val(),
+            observaciones: $(this.config.selectors.observacionesTextarea).val()
+        };
+    },
+    
+    /**
+     * Valida el formulario antes del envío
+     */
+    validarFormulario() {
+        const datos = this.obtenerDatosFormulario();
+        
+        // Validar campos requeridos
+        const camposRequeridos = ['box', 'fecha', 'hora_inicio', 'hora_fin', 'profesional', 'tipo_agenda'];
+        
+        for (let campo of camposRequeridos) {
+            if (!datos[campo]) {
+                this.mostrarError(`El campo ${campo.replace('_', ' ')} es requerido`);
+                return false;
+            }
+        }
+        
+        // Validar horarios
+        if (!this.validarHorarios()) return false;
+        
+        return true;
+    },
+    
+    /**
+     * Limpia el formulario
+     */
+    limpiarFormulario() {
+        $(this.config.selectors.form)[0].reset();
+        $(this.config.selectors.form + ' .alert').remove();
+    },
+    
+    /**
+     * Muestra mensaje de error
+     */
+    mostrarError(mensaje) {
+        this.mostrarMensaje(mensaje, 'danger');
+    },
+    
+    /**
+     * Muestra mensaje de éxito
+     */
+    mostrarExito(mensaje) {
+        this.mostrarMensaje(mensaje, 'success');
+    },
+    
+    /**
+     * Muestra un mensaje en el panel
+     */
+    mostrarMensaje(mensaje, tipo) {
+        const alertHtml = `
+            <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${tipo === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        
+        // Remover alertas anteriores
+        $('#mensajes-agendamiento .alert').remove();
+        
+        // Agregar nueva alerta
+        $('#mensajes-agendamiento').html(alertHtml);
+        
+        // Auto-remover después de 5 segundos
+        setTimeout(() => {
+            $('#mensajes-agendamiento .alert').fadeOut();
+        }, 5000);
+    },
+    
+    /**
+     * Obtiene el token CSRF
+     */
+    getCsrfToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+};
+
+// Inicializar el panel de agendamiento cuando esté listo el DOM
+$(document).ready(function() {
+    AgendamientoPanel.init();
+});

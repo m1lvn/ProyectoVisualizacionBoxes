@@ -1,0 +1,213 @@
+<!-- ============================= -->
+<!-- PANEL DE AGENDAMIENTO        -->
+<!-- ============================= -->
+<div class="panel-agendamiento bg-white shadow-sm rounded-3 h-100" style="background: #2c3e50;">
+  <!-- Header del panel -->
+  <div class="panel-header p-3 text-white">
+    <h5 class="mb-0 fw-bold">
+      <i class="fas fa-calendar-plus me-2"></i>
+      Nuevo Agendamiento
+    </h5>
+  </div>
+  
+  <!-- Formulario -->
+  <div class="panel-body p-3" style="background: #34495e;">
+    <form id="form-agendamiento" method="post" action="{% url 'visualizacionBoxes:crear_agenda' %}">
+      {% csrf_token %}
+      
+      <!-- Selección de Pasillo -->
+      <div class="mb-3">
+        <label class="form-label text-white fw-semibold">Seleccione el pasillo...</label>
+        <select class="form-select form-select-sm" name="pasillo" id="select-pasillo">
+          <option value="" disabled selected>Seleccione el pasillo...</option>
+          {% for pasillo in pasillos %}
+            <option value="{{ pasillo.idpasillo }}">{{ pasillo.pasillo }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <!-- Selección de Box -->
+      <div class="mb-3">
+        <label class="form-label text-white fw-semibold">Seleccione el Box...</label>
+        <select class="form-select form-select-sm" name="box" id="select-box" required>
+          <option value="" disabled selected>Seleccione el Box...</option>
+          {% for box in todos_boxes %}
+            <option value="{{ box.idbox }}" data-pasillo="{{ box.idpasillo.idpasillo }}">
+                {{ box.codigobox }} - {{ box.idpasillo.pasillo }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <!-- Fecha -->
+      <div class="mb-3">
+        <label class="form-label text-white fw-semibold">Fecha</label>
+        <input type="date" class="form-control form-control-sm datepicker" 
+               name="fecha" id="input-fecha" 
+               value="{{ fecha|date:'Y-m-d' }}" required>
+      </div>
+      
+      <!-- Horas -->
+      <div class="row mb-3">
+        <div class="col-6">
+          <label class="form-label text-white fw-semibold">Hora inicio</label>
+          <input type="time" class="form-control form-control-sm" 
+                 name="hora_inicio" id="input-hora-inicio" required>
+        </div>
+        <div class="col-6">
+          <label class="form-label text-white fw-semibold">Hora Término</label>
+          <input type="time" class="form-control form-control-sm" 
+                 name="hora_fin" id="input-hora-fin" required>
+        </div>
+      </div>
+      
+      <!-- Tipo de Agenda -->
+      <div class="mb-3">
+        <label class="form-label text-white fw-semibold">Tipo de Agenda</label>
+        <select class="form-select form-select-sm" name="tipo_agenda" id="select-tipo-agenda" required>
+          <option value="" disabled selected>Seleccione el tipo de agenda...</option>
+          {% for tipo in tipos_agenda %}
+            <option value="{{ tipo.idtipoagenda }}">{{ tipo.tipoagenda }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <!-- Profesional (Opcional) -->
+      <div class="mb-3">
+        <label class="form-label text-white fw-semibold">Profesional</label>
+        <div class="position-relative">
+          <select class="form-select form-select-sm" name="profesional" id="select-profesional">
+            <option value="" disabled selected>Seleccione el profesional</option>
+            {% for profesional in profesionales %}
+              <option value="{{ profesional.idprofesional }}" 
+                      data-especialidad="{{ profesional.idespecialidad.especialidad }}">
+                {{ profesional.nombre }}
+              </option>
+            {% endfor %}
+          </select>
+          <div class="mt-2">
+            <input type="text" class="form-control form-control-sm" 
+                   id="busqueda-profesional" 
+                   placeholder="🔍 Búsqueda por Código">
+          </div>
+        </div>
+      </div>
+      
+      <!-- Botón Confirmar -->
+      <div class="d-grid">
+        <button type="submit" class="btn btn-primary btn-lg fw-bold" id="btn-confirmar-reserva">
+          <i class="fas fa-check me-2"></i>Confirmar reserva
+        </button>
+      </div>
+      
+      <!-- Botón Limpiar -->
+      <div class="d-grid mt-2">
+        <button type="button" class="btn btn-outline-light btn-sm" id="btn-limpiar-form">
+          <i class="fas fa-eraser me-2"></i>Limpiar formulario
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Mensajes de resultado -->
+<div id="mensajes-agendamiento" class="mt-3"></div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtrado de boxes por pasillo
+    const pasilloSelect = document.getElementById('select-pasillo');
+    const boxSelect = document.getElementById('select-box');
+    const allBoxOptions = Array.from(boxSelect.querySelectorAll('option[data-pasillo]'));
+    
+    pasilloSelect.addEventListener('change', function() {
+        const selectedPasillo = this.value;
+        
+        // Limpiar selección actual de box
+        boxSelect.value = '';
+        
+        // Mostrar/ocultar opciones según pasillo seleccionado
+        allBoxOptions.forEach(option => {
+            if (!selectedPasillo || option.dataset.pasillo === selectedPasillo) {
+                option.style.display = '';
+            } else {
+                option.style.display = 'none';
+            }
+        });
+        
+        // Actualizar placeholder
+        const firstOption = boxSelect.querySelector('option[value=""]');
+        if (selectedPasillo) {
+            firstOption.textContent = 'Seleccione el Box...';
+        } else {
+            firstOption.textContent = 'Seleccione el Box...';
+        }
+    });
+    
+    // Búsqueda de profesional
+    const profesionalSearch = document.getElementById('busqueda-profesional');
+    const profesionalSelect = document.getElementById('select-profesional');
+    
+    profesionalSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const options = profesionalSelect.querySelectorAll('option:not([value=""])');
+        
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            option.style.display = text.includes(searchTerm) ? '' : 'none';
+        });
+    });
+    
+    // Limpiar formulario
+    document.getElementById('btn-limpiar-form').addEventListener('click', function() {
+        document.getElementById('form-agendamiento').reset();
+        // Restablecer fecha actual
+        document.getElementById('input-fecha').value = '{{ fecha|date:"Y-m-d" }}';
+        // Mostrar todos los boxes nuevamente
+        allBoxOptions.forEach(option => option.style.display = '');
+    });
+});
+</script>
+
+<style>
+.panel-agendamiento {
+  max-height: 90vh;
+  overflow-y: auto;
+  border: none !important;
+}
+
+.panel-agendamiento .form-control,
+.panel-agendamiento .form-select {
+  background-color: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+}
+
+.panel-agendamiento .form-control:focus,
+.panel-agendamiento .form-select:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.btn-outline-light {
+  border-radius: 6px;
+}
+
+#mensajes-agendamiento .alert {
+  border-radius: 8px;
+  border: none;
+}
+</style>

@@ -5,10 +5,11 @@ Este módulo contiene las vistas principales para mostrar el estado
 de los boxes del hospital en tiempo real.
 """
 
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.contrib import messages
 from datetime import datetime, time, timedelta
 
 from .models import (
@@ -320,6 +321,14 @@ def visualizacion_pasillo(request):
             pasillo_actual = None
     
     # ===============================
+    # PREPARAR DATOS PARA AGENDAMIENTO
+    # ===============================
+    # Obtener datos necesarios para el formulario de agendamiento
+    todos_boxes = Box.objects.all().order_by('idpasillo__pasillo', 'idbox')
+    profesionales = Profesional.objects.all().order_by('nombre')
+    tipos_agenda = Tipoagenda.objects.all().order_by('tipoagenda')
+    
+    # ===============================
     # PREPARAR CONTEXTO DE RESPUESTA
     # ===============================
     context = {
@@ -347,6 +356,11 @@ def visualizacion_pasillo(request):
         'page_obj': boxes_page,
         'is_paginated': paginator.num_pages > 1,
         'page_range': paginator.get_elided_page_range(boxes_page.number),
+        
+        # Datos para agendamiento
+        'todos_boxes': todos_boxes,
+        'profesionales': profesionales,
+        'tipos_agenda': tipos_agenda,
     }
     
     return render(request, 'visualizacionBoxes/visualizacionPasillo.html', context)
@@ -1183,3 +1197,240 @@ def buscar_medicos(request):
         })
     
     return JsonResponse({'medicos': medicos_data})
+
+
+# ===============================
+# VISTAS DE AUTENTICACIÓN Y USUARIO
+# ===============================
+
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.shortcuts import redirect
+from .models import PerfilUsuario, TipoUsuario
+
+
+def perfil_usuario(request):
+    """
+    Vista para mostrar el perfil del usuario autenticado.
+    
+    Muestra información del usuario y permite actualizaciones básicas.
+    """
+    if not request.user.is_authenticated:
+        messages.warning(request, 'Debes iniciar sesión para ver tu perfil.')
+        return redirect('account_login')
+    
+    try:
+        perfil = request.user.perfilusuario
+    except PerfilUsuario.DoesNotExist:
+        # Crear perfil si no existe (usuarios creados antes del sistema)
+        tipo_visitante = TipoUsuario.objects.get_or_create(
+            nombre='Visitante',
+            defaults={'descripcion': 'Usuario visitante con acceso limitado', 'activo': True}
+        )[0]
+        
+        perfil = PerfilUsuario.objects.create(
+            usuario=request.user,
+            tipo_usuario=tipo_visitante,
+            activo=True
+        )
+        messages.info(request, 'Se ha creado tu perfil como Visitante.')
+    
+    context = {
+        'perfil': perfil,
+        'tipos_usuario': TipoUsuario.objects.filter(activo=True).order_by('nombre')
+    }
+    
+    return render(request, 'visualizacionBoxes/perfil_usuario.html', context)
+
+
+@login_required
+def dashboard_usuario(request):
+    """
+    Vista del dashboard personalizado según el tipo de usuario.
+    """
+    perfil = request.user.perfilusuario
+    
+    # Actualizar último acceso
+    perfil.ultimo_acceso = datetime.now()
+    perfil.save()
+    
+    # Datos específicos según tipo de usuario
+    context = {
+        'perfil': perfil,
+    }
+    
+    if perfil.es_administrador:
+        # Estadísticas para administradores
+        context.update({
+            'total_usuarios': PerfilUsuario.objects.filter(activo=True).count(),
+            'total_boxes': Box.objects.count(),
+            'agendas_hoy': Agenda.objects.filter(fecha=datetime.now().date()).count(),
+        })
+    elif perfil.es_personal_medico or perfil.es_personal_administrativo:
+        # Información relevante para personal médico/administrativo
+        context.update({
+            'agendas_hoy': Agenda.objects.filter(fecha=datetime.now().date()).count(),
+            'boxes_ocupados': Box.objects.filter(
+                agenda__fecha=datetime.now().date(),
+                agenda__horainicio__lte=datetime.now().time(),
+                agenda__horafin__gte=datetime.now().time()
+            ).distinct().count(),
+        })
+    
+    return render(request, 'visualizacionBoxes/dashboard_usuario.html', context)
+
+
+def verificar_permisos(user, accion='lectura'):
+    """
+    Función auxiliar para verificar permisos de usuario.
+    
+    Args:
+        user: Usuario de Django
+        accion: 'lectura' o 'escritura'
+    
+    Returns:
+        bool: True si tiene permisos, False en caso contrario
+    """
+    if not user.is_authenticated:
+        return False
+    
+    try:
+        perfil = user.perfilusuario
+        if not perfil.activo or not perfil.tipo_usuario.activo:
+            return False
+        
+        if accion == 'lectura':
+            return perfil.tiene_permiso_lectura()
+        elif accion == 'escritura':
+            return perfil.tiene_permiso_escritura()
+        
+        return False
+    except PerfilUsuario.DoesNotExist:
+        return False
+
+
+def redirect_after_login(request):
+    """
+    Vista para redireccionar al usuario después del login según su tipo.
+    """
+    if not request.user.is_authenticated:
+        return redirect('account_login')
+    
+    try:
+        perfil = request.user.perfilusuario
+        
+        # Mensaje de bienvenida personalizado
+        if perfil.es_administrador:
+            messages.success(request, f'¡Bienvenido, {perfil.nombre_completo}! Tienes acceso completo como administrador.')
+        elif perfil.es_personal_medico:
+            messages.success(request, f'¡Bienvenido, {perfil.nombre_completo}! Accede a las funciones médicas.')
+        elif perfil.es_personal_administrativo:
+            messages.success(request, f'¡Bienvenido, {perfil.nombre_completo}! Gestiona las funciones administrativas.')
+        else:
+            messages.info(request, f'¡Bienvenido, {perfil.nombre_completo}! Tienes acceso como visitante.')
+        
+        # Redireccionar según preferencias
+        return redirect('visualizacionBoxes:visualizacion_general')
+        
+    except PerfilUsuario.DoesNotExist:
+        messages.warning(request, 'Tu perfil no está configurado. Contacta al administrador.')
+        return redirect('visualizacionBoxes:visualizacion_general')
+
+
+def crear_agenda(request):
+    """
+    Vista para crear una nueva agenda desde el panel de agendamiento.
+    
+    Procesa los datos del formulario de agendamiento y crea una nueva
+    entrada en la agenda si los datos son válidos.
+    
+    Returns:
+        JsonResponse: Respuesta con el resultado de la operación
+    """
+    if request.method == 'POST':
+        try:
+            # Verificar permisos del usuario
+            if not request.user.is_authenticated:
+                return JsonResponse({'error': 'Usuario no autenticado'}, status=401)
+            
+            # Verificar que el usuario tenga permisos para crear agendas
+            perfil = request.user.perfilusuario
+            if not (perfil.es_administrador or perfil.es_personal_administrativo):
+                return JsonResponse({'error': 'Sin permisos para crear agendas'}, status=403)
+            
+            # Obtener datos del formulario
+            box_id = request.POST.get('box')
+            fecha = request.POST.get('fecha')
+            hora_inicio = request.POST.get('hora_inicio')
+            hora_fin = request.POST.get('hora_fin')
+            profesional_id = request.POST.get('profesional')  # Opcional
+            tipo_agenda_id = request.POST.get('tipo_agenda')
+            observaciones = request.POST.get('observaciones', '')
+            
+            # Validar datos requeridos (solo los obligatorios)
+            # Nota: Profesional es técnicamente requerido en BD, pero puede implementarse un "profesional genérico"
+            if not all([box_id, fecha, hora_inicio, hora_fin, tipo_agenda_id]):
+                return JsonResponse({'error': 'Faltan datos requeridos. Campos obligatorios: Box, Fecha, Hora inicio, Hora fin, Tipo de agenda'}, status=400)
+            
+            # Validar y obtener objetos relacionados
+            try:
+                box = Box.objects.get(idbox=box_id)
+                tipo_agenda = Tipoagenda.objects.get(idtipoagenda=tipo_agenda_id)
+                fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
+                hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time()
+                hora_fin_obj = datetime.strptime(hora_fin, '%H:%M').time()
+                
+                # Profesional: si no se especifica, usar un profesional genérico o el primero disponible
+                if profesional_id:
+                    profesional = Profesional.objects.get(idprofesional=profesional_id)
+                else:
+                    # Usar el primer profesional disponible como "genérico"
+                    profesional = Profesional.objects.first()
+                    if not profesional:
+                        return JsonResponse({'error': 'No hay profesionales disponibles en el sistema'}, status=400)
+                    
+            except Box.DoesNotExist:
+                return JsonResponse({'error': 'Box no encontrado'}, status=400)
+            except Tipoagenda.DoesNotExist:
+                return JsonResponse({'error': 'Tipo de agenda no encontrado'}, status=400)
+            except Profesional.DoesNotExist:
+                return JsonResponse({'error': 'Profesional no encontrado'}, status=400)
+            except ValueError:
+                return JsonResponse({'error': 'Formato de fecha u hora inválido'}, status=400)
+            
+            # Validar que hora_fin sea posterior a hora_inicio
+            if hora_fin_obj <= hora_inicio_obj:
+                return JsonResponse({'error': 'La hora de fin debe ser posterior a la hora de inicio'}, status=400)
+            
+            # Verificar conflictos de horario en el mismo box
+            conflictos = Agenda.objects.filter(
+                idbox=box,
+                fecha=fecha_obj
+            ).filter(
+                Q(horainicio__lt=hora_fin_obj, horafin__gt=hora_inicio_obj)
+            )
+            
+            if conflictos.exists():
+                return JsonResponse({'error': 'Ya existe una agenda en ese horario para el box seleccionado'}, status=400)
+            
+            # Crear la nueva agenda
+            nueva_agenda = Agenda.objects.create(
+                idbox=box,
+                idprofesional=profesional,  # Requerido en BD - usa profesional seleccionado o genérico
+                idtipoagenda=tipo_agenda,
+                fecha=fecha_obj,
+                horainicio=hora_inicio_obj,
+                horafin=hora_fin_obj,
+                observaciones=observaciones
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Agenda creada exitosamente',
+                'agenda_id': nueva_agenda.idagenda
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': f'Error interno: {str(e)}'}, status=500)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
