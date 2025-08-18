@@ -1,48 +1,162 @@
 <!-- ============================= -->
-<!-- PANEL DE AGENDAMIENTO        -->
+<!-- PANEL DE AGENDAMIENTO LIMPIO  -->
 <!-- ============================= -->
-<div class="panel-agendamiento bg-white shadow-sm rounded-3 h-100" style="background: #2c3e50;">
-  <!-- Header del panel -->
-  <div class="panel-header p-3 text-white">
-    <h5 class="mb-0 fw-bold">
-      <i class="fas fa-calendar-plus me-2"></i>
-      Nuevo Agendamiento
-    </h5>
-  </div>
+
+<!-- CSS para flechas desplegables personalizadas -->
+<style>
+  .custom-select {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+  }
   
-  <!-- Formulario -->
-  <div class="panel-body p-3" style="background: #34495e;">
+  .custom-select select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 1.2em;
+    padding-right: 2.5rem;
+    color: #495057;
+    background-color: #fff;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  }
+  
+  .custom-select select:focus {
+    border-color: #86b7fe;
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+  }
+  
+  .custom-select select:hover {
+    border-color: #86b7fe;
+  }
+  
+  /* Estilos para el contenedor (sin color) - SOBRESCRIBIR visualizacionPasillo.css */
+  .panel-agendamiento-container {
+    width: auto !important;       /* Ancho automático según contenido */
+    max-width: 300px !important;  /* Ancho máximo similar a la leyenda */
+    min-width: 250px !important;  /* Ancho mínimo para legibilidad */
+    height: auto !important;
+    min-height: auto !important;  /* Sobrescribir cualquier min-height */
+    max-height: none !important;  /* Sobrescribir max-height del CSS general */
+    padding: 0 !important;        /* Sobrescribir padding del CSS general */
+    margin: 0 !important;         /* Sobrescribir margin del CSS general */
+    margin-bottom: 0 !important;  /* Sobrescribir margin-bottom específico */
+    overflow-y: visible !important; /* Sobrescribir overflow del CSS general */
+    position: relative !important;  /* Sobrescribir position sticky */
+    top: auto !important;         /* Sobrescribir top del CSS general */
+    bottom: auto !important;      /* Asegurar que no hay bottom */
+    background: transparent !important; /* Sin color de fondo */
+  }
+  
+  /* El panel interno ya tiene las clases correctas de Bootstrap (card bg-dark) */
+  }
+  
+  .panel-header {
+    margin: 0 !important;         /* Sobrescribir márgenes negativos */
+    padding: 1rem !important;     /* Padding controlado */
+  }
+  
+  .panel-body {
+    padding: 1.5rem !important;
+    width: 100%;
+    margin: 0 !important;
+  }
+  
+  /* Sobrescribir TODOS los estilos que puedan venir del CSS general */
+  .panel-agendamiento .card-header {
+    margin: 0 !important;
+    padding: 1rem !important;
+    background: inherit !important;
+  }
+  
+  /* Asegurar que no hay espacios en blanco laterales */
+  .panel-agendamiento-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+  }
+  
+  .form-control, 
+  .custom-select select {
+    width: 100%;
+    font-size: 0.875rem;
+  }
+  
+  .custom-select {
+    width: 100%;
+  }
+  
+  .btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+  }
+  
+  .mb-3 {
+    margin-bottom: 1rem !important;
+  }
+  
+  .form-label {
+    margin-bottom: 0.5rem !important;
+    font-size: 0.875rem;
+  }
+  
+  /* Ajustes para campos de hora en dos columnas */
+  .row .col-6 .form-control {
+    width: 100%;
+  }
+  
+  /* Textarea optimizado */
+  textarea.form-control {
+    width: 100%;
+    min-height: 80px;
+  }
+</style>
+
+<div class="panel-agendamiento-container">
+  <!-- Panel de agendamiento con color oscuro -->
+  <div class="card bg-dark text-white px-3 py-3 shadow-sm" style="border-radius: 12px;">
     <form id="form-agendamiento" method="post" action="{% url 'visualizacionBoxes:crear_agenda' %}">
       {% csrf_token %}
       
       <!-- Selección de Pasillo -->
       <div class="mb-3">
-        <label class="form-label text-white fw-semibold">Seleccione el pasillo...</label>
-        <select class="form-select form-select-sm" name="pasillo" id="select-pasillo">
-          <option value="" disabled selected>Seleccione el pasillo...</option>
-          {% for pasillo in pasillos %}
-            <option value="{{ pasillo.idpasillo }}">{{ pasillo.pasillo }}</option>
-          {% endfor %}
-        </select>
+        <label class="form-label text-white fw-semibold">Pasillo</label>
+        <div class="custom-select">
+          <select class="form-control form-control-sm" name="pasillo" id="select-pasillo">
+            <option value="">Seleccione un pasillo...</option>
+            {% for pasillo in pasillos %}
+              <option value="{{ pasillo.idpasillo }}">{{ pasillo.pasillo }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
       
       <!-- Selección de Box -->
       <div class="mb-3">
-        <label class="form-label text-white fw-semibold">Seleccione el Box...</label>
-        <select class="form-select form-select-sm" name="box" id="select-box" required>
-          <option value="" disabled selected>Seleccione el Box...</option>
-          {% for box in todos_boxes %}
-            <option value="{{ box.idbox }}" data-pasillo="{{ box.idpasillo.idpasillo }}">
+        <label class="form-label text-white fw-semibold">Box *</label>
+        <div class="custom-select">
+          <select class="form-control form-control-sm" name="box" id="select-box" required>
+            <option value="">Seleccione un box...</option>
+            {% for box in todos_boxes %}
+              <option value="{{ box.idbox }}" data-pasillo="{{ box.idpasillo.idpasillo }}">
                 {{ box.codigobox }} - {{ box.idpasillo.pasillo }}
-            </option>
-          {% endfor %}
-        </select>
+              </option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
-      
+
       <!-- Fecha -->
       <div class="mb-3">
-        <label class="form-label text-white fw-semibold">Fecha</label>
-        <input type="date" class="form-control form-control-sm datepicker" 
+        <label class="form-label text-white fw-semibold">Fecha *</label>
+        <input type="date" class="form-control form-control-sm" 
                name="fecha" id="input-fecha" 
                value="{{ fecha|date:'Y-m-d' }}" required>
       </div>
@@ -50,12 +164,12 @@
       <!-- Horas -->
       <div class="row mb-3">
         <div class="col-6">
-          <label class="form-label text-white fw-semibold">Hora inicio</label>
+          <label class="form-label text-white fw-semibold">Hora inicio *</label>
           <input type="time" class="form-control form-control-sm" 
                  name="hora_inicio" id="input-hora-inicio" required>
         </div>
         <div class="col-6">
-          <label class="form-label text-white fw-semibold">Hora Término</label>
+          <label class="form-label text-white fw-semibold">Hora término *</label>
           <input type="time" class="form-control form-control-sm" 
                  name="hora_fin" id="input-hora-fin" required>
         </div>
@@ -63,45 +177,50 @@
       
       <!-- Tipo de Agenda -->
       <div class="mb-3">
-        <label class="form-label text-white fw-semibold">Tipo de Agenda</label>
-        <select class="form-select form-select-sm" name="tipo_agenda" id="select-tipo-agenda" required>
-          <option value="" disabled selected>Seleccione el tipo de agenda...</option>
-          {% for tipo in tipos_agenda %}
-            <option value="{{ tipo.idtipoagenda }}">{{ tipo.tipoagenda }}</option>
-          {% endfor %}
-        </select>
+        <label class="form-label text-white fw-semibold">Tipo de Agenda *</label>
+        <div class="custom-select">
+          <select class="form-control form-control-sm" name="tipo_agenda" id="select-tipo-agenda" required>
+            <option value="">Seleccione tipo de agenda...</option>
+            {% for tipo in tipos_agenda %}
+              <option value="{{ tipo.idtipoagenda }}">{{ tipo.tipoagenda }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </div>
       
       <!-- Profesional (Opcional) -->
       <div class="mb-3">
         <label class="form-label text-white fw-semibold">Profesional</label>
-        <div class="position-relative">
-          <select class="form-select form-select-sm" name="profesional" id="select-profesional">
-            <option value="" disabled selected>Seleccione el profesional</option>
+        <div class="custom-select">
+          <select class="form-control form-control-sm" name="profesional" id="select-profesional">
+            <option value="">Seleccione un profesional...</option>
             {% for profesional in profesionales %}
-              <option value="{{ profesional.idprofesional }}" 
-                      data-especialidad="{{ profesional.idespecialidad.especialidad }}">
-                {{ profesional.nombre }}
+              <option value="{{ profesional.idprofesional }}">
+                {{ profesional.nombre }} - {{ profesional.idespecialidad.especialidad }}
               </option>
             {% endfor %}
           </select>
-          <div class="mt-2">
-            <input type="text" class="form-control form-control-sm" 
-                   id="busqueda-profesional" 
-                   placeholder="🔍 Búsqueda por Código">
-          </div>
         </div>
       </div>
       
-      <!-- Botón Confirmar -->
+      <!-- Observaciones (Opcional) -->
+      <div class="mb-3">
+        <label class="form-label text-white fw-semibold">Observaciones</label>
+        <textarea class="form-control form-control-sm" 
+                  name="observaciones" 
+                  id="agendamiento-observaciones"
+                  rows="3" 
+                  placeholder="Comentarios adicionales"></textarea>
+      </div>
+      
+      <!-- Botones -->
       <div class="d-grid">
         <button type="submit" class="btn btn-primary btn-lg fw-bold" id="btn-confirmar-reserva">
           <i class="fas fa-check me-2"></i>Confirmar reserva
         </button>
       </div>
       
-      <!-- Botón Limpiar -->
-      <div class="d-grid mt-2">
+      <div class="d-grid mt-2 mb-0">
         <button type="button" class="btn btn-outline-light btn-sm" id="btn-limpiar-form">
           <i class="fas fa-eraser me-2"></i>Limpiar formulario
         </button>
@@ -115,99 +234,83 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Filtrado de boxes por pasillo
+    // Configurar formulario AJAX
+    const form = document.getElementById('form-agendamiento');
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(form);
+        const submitBtn = document.getElementById('btn-confirmar-reserva');
+        const mensajesDiv = document.getElementById('mensajes-agendamiento');
+        
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Procesando...';
+        mensajesDiv.innerHTML = '';
+        
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mensajesDiv.innerHTML = '<div class="alert alert-success alert-dismissible fade show" role="alert"><i class="fas fa-check-circle me-2"></i>' + data.message + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+                form.reset();
+                setTodayDate();
+                setTimeout(function() {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                mensajesDiv.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="fas fa-exclamation-triangle me-2"></i>' + data.error + '<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+            }
+        })
+        .catch(error => {
+            mensajesDiv.innerHTML = '<div class="alert alert-danger alert-dismissible fade show" role="alert"><i class="fas fa-exclamation-triangle me-2"></i>Error de conexión. Intente nuevamente.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>';
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Confirmar reserva';
+        });
+    });
+    
+    // Configurar filtrado de boxes por pasillo
     const pasilloSelect = document.getElementById('select-pasillo');
     const boxSelect = document.getElementById('select-box');
-    const allBoxOptions = Array.from(boxSelect.querySelectorAll('option[data-pasillo]'));
     
     pasilloSelect.addEventListener('change', function() {
         const selectedPasillo = this.value;
+        const boxOptions = boxSelect.querySelectorAll('option');
         
-        // Limpiar selección actual de box
-        boxSelect.value = '';
-        
-        // Mostrar/ocultar opciones según pasillo seleccionado
-        allBoxOptions.forEach(option => {
-            if (!selectedPasillo || option.dataset.pasillo === selectedPasillo) {
-                option.style.display = '';
+        boxOptions.forEach(option => {
+            if (option.value === '') {
+                option.style.display = 'block';
             } else {
-                option.style.display = 'none';
+                const boxPasillo = option.getAttribute('data-pasillo');
+                option.style.display = (selectedPasillo === '' || boxPasillo === selectedPasillo) ? 'block' : 'none';
             }
         });
         
-        // Actualizar placeholder
-        const firstOption = boxSelect.querySelector('option[value=""]');
-        if (selectedPasillo) {
-            firstOption.textContent = 'Seleccione el Box...';
-        } else {
-            firstOption.textContent = 'Seleccione el Box...';
-        }
+        boxSelect.value = '';
     });
     
-    // Búsqueda de profesional
-    const profesionalSearch = document.getElementById('busqueda-profesional');
-    const profesionalSelect = document.getElementById('select-profesional');
-    
-    profesionalSearch.addEventListener('input', function() {
-        const searchTerm = this.value.toLowerCase();
-        const options = profesionalSelect.querySelectorAll('option:not([value=""])');
-        
-        options.forEach(option => {
-            const text = option.textContent.toLowerCase();
-            option.style.display = text.includes(searchTerm) ? '' : 'none';
-        });
-    });
-    
-    // Limpiar formulario
+    // Configurar botón limpiar
     document.getElementById('btn-limpiar-form').addEventListener('click', function() {
-        document.getElementById('form-agendamiento').reset();
-        // Restablecer fecha actual
-        document.getElementById('input-fecha').value = '{{ fecha|date:"Y-m-d" }}';
-        // Mostrar todos los boxes nuevamente
-        allBoxOptions.forEach(option => option.style.display = '');
+        form.reset();
+        setTodayDate();
     });
+    
+    // Configurar fecha de hoy por defecto
+    function setTodayDate() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        document.getElementById('input-fecha').value = yyyy + '-' + mm + '-' + dd;
+    }
+    
+    setTodayDate();
 });
 </script>
-
-<style>
-.panel-agendamiento {
-  max-height: 90vh;
-  overflow-y: auto;
-  border: none !important;
-}
-
-.panel-agendamiento .form-control,
-.panel-agendamiento .form-select {
-  background-color: #fff;
-  border: 1px solid #dee2e6;
-  border-radius: 6px;
-}
-
-.panel-agendamiento .form-control:focus,
-.panel-agendamiento .form-select:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-  border: none;
-  border-radius: 8px;
-  padding: 12px;
-}
-
-.btn-primary:hover {
-  background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
-}
-
-.btn-outline-light {
-  border-radius: 6px;
-}
-
-#mensajes-agendamiento .alert {
-  border-radius: 8px;
-  border: none;
-}
-</style>

@@ -2,6 +2,7 @@ from allauth.account.adapter import DefaultAccountAdapter
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
 from django.contrib.auth.models import User
 from .models import PerfilUsuario, TipoUsuario
+import uuid
 
 
 class CustomAccountAdapter(DefaultAccountAdapter):
@@ -10,6 +11,64 @@ class CustomAccountAdapter(DefaultAccountAdapter):
     def is_open_for_signup(self, request):
         """Permite el registro de nuevos usuarios."""
         return True
+    
+    def generate_unique_username(self, txts, regex=None):
+        """
+        Genera un username único basado en el email o usando UUID.
+        """
+        username = None
+        if txts:
+            # Intentar usar la parte del email antes del @
+            email_part = txts[0].split('@')[0] if '@' in txts[0] else txts[0]
+            username = email_part.lower().replace('.', '').replace('-', '')
+            
+            # Si el username ya existe, agregar un sufijo
+            counter = 1
+            original_username = username
+            while User.objects.filter(username=username).exists():
+                username = f"{original_username}{counter}"
+                counter += 1
+        
+        # Si no se puede generar desde el email, usar UUID
+        if not username:
+            username = f"user_{str(uuid.uuid4())[:8]}"
+            while User.objects.filter(username=username).exists():
+                username = f"user_{str(uuid.uuid4())[:8]}"
+        
+        return username
+    
+    def save_user(self, request, user, form, commit=True):
+        """
+        Guarda el usuario y crea su perfil con tipo por defecto.
+        """
+        user = super().save_user(request, user, form, commit=False)
+        
+        # Asegurar que tiene un username único
+        if not user.username:
+            user.username = self.generate_unique_username([user.email])
+        
+        if commit:
+            user.save()
+            
+            # Crear perfil de usuario si no existe
+            if not hasattr(user, 'perfilusuario'):
+                # Obtener o crear tipo de usuario por defecto (Visitante)
+                tipo_visitante, created = TipoUsuario.objects.get_or_create(
+                    nombre='Visitante',
+                    defaults={
+                        'descripcion': 'Usuario visitante con acceso limitado',
+                        'activo': True
+                    }
+                )
+                
+                # Crear perfil de usuario
+                PerfilUsuario.objects.create(
+                    usuario=user,
+                    tipo_usuario=tipo_visitante,
+                    activo=True
+                )
+        
+        return user
 
 
 class CustomSocialAccountAdapter(DefaultSocialAccountAdapter):

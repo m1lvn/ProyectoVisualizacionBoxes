@@ -154,12 +154,12 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-# Configuración de allauth
-ACCOUNT_LOGIN_METHODS = {'email'}  # Método de login actualizado
-ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Campos de registro actualizados
-ACCOUNT_EMAIL_VERIFICATION = 'none'  # Cambiar a 'mandatory' para verificación de email
-ACCOUNT_USER_MODEL_USERNAME_FIELD = None
+# Configuración de allauth (sintaxis moderna)
+ACCOUNT_LOGIN_METHODS = {'email'}       # Usar email para login
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']  # Campos requeridos
+ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'  # Django necesita username internamente
 ACCOUNT_USER_MODEL_EMAIL_FIELD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'none'     # Sin verificación de email por ahora
 
 # Redirecciones después del login/logout
 LOGIN_REDIRECT_URL = '/redirect-after-login/'

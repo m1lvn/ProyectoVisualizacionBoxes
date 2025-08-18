@@ -69,6 +69,11 @@
   pointer-events: none;
 }
 
+/* Ajuste específico para input de fecha - igual que en panel de agendamiento */
+input[type="date"].filtro-select {
+  padding: 8px 12px 8px 12px; /* Sin padding extra para icono manual */
+}
+
 /* Grupos de búsqueda */
 .search-input-group {
   position: relative;

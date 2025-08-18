@@ -177,7 +177,9 @@ class Agenda(models.Model):
         Profesional, 
         models.DO_NOTHING, 
         db_column='idProfesional',
-        help_text="Profesional asignado"
+        blank=True,  # Permite que el campo esté vacío en formularios
+        null=True,   # Permite NULL en la base de datos
+        help_text="Profesional asignado (opcional)"
     )
     idbox = models.ForeignKey(
         Box, 
@@ -193,6 +195,11 @@ class Agenda(models.Model):
     horafin = models.TimeField(
         db_column='horaFin',
         help_text="Hora de fin de la agenda"
+    )
+    observaciones = models.TextField(
+        blank=True,    # Permite que el campo esté vacío en formularios
+        null=True,     # Permite NULL en la base de datos
+        help_text="Observaciones adicionales para la agenda"
     )
 
     class Meta:

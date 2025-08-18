@@ -21,7 +21,6 @@
   <!-- Contenido según estado -->
   {% if estado == 'Reservado' %}
     <div class="box-content reservado">
-      <i class="fas fa-user-md"></i>
       <small>{{ info }}</small>
     </div>
   {% elif estado == 'Inhabilitado' %}
@@ -41,7 +40,6 @@
     </div>
   {% else %}
     <div class="box-content disponible">
-      <i class="fas fa-check-circle"></i>
     </div>
   {% endif %}
 </td>

@@ -1367,8 +1367,18 @@ def crear_agenda(request):
             tipo_agenda_id = request.POST.get('tipo_agenda')
             observaciones = request.POST.get('observaciones', '')
             
+            # Debug: Log de los datos recibidos
+            print(f"DEBUG - Datos recibidos:")
+            print(f"  box_id: '{box_id}'")
+            print(f"  fecha: '{fecha}'")
+            print(f"  hora_inicio: '{hora_inicio}'")
+            print(f"  hora_fin: '{hora_fin}'")
+            print(f"  profesional_id: '{profesional_id}'")
+            print(f"  tipo_agenda_id: '{tipo_agenda_id}'")
+            print(f"  observaciones: '{observaciones}'")
+            
             # Validar datos requeridos (solo los obligatorios)
-            # Nota: Profesional es técnicamente requerido en BD, pero puede implementarse un "profesional genérico"
+            # Nota: Profesional ahora es opcional gracias a los cambios en la BD
             if not all([box_id, fecha, hora_inicio, hora_fin, tipo_agenda_id]):
                 return JsonResponse({'error': 'Faltan datos requeridos. Campos obligatorios: Box, Fecha, Hora inicio, Hora fin, Tipo de agenda'}, status=400)
             
@@ -1376,18 +1386,42 @@ def crear_agenda(request):
             try:
                 box = Box.objects.get(idbox=box_id)
                 tipo_agenda = Tipoagenda.objects.get(idtipoagenda=tipo_agenda_id)
-                fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
-                hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time()
-                hora_fin_obj = datetime.strptime(hora_fin, '%H:%M').time()
                 
-                # Profesional: si no se especifica, usar un profesional genérico o el primero disponible
-                if profesional_id:
+                # Parsear fecha con manejo de formato chileno DD/MM/YYYY
+                try:
+                    # Primero intentar formato chileno DD/MM/YYYY
+                    if '/' in fecha:
+                        fecha_obj = datetime.strptime(fecha, '%d/%m/%Y').date()
+                    # Si no, intentar formato ISO YYYY-MM-DD
+                    elif '-' in fecha:
+                        fecha_obj = datetime.strptime(fecha, '%Y-%m-%d').date()
+                    else:
+                        raise ValueError(f"Formato de fecha no reconocido: {fecha}")
+                    print(f"DEBUG - Fecha parseada correctamente: {fecha_obj}")
+                except ValueError as e:
+                    print(f"DEBUG - Error al parsear fecha '{fecha}': {e}")
+                    return JsonResponse({'error': f'Formato de fecha inválido: {fecha}. Formatos aceptados: DD/MM/YYYY o YYYY-MM-DD'}, status=400)
+                
+                # Parsear hora inicio con manejo de errores específico  
+                try:
+                    hora_inicio_obj = datetime.strptime(hora_inicio, '%H:%M').time()
+                    print(f"DEBUG - Hora inicio parseada correctamente: {hora_inicio_obj}")
+                except ValueError as e:
+                    print(f"DEBUG - Error al parsear hora_inicio '{hora_inicio}': {e}")
+                    return JsonResponse({'error': f'Formato de hora inicio inválido: {hora_inicio}. Esperado: HH:MM'}, status=400)
+                
+                # Parsear hora fin con manejo de errores específico
+                try:
+                    hora_fin_obj = datetime.strptime(hora_fin, '%H:%M').time()
+                    print(f"DEBUG - Hora fin parseada correctamente: {hora_fin_obj}")
+                except ValueError as e:
+                    print(f"DEBUG - Error al parsear hora_fin '{hora_fin}': {e}")
+                    return JsonResponse({'error': f'Formato de hora fin inválido: {hora_fin}. Esperado: HH:MM'}, status=400)
+                
+                # Profesional: ahora es opcional
+                profesional = None
+                if profesional_id and profesional_id != '':
                     profesional = Profesional.objects.get(idprofesional=profesional_id)
-                else:
-                    # Usar el primer profesional disponible como "genérico"
-                    profesional = Profesional.objects.first()
-                    if not profesional:
-                        return JsonResponse({'error': 'No hay profesionales disponibles en el sistema'}, status=400)
                     
             except Box.DoesNotExist:
                 return JsonResponse({'error': 'Box no encontrado'}, status=400)
@@ -1395,8 +1429,6 @@ def crear_agenda(request):
                 return JsonResponse({'error': 'Tipo de agenda no encontrado'}, status=400)
             except Profesional.DoesNotExist:
                 return JsonResponse({'error': 'Profesional no encontrado'}, status=400)
-            except ValueError:
-                return JsonResponse({'error': 'Formato de fecha u hora inválido'}, status=400)
             
             # Validar que hora_fin sea posterior a hora_inicio
             if hora_fin_obj <= hora_inicio_obj:
@@ -1416,7 +1448,7 @@ def crear_agenda(request):
             # Crear la nueva agenda
             nueva_agenda = Agenda.objects.create(
                 idbox=box,
-                idprofesional=profesional,  # Requerido en BD - usa profesional seleccionado o genérico
+                idprofesional=profesional,  # Ahora puede ser None
                 idtipoagenda=tipo_agenda,
                 fecha=fecha_obj,
                 horainicio=hora_inicio_obj,

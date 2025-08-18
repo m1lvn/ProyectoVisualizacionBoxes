@@ -2,46 +2,44 @@
 <!-- ============================= -->
 <!-- TABLA DE BOXES PASILLO       -->
 <!-- ============================= -->
-<div class="contenedor-tabla position-relative">
-  <div class="table-responsive position-relative">
-    <table class="table table-bordered text-center w-100 table-boxes">
-      
-      <!-- Encabezado -->
-      <thead class="table-light sticky-top">
-        <tr>
-          <th class="celda-hora">
-            <i class="fas fa-clock me-1"></i>Hora
+<div class="table-responsive contenedor-tabla">
+  <table class="table table-bordered text-center w-100 table-boxes">
+    
+    <!-- Encabezado -->
+    <thead class="table-light sticky-top">
+      <tr>
+        <th class="celda-hora">
+          <i class="fas fa-clock me-1"></i>Hora
+        </th>
+        {% for box in boxes %}
+          <th class="columna-box" data-pasillo="{{ box.idpasillo.pasillo|lower }}" 
+              title="Pasillo: {{ box.idpasillo.pasillo }}">
+            <div class="box-header">
+              <strong>BOX {{ box.idbox }}</strong>
+            </div>
           </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    
+    <!-- Cuerpo de la tabla -->
+    <tbody>
+      {% for hora in horas %}
+        <tr class="fila-horario" data-hora="{{ hora }}">
+          <td class="celda-hora">
+            <strong>{{ hora }}</strong>
+          </td>
           {% for box in boxes %}
-            <th class="columna-box" data-pasillo="{{ box.idpasillo.pasillo|lower }}" 
-                title="Pasillo: {{ box.idpasillo.pasillo }}">
-              <div class="box-header">
-                <strong>BOX {{ box.idbox }}</strong>
-              </div>
-            </th>
-          {% endfor %}
-        </tr>
-      </thead>
-      
-      <!-- Cuerpo de la tabla -->
-      <tbody>
-        {% for hora in horas %}
-          <tr class="fila-horario" data-hora="{{ hora }}">
-            <td class="celda-hora">
-              <strong>{{ hora }}</strong>
-            </td>
-            {% for box in boxes %}
-              {% with key=box.idbox|stringformat:"s"|add:"-"|add:hora %}
-                {% with estado=estado_por_box_y_hora|get_item:key %}
-                  {% with info=info_por_box_y_hora|get_item:key %}
-                    {% include "visualizacionBoxes/partials_pasillo/celda_box.html" with box=box hora=hora estado=estado info=info %}
-                  {% endwith %}
+            {% with key=box.idbox|stringformat:"s"|add:"-"|add:hora %}
+              {% with estado=estado_por_box_y_hora|get_item:key %}
+                {% with info=info_por_box_y_hora|get_item:key %}
+                  {% include "visualizacionBoxes/partials_pasillo/celda_box.html" with box=box hora=hora estado=estado info=info %}
                 {% endwith %}
               {% endwith %}
-            {% endfor %}
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+            {% endwith %}
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>

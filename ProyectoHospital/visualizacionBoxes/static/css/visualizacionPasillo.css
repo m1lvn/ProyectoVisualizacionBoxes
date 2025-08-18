@@ -70,15 +70,13 @@
   border-collapse: separate;
   border-spacing: 8px;
   background-color: #f8f9fa;
-  border-radius: var(--border-radius-lg);
+  border-radius: var(--border-radius);
   font-size: 12px;
   margin: 0;
   animation: fadeIn 0.5s ease-in-out;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   table-layout: fixed;
   position: relative;
   border: none;
-  padding: 12px;
 }
 
 /* ========================================================================== */
@@ -323,8 +321,11 @@
 .table-responsive {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: var(--border-radius-lg);
+  background: white;
+  box-shadow: var(--container-shadow);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 16px;
 }
 
 .fila-horario {
