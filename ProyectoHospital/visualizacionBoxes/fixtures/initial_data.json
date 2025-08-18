@@ -3,7 +3,7 @@
     "model": "auth.group",
     "pk": 1,
     "fields": {
-      "name": "Médico",
+      "name": "Administrador",
       "permissions": []
     }
   },
@@ -11,7 +11,7 @@
     "model": "auth.group", 
     "pk": 2,
     "fields": {
-      "name": "Enfermero",
+      "name": "Personal Médico",
       "permissions": []
     }
   },
@@ -19,21 +19,13 @@
     "model": "auth.group",
     "pk": 3, 
     "fields": {
-      "name": "Administrativo",
+      "name": "Personal Administrativo",
       "permissions": []
     }
   },
   {
     "model": "auth.group",
     "pk": 4,
-    "fields": {
-      "name": "Visitante",
-      "permissions": []
-    }
-  },
-  {
-    "model": "auth.group",
-    "pk": 5,
     "fields": {
       "name": "Supervisor",
       "permissions": []
