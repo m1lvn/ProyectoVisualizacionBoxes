@@ -639,132 +639,154 @@ def _determinar_estado_agenda(agenda):
 
 def reportes(request):
     """
-    Vista para el módulo de reportes del sistema hospitalario.
-    
-    Genera reportes detallados sobre ocupación de boxes, profesionales,
-    especialidades y tipos de agenda en un rango de fechas específico.
-    Soporta vista previa AJAX y descarga en múltiples formatos.
-    
-    Parámetros POST:
-    - fechainicio: Fecha inicio del reporte (formato YYYY-MM-DD)
-    - fechafin: Fecha fin del reporte (formato YYYY-MM-DD)
-    - pasillo: ID del pasillo ("General" para todos los pasillos)
-    - tipo_reporte: Tipo (ocupacion, profesionales, especialidades, tipos_agenda)
-    - formato: Formato de salida (csv, excel, pdf)
-    - action: Acción (preview, download)
-    
-    Returns:
-        HttpResponse: Template de reportes o archivo de descarga
-        JsonResponse: Vista previa en formato AJAX
+    Vista mejorada para el módulo de reportes del sistema hospitalario.
     """
-    # ===============================
-    # IMPORTACIONES LOCALIZADAS
-    # ===============================
-    from django.http import HttpResponse
-    from django.db.models import Count, Sum, Avg, F, Case, When, IntegerField
-    from django.db.models.functions import Cast
-    import csv
-    import json
-    from datetime import datetime, timedelta
+    import logging
+    logger = logging.getLogger(__name__)
     
-    # ===============================
-    # OBTENER DATOS BASE
-    # ===============================
+    # Obtener datos base
     pasillos = Pasillo.objects.all().order_by('pasillo')
     
-    # ===============================
-    # PROCESAR SOLICITUD POST
-    # ===============================
     if request.method == 'POST':
-        # ===============================
-        # OBTENER PARÁMETROS DEL FORM
-        # ===============================
-        parametros = {
-            'fecha_inicio_str': request.POST.get('fechainicio'),
-            'fecha_fin_str': request.POST.get('fechafin'),
-            'pasillo_id': request.POST.get('pasillo'),
-            'tipo_reporte': request.POST.get('tipo_reporte', 'ocupacion'),
-            'formato': request.POST.get('formato', 'csv'),
-            'action': request.POST.get('action', 'preview')
-        }
+        # Debug para ver qué datos llegan
+        print("=== DEBUG REPORTES ===")
+        print(f"POST data completo: {dict(request.POST)}")
+        print(f"Method: {request.method}")
+        print(f"Content-Type: {request.content_type}")
+        print("======================")
         
-        # ===============================
-        # VALIDAR Y PROCESAR FECHAS
-        # ===============================
         try:
-            fecha_inicio = datetime.strptime(parametros['fecha_inicio_str'], '%Y-%m-%d').date()
-            fecha_fin = datetime.strptime(parametros['fecha_fin_str'], '%Y-%m-%d').date()
-        except (ValueError, TypeError):
-            return JsonResponse({
-                'success': False, 
-                'message': 'Fechas inválidas. Use formato YYYY-MM-DD.'
-            })
-        
-        if fecha_inicio > fecha_fin:
-            return JsonResponse({
-                'success': False,
-                'message': 'La fecha de inicio no puede ser posterior a la fecha de fin.'
-            })
-        
-        # ===============================
-        # CONSTRUIR QUERY BASE
-        # ===============================
-        agendas_query = Agenda.objects.filter(
-            fecha__gte=fecha_inicio,
-            fecha__lte=fecha_fin
-        ).select_related('idbox', 'idbox__idpasillo', 'idprofesional', 'idtipoagenda')
-        
-        # Filtrar por pasillo si se especifica
-        if parametros['pasillo_id'] and parametros['pasillo_id'] != 'General':
-            agendas_query = agendas_query.filter(idbox__idpasillo=parametros['pasillo_id'])
-        
-        # ===============================
-        # GENERAR DATOS DEL REPORTE
-        # ===============================
-        if parametros['tipo_reporte'] == 'ocupacion':
-            datos = _generar_reporte_ocupacion(agendas_query, fecha_inicio, fecha_fin)
-        elif parametros['tipo_reporte'] == 'profesionales':
-            datos = _generar_reporte_profesionales(agendas_query, fecha_inicio, fecha_fin)
-        elif parametros['tipo_reporte'] == 'especialidades':
-            datos = _generar_reporte_especialidades(agendas_query, fecha_inicio, fecha_fin)
-        elif parametros['tipo_reporte'] == 'tipos_agenda':
-            datos = _generar_reporte_tipos_agenda(agendas_query, fecha_inicio, fecha_fin)
-        else:
-            return JsonResponse({
-                'success': False,
-                'message': 'Tipo de reporte no válido.'
-            })
-        
-        # ===============================
-        # PROCESAR SEGÚN ACCIÓN
-        # ===============================
-        if parametros['action'] == 'preview':
-            if not datos['registros']:
+            # Obtener y validar parámetros
+            parametros = {
+                'fecha_inicio_str': request.POST.get('fechainicio'),
+                'fecha_fin_str': request.POST.get('fechafin'),
+                'pasillo_id': request.POST.get('pasillo'),
+                'tipo_reporte': request.POST.get('tipo_reporte', 'ocupacion'),
+                'formato': request.POST.get('formato', 'csv'),
+                'action': request.POST.get('action', 'preview')
+            }
+            
+            logger.info(f"Procesando reporte con parámetros: {parametros}")
+            
+            # Validar fechas
+            if not parametros['fecha_inicio_str'] or not parametros['fecha_fin_str']:
                 return JsonResponse({
                     'success': False,
-                    'message': 'No se encontraron datos para los filtros seleccionados.'
+                    'message': 'Las fechas de inicio y fin son requeridas.'
                 })
             
-            # Generar HTML para vista previa
-            html_preview = _generar_html_preview(datos)
-            return JsonResponse({
-                'success': True,
-                'html': html_preview,
-                'total_registros': len(datos['registros'])
-            })
+            try:
+                fecha_inicio = datetime.strptime(parametros['fecha_inicio_str'], '%Y-%m-%d').date()
+                fecha_fin = datetime.strptime(parametros['fecha_fin_str'], '%Y-%m-%d').date()
+            except ValueError:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Formato de fecha inválido. Use YYYY-MM-DD.'
+                })
+            
+            if fecha_inicio > fecha_fin:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'La fecha de inicio no puede ser posterior a la fecha de fin.'
+                })
+            
+            # Construir query base con manejo de errores
+            try:
+                agendas_query = Agenda.objects.filter(
+                    fecha__gte=fecha_inicio,
+                    fecha__lte=fecha_fin
+                ).select_related('idbox', 'idbox__idpasillo', 'idprofesional', 'idtipoagenda')
+                
+                # Filtrar por pasillo si se especifica
+                if parametros['pasillo_id'] and parametros['pasillo_id'] != 'General':
+                    agendas_query = agendas_query.filter(idbox__idpasillo=parametros['pasillo_id'])
+                
+                # Verificar si hay datos
+                if not agendas_query.exists():
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'No se encontraron agendas para el rango de fechas y filtros seleccionados.'
+                    })
+                
+                logger.info(f"Encontradas {agendas_query.count()} agendas")
+                
+            except Exception as e:
+                logger.error(f"Error al construir query: {e}")
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Error al acceder a los datos de agendas.'
+                })
+            
+            # Generar datos del reporte
+            try:
+                if parametros['tipo_reporte'] == 'ocupacion':
+                    datos = _generar_reporte_ocupacion(agendas_query, fecha_inicio, fecha_fin)
+                elif parametros['tipo_reporte'] == 'profesionales':
+                    datos = _generar_reporte_profesionales(agendas_query, fecha_inicio, fecha_fin)
+                elif parametros['tipo_reporte'] == 'especialidades':
+                    datos = _generar_reporte_especialidades(agendas_query, fecha_inicio, fecha_fin)
+                elif parametros['tipo_reporte'] == 'tipos_agenda':
+                    datos = _generar_reporte_tipos_agenda(agendas_query, fecha_inicio, fecha_fin)
+                else:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Tipo de reporte no válido.'
+                    })
+                
+                if not datos or not datos.get('registros'):
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'No se pudieron generar datos para el reporte seleccionado.'
+                    })
+                
+                logger.info(f"Datos generados: {len(datos['registros'])} registros")
+                
+            except Exception as e:
+                logger.error(f"Error al generar datos del reporte: {e}")
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Error al generar el reporte: {str(e)}'
+                })
+            
+            # Procesar según acción
+            if parametros['action'] == 'preview':
+                try:
+                    html_preview = _generar_html_preview(datos)
+                    return JsonResponse({
+                        'success': True,
+                        'html': html_preview,
+                        'total_registros': len(datos['registros'])
+                    })
+                except Exception as e:
+                    logger.error(f"Error al generar HTML preview: {e}")
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Error al generar la vista previa.'
+                    })
+            
+            elif parametros['action'] == 'download':
+                try:
+                    if parametros['formato'] == 'csv':
+                        return _generar_csv_response(datos, parametros['tipo_reporte'], fecha_inicio, fecha_fin)
+                    elif parametros['formato'] == 'excel':
+                        return _generar_excel_response(datos, parametros['tipo_reporte'], fecha_inicio, fecha_fin)
+                    elif parametros['formato'] == 'pdf':
+                        return _generar_pdf_response(datos, parametros['tipo_reporte'], fecha_inicio, fecha_fin)
+                except Exception as e:
+                    logger.error(f"Error al generar descarga: {e}")
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Error al generar el archivo de descarga.'
+                    })
         
-        # Acción de descarga
-        elif parametros['action'] == 'download':
-            if parametros['formato'] == 'csv':
-                return _generar_csv_response(datos, parametros['tipo_reporte'], fecha_inicio, fecha_fin)
-            elif parametros['formato'] == 'excel':
-                return _generar_excel_response(datos, parametros['tipo_reporte'], fecha_inicio, fecha_fin)
-            elif parametros['formato'] == 'pdf':
-                return _generar_pdf_response(datos, parametros['tipo_reporte'], fecha_inicio, fecha_fin)
+        except Exception as e:
+            logger.error(f"Error general en reportes: {e}")
+            return JsonResponse({
+                'success': False,
+                'message': 'Error interno del servidor. Por favor, intente nuevamente.'
+            })
     
-    # ===============================
-    # PROCESAR SOLICITUD GET
-    # ===============================
+    # Respuesta GET - mostrar template
     context = {
         'pasillos': pasillos,
     }
@@ -805,11 +827,21 @@ def _generar_reporte_ocupacion(agendas_query, fecha_inicio, fecha_fin):
         duracion_total = stat['total_horas']
         horas_ocupacion = duracion_total.total_seconds() / 3600 if duracion_total else 0
         
+        # Asegurar que no haya valores negativos
+        horas_ocupacion = max(0, horas_ocupacion)
+        
         # Calcular días en el rango
         dias_periodo = (fecha_fin - fecha_inicio).days + 1
-        horas_disponibles = dias_periodo * 24  # Asumiendo 24 horas disponibles por día
+        # Horas laborales por día (8 AM a 6 PM = 10 horas por día)
+        horas_laborales_diarias = 10
+        horas_disponibles = dias_periodo * horas_laborales_diarias
         
-        porcentaje_ocupacion = (horas_ocupacion / horas_disponibles * 100) if horas_disponibles > 0 else 0
+        # Calcular porcentaje y asegurar que esté en rango válido
+        if horas_disponibles > 0:
+            porcentaje_ocupacion = (horas_ocupacion / horas_disponibles * 100)
+            porcentaje_ocupacion = max(0, min(100, porcentaje_ocupacion))  # Entre 0% y 100%
+        else:
+            porcentaje_ocupacion = 0
         
         registros.append({
             'Box': f"Box {stat['idbox__idbox']}",
