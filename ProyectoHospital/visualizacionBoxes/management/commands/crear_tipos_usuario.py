@@ -21,8 +21,12 @@ class Command(BaseCommand):
                 'descripcion': 'Acceso administrativo completo. Puede ver todos los pasillos, administrar todas las agendas y generar reportes de todos los datos. No puede gestionar usuarios ni configurar sistema.',
             },
             {
-                'nombre': 'Personal Medico',
+                'nombre': 'Personal Médico',
                 'descripcion': 'Acceso médico limitado a su pasillo asignado. Puede ver visualizaciones y generar reportes solo de su pasillo. Puede consultar agendas pero no administrarlas.',
+            },
+            {
+                'nombre': 'Visitante',
+                'descripcion': 'Acceso de solo lectura limitado. Puede ver visualizaciones generales sin datos sensibles. Sin acceso a agendas, reportes detallados o funciones administrativas.',
             },
         ]
 
@@ -73,5 +77,13 @@ class Command(BaseCommand):
         self.stdout.write('   ❌ Gestionar Usuarios')
         self.stdout.write('   ❌ Configuración Sistema')
         self.stdout.write('')
-        self.stdout.write('💡 RECORDATORIO: Para Personal Médico, no olvides asignar un pasillo en el admin.')
+        self.stdout.write('� VISITANTE:')
+        self.stdout.write('   ✅ Visualización General (limitada)')
+        self.stdout.write('   ❌ Visualización Pasillos')
+        self.stdout.write('   ❌ Generar Reportes')
+        self.stdout.write('   ❌ Administrar Agendas')
+        self.stdout.write('   ❌ Gestionar Usuarios')
+        self.stdout.write('   ❌ Configuración Sistema')
+        self.stdout.write('')
+        self.stdout.write('�💡 RECORDATORIO: Para Personal Médico, no olvides asignar un pasillo en el admin.')
         self.stdout.write('='*60)

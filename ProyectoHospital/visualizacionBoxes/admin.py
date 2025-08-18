@@ -6,8 +6,8 @@ a través del panel de administración de Django.
 """
 
 from django.contrib import admin
-from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
-from django.contrib.auth.models import Group
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.models import User
 from .models import (
     Box, Agenda, Tipoagenda, Pasillo, Especialidad, Profesional,
     TipoUsuario, PerfilUsuario
@@ -180,30 +180,57 @@ class PerfilUsuarioAdmin(admin.ModelAdmin):
 
 
 # ===============================
-# ADMINISTRACIÓN DE TIPOS DE USUARIO (GROUPS) - LEGACY
+# ADMINISTRACIÓN DE USUARIOS CON PERFIL INLINE
 # ===============================
 
-# Configuración personalizada para Groups (Tipos de Usuario)
-class GroupAdmin(BaseGroupAdmin):
-    """Admin personalizado para Groups con mejor visualización."""
-    list_display = ('name', 'get_user_count', 'get_permissions_count')
-    search_fields = ('name',)
-    ordering = ('name',)
+# Inline para PerfilUsuario en User
+class PerfilUsuarioInline(admin.StackedInline):
+    model = PerfilUsuario
+    extra = 0
+    can_delete = False
+    verbose_name = "Perfil del Hospital"
+    verbose_name_plural = "Perfil del Hospital"
     
-    def get_user_count(self, obj):
-        """Mostrar cantidad de usuarios en el grupo."""
-        return obj.user_set.count()
-    get_user_count.short_description = 'Usuarios'
+    fieldsets = (
+        ('Información del Hospital', {
+            'fields': ('tipo_usuario', 'pasillo_asignado', 'telefono', 'activo'),
+            'description': 'Configuración específica del hospital para este usuario.'
+        }),
+    )
+
+# Admin personalizado para User que incluye PerfilUsuario
+class UserAdminCustom(BaseUserAdmin):
+    inlines = (PerfilUsuarioInline,)
     
-    def get_permissions_count(self, obj):
-        """Mostrar cantidad de permisos del grupo."""
-        return obj.permissions.count()
-    get_permissions_count.short_description = 'Permisos'
+    # Agregar campos del perfil a la vista de lista
+    list_display = BaseUserAdmin.list_display + ('get_tipo_usuario', 'get_pasillo_asignado', 'get_activo')
+    list_filter = BaseUserAdmin.list_filter + ('perfilusuario__tipo_usuario', 'perfilusuario__pasillo_asignado', 'perfilusuario__activo')
+    
+    def get_tipo_usuario(self, obj):
+        try:
+            return obj.perfilusuario.tipo_usuario.nombre
+        except PerfilUsuario.DoesNotExist:
+            return "Sin perfil"
+    get_tipo_usuario.short_description = 'Tipo de Usuario'
+    
+    def get_pasillo_asignado(self, obj):
+        try:
+            return obj.perfilusuario.pasillo_asignado.nombre if obj.perfilusuario.pasillo_asignado else "Sin asignar"
+        except PerfilUsuario.DoesNotExist:
+            return "Sin perfil"
+    get_pasillo_asignado.short_description = 'Pasillo'
+    
+    def get_activo(self, obj):
+        try:
+            return "✓" if obj.perfilusuario.activo else "✗"
+        except PerfilUsuario.DoesNotExist:
+            return "Sin perfil"
+    get_activo.short_description = 'Activo'
 
+# Re-registrar el admin de User con configuración personalizada
+admin.site.unregister(User)
+admin.site.register(User, UserAdminCustom)
 
-# Re-registrar el admin de Group con configuración personalizada
-admin.site.unregister(Group)
-admin.site.register(Group, GroupAdmin)
 
 # Personalizar títulos del admin
 admin.site.site_header = "Administración del Hospital"
