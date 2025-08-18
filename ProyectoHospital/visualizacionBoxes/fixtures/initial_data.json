@@ -1,0 +1,112 @@
+[
+  {
+    "model": "auth.group",
+    "pk": 1,
+    "fields": {
+      "name": "Médico",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group", 
+    "pk": 2,
+    "fields": {
+      "name": "Enfermero",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 3, 
+    "fields": {
+      "name": "Administrativo",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 4,
+    "fields": {
+      "name": "Visitante",
+      "permissions": []
+    }
+  },
+  {
+    "model": "auth.group",
+    "pk": 5,
+    "fields": {
+      "name": "Supervisor",
+      "permissions": []
+    }
+  },
+  {
+    "model": "visualizacionBoxes.tipoagenda",
+    "pk": 1,
+    "fields": {
+      "tipoagenda": "Hora médica"
+    }
+  },
+  {
+    "model": "visualizacionBoxes.tipoagenda",
+    "pk": 2,
+    "fields": {
+      "tipoagenda": "Hora no médica"
+    }
+  },
+  {
+    "model": "visualizacionBoxes.tipoagenda",
+    "pk": 3,
+    "fields": {
+      "tipoagenda": "Limpieza"
+    }
+  },
+  {
+    "model": "visualizacionBoxes.tipoagenda",
+    "pk": 4,
+    "fields": {
+      "tipoagenda": "Deshabilitado"
+    }
+  },
+  {
+    "model": "visualizacionBoxes.tipoagenda",
+    "pk": 5,
+    "fields": {
+      "tipoagenda": "Mantención"
+    }
+  },
+  {
+    "model": "visualizacionBoxes.tipoagenda",
+    "pk": 6,
+    "fields": {
+      "tipoagenda": "Capacitación"
+    }
+  },
+  {
+    "model": "visualizacionBoxes.tipoagenda",
+    "pk": 7,
+    "fields": {
+      "tipoagenda": "Reunión"
+    }
+  },
+  {
+    "model": "visualizacionBoxes.tipoagenda",
+    "pk": 8,
+    "fields": {
+      "tipoagenda": "Bloqueado por gestión"
+    }
+  },
+  {
+    "model": "visualizacionBoxes.tipoagenda",
+    "pk": 9,
+    "fields": {
+      "tipoagenda": "Bloqueo administrativo"
+    }
+  },
+  {
+    "model": "visualizacionBoxes.tipoagenda",
+    "pk": 10,
+    "fields": {
+      "tipoagenda": "Reservado para urgencias"
+    }
+  }
+]
