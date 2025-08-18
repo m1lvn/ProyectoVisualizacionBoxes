@@ -9,7 +9,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import GroupAdmin as BaseGroupAdmin
 from django.contrib.auth.models import Group
 from .models import (
-    Box, Agenda, Tipoagenda, Pasillo, Especialidad, Profesional
+    Box, Agenda, Tipoagenda, Pasillo, Especialidad, Profesional,
+    TipoUsuario, PerfilUsuario
 )
 
 
@@ -109,7 +110,77 @@ class AgendaAdmin(admin.ModelAdmin):
 
 
 # ===============================
-# ADMINISTRACIÓN DE TIPOS DE USUARIO (GROUPS)
+# ADMINISTRACIÓN DE TIPOS DE USUARIO
+# ===============================
+
+@admin.register(TipoUsuario)
+class TipoUsuarioAdmin(admin.ModelAdmin):
+    """Admin para los tipos de usuario del sistema."""
+    list_display = ('nombre', 'descripcion_corta', 'activo', 'fecha_creacion', 'get_usuarios_count')
+    list_filter = ('activo', 'fecha_creacion')
+    search_fields = ('nombre', 'descripcion')
+    ordering = ('nombre',)
+    readonly_fields = ('fecha_creacion', 'fecha_modificacion')
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('nombre', 'descripcion', 'activo')
+        }),
+        ('Fechas', {
+            'fields': ('fecha_creacion', 'fecha_modificacion'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def descripcion_corta(self, obj):
+        """Muestra una versión corta de la descripción."""
+        return obj.descripcion[:50] + '...' if len(obj.descripcion) > 50 else obj.descripcion
+    descripcion_corta.short_description = 'Descripción'
+    
+    def get_usuarios_count(self, obj):
+        """Muestra la cantidad de usuarios de este tipo."""
+        return obj.perfilusuario_set.count()
+    get_usuarios_count.short_description = 'Usuarios'
+
+
+@admin.register(PerfilUsuario)
+class PerfilUsuarioAdmin(admin.ModelAdmin):
+    """Admin para los perfiles de usuario."""
+    list_display = ('get_nombre_completo', 'get_email', 'tipo_usuario', 'pasillo_asignado', 'activo', 'fecha_creacion')
+    list_filter = ('tipo_usuario', 'pasillo_asignado', 'activo', 'fecha_creacion')
+    search_fields = ('usuario__username', 'usuario__first_name', 'usuario__last_name', 'usuario__email', 'telefono')
+    ordering = ('-fecha_creacion',)
+    readonly_fields = ('fecha_creacion', 'fecha_modificacion')
+    
+    fieldsets = (
+        ('Usuario Django', {
+            'fields': ('usuario',)
+        }),
+        ('Perfil Hospital', {
+            'fields': ('tipo_usuario', 'pasillo_asignado', 'activo', 'telefono'),
+            'description': 'El campo "Pasillo asignado" solo es necesario para Personal Médico.'
+        }),
+        ('Fechas', {
+            'fields': ('fecha_creacion', 'fecha_modificacion', 'ultimo_acceso'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def get_nombre_completo(self, obj):
+        """Obtener nombre completo del usuario."""
+        return obj.nombre_completo
+    get_nombre_completo.short_description = 'Nombre Completo'
+    get_nombre_completo.admin_order_field = 'usuario__first_name'
+    
+    def get_email(self, obj):
+        """Obtener email del usuario."""
+        return obj.usuario.email
+    get_email.short_description = 'Email'
+    get_email.admin_order_field = 'usuario__email'
+
+
+# ===============================
+# ADMINISTRACIÓN DE TIPOS DE USUARIO (GROUPS) - LEGACY
 # ===============================
 
 # Configuración personalizada para Groups (Tipos de Usuario)
