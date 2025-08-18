@@ -1,139 +1,210 @@
 {% extends 'visualizacionBoxes/base.html' %}
-{% load socialaccount %}
 
-{% block title %}Registrarse - Hospital{% endblock %}
+{% block title %}Crear cuenta – Hospital{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white text-center">
-                    <h4><i class="fas fa-user-plus me-2"></i>Crear Cuenta</h4>
-                </div>
-                <div class="card-body p-4">
-                    {% if form.errors %}
-                        <div class="alert alert-danger">
-                            <ul class="mb-0">
-                                {% for field, errors in form.errors.items %}
-                                    {% for error in errors %}
-                                        <li>{{ error }}</li>
-                                    {% endfor %}
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
+<div class="auth-wrap d-flex align-items-center justify-content-center py-5">
+  <div class="auth-card shadow-lg border-0">
+    <div class="card-body p-4 p-md-5">
 
-                    <!-- Registro con Google -->
-                    <div class="text-center mb-4">
-                        <a href="{% provider_login_url 'google' %}" class="btn btn-danger btn-lg w-100">
-                            <i class="fab fa-google me-2"></i>
-                            Registrarse con Google
-                        </a>
-                    </div>
+      <!-- Encabezado -->
+      <div class="text-center mb-4">
+        <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#1d74ff"/>
+              <stop offset="100%" stop-color="#22c1a1"/>
+            </linearGradient>
+          </defs>
+          <circle cx="36" cy="36" r="36" fill="url(#g)"/>
+          <!-- ficha -->
+          <rect x="22" y="18" width="20" height="24" rx="4" fill="#fff" opacity="0.95"/>
+          <rect x="26" y="22" width="12" height="2.8" rx="1.4" fill="#1d74ff" opacity="0.9"/>
+          <rect x="26" y="27" width="12" height="2" rx="1" fill="#cfe3ff"/>
+          <rect x="26" y="31" width="12" height="2" rx="1" fill="#cfe3ff"/>
+          <rect x="33.5" y="23.5" width="3" height="8" rx="1" fill="#1d74ff"/>
+          <rect x="31" y="26" width="8" height="3" rx="1" fill="#1d74ff"/>
+          <!-- persona -->
+          <circle cx="47" cy="37" r="6" fill="#fff"/><rect x="41" y="42" width="12" height="8" rx="4" fill="#fff"/>
+        </svg>
 
-                    <div class="text-center">
-                        <div class="d-inline-flex align-items-center">
-                            <div class="border-top flex-grow-1"></div>
-                            <span class="px-3 text-muted">o</span>
-                            <div class="border-top flex-grow-1"></div>
-                        </div>
-                    </div>
+        <h1 class="heading-xl welcome-title mb-1 fw-bold">Crear cuenta</h1>
+        <p class="subtle m-0">Completa tus datos para registrarte</p>
+      </div>
 
-                    <!-- Registro tradicional -->
-                    <form method="post" class="mt-4">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="{{ form.email.id_for_label }}" class="form-label">
-                                <i class="fas fa-envelope me-1"></i>Email
-                            </label>
-                            {{ form.email }}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.password1.id_for_label }}" class="form-label">
-                                <i class="fas fa-lock me-1"></i>Contraseña
-                            </label>
-                            {{ form.password1 }}
-                        </div>
+      <!-- Errores globales -->
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger" role="alert">
+        {% for err in form.non_field_errors %}{{ err }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+      </div>
+      {% endif %}
 
-                        <div class="mb-3">
-                            <label for="{{ form.password2.id_for_label }}" class="form-label">
-                                <i class="fas fa-lock me-1"></i>Confirmar Contraseña
-                            </label>
-                            {{ form.password2 }}
-                        </div>
+      <!-- Formulario (sin widget_tweaks) -->
+      <form method="post" action="{% url 'account_signup' %}" novalidate>
+        {% csrf_token %}
 
-                        <button type="submit" class="btn btn-success w-100">
-                            <i class="fas fa-user-plus me-2"></i>Crear Cuenta
-                        </button>
-                    </form>
-
-                    <div class="alert alert-info mt-3" role="alert">
-                        <small>
-                            <i class="fas fa-info-circle me-1"></i>
-                            Al registrarte, obtendrás acceso como <strong>Visitante</strong>. 
-                            Un administrador puede cambiar tu tipo de usuario posteriormente.
-                        </small>
-                    </div>
-                </div>
-                <div class="card-footer text-center bg-light">
-                    <small class="text-muted">
-                        ¿Ya tienes cuenta? 
-                        <a href="{% url 'account_login' %}" class="text-decoration-none">Iniciar Sesión</a>
-                    </small>
-                </div>
-            </div>
+        <!-- Nombre / Apellido paterno -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-600">Nombre</label>
+            <input type="text" name="first_name" id="id_first_name" class="form-control"
+                   placeholder="Ej: Juan" value="{{ form.first_name.value|default_if_none:'' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-600">Apellido paterno</label>
+            <input type="text" name="last_name" id="id_last_name" class="form-control"
+                   placeholder="Ej: Pérez" value="{{ form.last_name.value|default_if_none:'' }}">
+          </div>
         </div>
+
+        <!-- Apellido materno / RUT -->
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <label class="form-label fw-600">Apellido materno</label>
+            <input type="text" name="apellido_materno" id="id_apellido_materno" class="form-control"
+                   placeholder="Ej: González">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-600">RUT</label>
+            <input type="text" name="rut" id="id_rut" class="form-control"
+                   placeholder="12.345.678-9">
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="mt-3">
+          <label class="form-label fw-600">Correo institucional</label>
+          <input type="email" name="email" id="id_email" class="form-control"
+                 placeholder="Dirección de correo electrónico"
+                 value="{{ form.email.value|default_if_none:'' }}" autocomplete="email" required>
+          {% if form.email.errors %}
+            <div class="invalid-feedback d-block">
+              {% for e in form.email.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Passwords -->
+        <div class="row g-3 mt-1">
+          <div class="col-md-6">
+            <label class="form-label fw-600">Contraseña</label>
+            <input type="password" name="password1" id="id_password1" class="form-control"
+                   placeholder="Contraseña" autocomplete="new-password" required>
+            {% if form.password1.errors %}
+              <div class="invalid-feedback d-block">
+                {% for e in form.password1.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-600">Confirmar contraseña</label>
+            <input type="password" name="password2" id="id_password2" class="form-control"
+                   placeholder="Contraseña (de nuevo)" autocomplete="new-password" required>
+            {% if form.password2.errors %}
+              <div class="invalid-feedback d-block">
+                {% for e in form.password2.errors %}{{ e }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Aviso -->
+        <div class="note-warning d-flex align-items-start gap-3 mt-3" role="note" aria-live="polite">
+          <svg class="note-icon" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3.5L1.7 20.5a1.4 1.4 0 0 0 1.2 2.1h18.2a1.4 1.4 0 0 0 1.2-2.1L12 3.5z" fill="#FACC15"/>
+            <rect x="11" y="9" width="2" height="6" rx="1" fill="#92400E"/>
+            <rect x="11" y="17" width="2" height="2" rx="1" fill="#92400E"/>
+          </svg>
+          <div>
+            <strong>Aviso:</strong> Al registrarte obtendrás acceso como <strong>Visitante</strong>. Un administrador puede cambiar tu tipo de usuario más adelante.
+          </div>
+        </div>
+
+        <!-- Botón -->
+        <button type="submit" class="btn btn-gradient w-100 mt-3">Registrarme</button>
+      </form>
+
+      <!-- Link a login -->
+      <div class="text-center mt-3">
+        <small class="subtle">¿Ya tienes cuenta?
+          <a class="link-accent text-decoration-none" href="{% url 'account_login' %}">Inicia sesión</a>
+        </small>
+      </div>
+
     </div>
+  </div>
 </div>
 
 <style>
-.card {
-    border: none;
-    border-radius: 10px;
-}
+  :root{
+    --radius: 14px;
+    --bg-gradient: linear-gradient(135deg, #e6f0ff 0%, #fde2e6 100%); /* fondo claro */
+    --card-bg: #ffffff;
+    --text-strong: #1f2937;
+    --text-muted: #6b7280;
+    --line: rgba(0,0,0,.10);
+    --primary: #1d74ff;
+    --primary-2: #22c1a1;              /* verde del icono */
+    --shadow-sm: 0 8px 24px rgba(16,24,40,.12);
 
-.card-header {
-    border-radius: 10px 10px 0 0 !important;
-    border: none;
-}
+    /* NUEVO: colores de los campos “coloridos” */
+    --field-bg: #eaf2ff;               /* azul muy suave como en tu captura */
+    --field-bd: #d6e4ff;               /* borde claro */
+    --field-focus-bd: #9bbcff;         /* borde al foco */
+    --field-placeholder: #8da2c6;
+  }
 
-.form-control {
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    padding: 12px;
-}
+  .auth-wrap{ min-height: calc(100vh - 120px); background: var(--bg-gradient); }
 
-.form-control:focus {
-    border-color: #28a745;
-    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
-}
+  /* Más compacto: un poco más angosta la card */
+  .auth-card{ background: var(--card-bg); width:100%; max-width: 560px; border-radius: 18px; box-shadow: var(--shadow-sm); }
 
-.btn {
-    border-radius: 8px;
-    padding: 12px;
-    font-weight: 500;
-}
+  .heading-xl{ font-size: clamp(1.5rem, 1.1rem + 1vw, 2rem); font-weight: 800; color: var(--text-strong); }
+  .welcome-title{ margin-top:.75rem; }
+  .subtle{ color: var(--text-muted); }
 
-.btn-danger {
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-    border: none;
-}
+  .form-label{ color: var(--text-strong); }
+  .fw-600{ font-weight:600; }
 
-.btn-success {
-    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
-    border: none;
-}
+  /* Inputs con “toque colorido” */
+  .form-control{
+    height: 46px;                       /* un poco más bajos */
+    border-radius: 12px;
+    border: 1px solid var(--field-bd);
+    background: var(--field-bg);
+    color: var(--text-strong);
+    padding: .75rem .95rem;
+    font-size: .98rem;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .form-control::placeholder{ color: var(--field-placeholder); }
+  .form-control:focus{
+    background: #f3f8ff;
+    border-color: var(--field-focus-bd);
+    box-shadow: 0 0 0 .2rem rgba(29,116,255,.15);
+    outline: none;
+  }
 
-.shadow {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
+  .invalid-feedback{ color:#dc3545; font-size:.9rem; margin-top:.35rem; }
 
-.alert-info {
-    background-color: #d1ecf1;
-    border-color: #bee5eb;
-    color: #0c5460;
-}
+  .note-warning{
+    background: #FFF7E6;
+    border: 1px solid #FDE68A;
+    border-radius: 12px;
+    padding: .85rem 1rem;
+    color:#7a5a00;
+  }
+  .note-icon{ flex: 0 0 22px; margin-top: 2px; }
+
+  .btn-gradient{
+    height: 50px;                       /* botón también un pelín más bajo */
+    border-radius: 12px; border:none; font-weight:800; color:#fff;
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+    box-shadow: 0 8px 18px rgba(29,116,255,.18);
+  }
+  .btn-gradient:hover{ filter: brightness(.97); }
+
+  .link-accent{ color: var(--primary); }
+  .link-accent:hover{ text-decoration: underline; }
 </style>
 {% endblock %}

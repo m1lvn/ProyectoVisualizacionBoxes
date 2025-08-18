@@ -37,12 +37,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django.contrib.sites',  # Requerido por allauth
+    'django.contrib.sites',
+    'visualizacionBoxes', 
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
-    'visualizacionBoxes',  # Asegúrate de que este es el nombre correcto de tu aplicación
 ]
 
 MIDDLEWARE = [

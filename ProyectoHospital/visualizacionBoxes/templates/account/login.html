@@ -1,131 +1,163 @@
 {% extends 'visualizacionBoxes/base.html' %}
 {% load socialaccount %}
 
-{% block title %}Iniciar Sesión - Hospital{% endblock %}
+{% block title %}Iniciar sesión – Hospital Padre Hurtado{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white text-center">
-                    <h4><i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión</h4>
-                </div>
-                <div class="card-body p-4">
-                    {% if form.errors %}
-                        <div class="alert alert-danger">
-                            <ul class="mb-0">
-                                {% for field, errors in form.errors.items %}
-                                    {% for error in errors %}
-                                        <li>{{ error }}</li>
-                                    {% endfor %}
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
+<div class="auth-wrap d-flex align-items-center justify-content-center py-5">
+  <div class="auth-card shadow-lg border-0">
+    <div class="card-body p-4 p-md-5">
 
-                    <!-- Login con Google -->
-                    <div class="text-center mb-4">
-                        <a href="{% provider_login_url 'google' %}" class="btn btn-danger btn-lg w-100">
-                            <i class="fab fa-google me-2"></i>
-                            Iniciar sesión con Google
-                        </a>
-                    </div>
+      <!-- Encabezado -->
+      <div class="text-center mb-4">
+        <!-- Ícono circular azul→verde (SVG inline) -->
+        <svg width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#1d74ff"/>
+              <stop offset="100%" stop-color="#22c1a1"/>
+            </linearGradient>
+          </defs>
+          <circle cx="36" cy="36" r="36" fill="url(#g)"/>
+          <!-- ficha -->
+          <rect x="22" y="18" width="20" height="24" rx="4" fill="#fff" opacity="0.95"/>
+          <rect x="26" y="22" width="12" height="2.8" rx="1.4" fill="#1d74ff" opacity="0.9"/>
+          <rect x="26" y="27" width="12" height="2" rx="1" fill="#cfe3ff"/>
+          <rect x="26" y="31" width="12" height="2" rx="1" fill="#cfe3ff"/>
+          <!-- cruz -->
+          <rect x="33.5" y="23.5" width="3" height="8" rx="1" fill="#1d74ff"/>
+          <rect x="31" y="26" width="8" height="3" rx="1" fill="#1d74ff"/>
+          <!-- persona -->
+          <circle cx="47" cy="37" r="6" fill="#fff" />
+          <rect x="41" y="42" width="12" height="8" rx="4" fill="#fff"/>
+        </svg>
 
-                    <div class="text-center">
-                        <div class="d-inline-flex align-items-center">
-                            <div class="border-top flex-grow-1"></div>
-                            <span class="px-3 text-muted">o</span>
-                            <div class="border-top flex-grow-1"></div>
-                        </div>
-                    </div>
+        <h1 class="heading-xl welcome-title mb-1">Bienvenido/a</h1>
+        <p class="subtle m-0">Accede al panel del Hospital</p>
+      </div>
 
-                    <!-- Login tradicional -->
-                    <form method="post" class="mt-4">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label for="{{ form.login.id_for_label }}" class="form-label">
-                                <i class="fas fa-envelope me-1"></i>Email
-                            </label>
-                            {{ form.login }}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.password.id_for_label }}" class="form-label">
-                                <i class="fas fa-lock me-1"></i>Contraseña
-                            </label>
-                            {{ form.password }}
-                        </div>
+      <!-- Errores globales -->
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger" role="alert">
+        {% for err in form.non_field_errors %}{{ err }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+      </div>
+      {% endif %}
 
-                        <div class="mb-3 form-check">
-                            {{ form.remember }}
-                            <label class="form-check-label" for="{{ form.remember.id_for_label }}">
-                                Recordarme
-                            </label>
-                        </div>
+      <!-- Separador (líneas a los lados, no cruzan el texto) -->
+      <div class="separator" role="separator" aria-label="o ingresa con tu correo">
+        <span>o ingresa con tu correo</span>
+      </div>
 
-                        <button type="submit" class="btn btn-primary w-100">
-                            <i class="fas fa-sign-in-alt me-2"></i>Iniciar Sesión
-                        </button>
-                    </form>
+      <!-- Formulario -->
+      <form method="post" novalidate>
+        {% csrf_token %}
 
-                    <div class="text-center mt-3">
-                        <a href="{% url 'account_reset_password' %}" class="text-decoration-none">
-                            ¿Olvidaste tu contraseña?
-                        </a>
-                    </div>
-                </div>
-                <div class="card-footer text-center bg-light">
-                    <small class="text-muted">
-                        ¿No tienes cuenta? 
-                        <a href="{% url 'account_signup' %}" class="text-decoration-none">Registrarse</a>
-                    </small>
-                </div>
-            </div>
+        <div class="form-row">
+          <label class="form-label" for="id_login">Correo institucional</label>
+          <input
+            type="text" id="id_login" name="login" class="form-control"
+            placeholder="Dirección de correo electrónico" autocomplete="email"
+            value="{{ form.login.value|default_if_none:'' }}" required>
         </div>
+
+        <div class="form-row">
+          <label class="form-label" for="id_password">Contraseña</label>
+          <input
+            type="password" id="id_password" name="password" class="form-control"
+            placeholder="Contraseña" autocomplete="current-password" required>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <div class="form-check">
+            <input type="checkbox" name="remember" id="id_remember" class="form-check-input"
+                   {% if form.remember.value %}checked{% endif %}>
+            <label class="form-check-label remember-label" for="id_remember">Recordarme</label>
+          </div>
+          <a class="small link-accent" href="{% url 'account_reset_password' %}">¿Olvidaste tu contraseña?</a>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 btn-lg">Ingresar</button>
+      </form>
+
+      <div class="text-center mt-4">
+        <small class="subtle">¿No tienes cuenta?
+          <a class="link-accent text-decoration-none" href="{% url 'account_signup' %}">Crear una cuenta</a>
+        </small>
+      </div>
     </div>
+  </div>
 </div>
 
 <style>
-.card {
-    border: none;
-    border-radius: 10px;
-}
+  :root{
+    --radius: 14px;
+    --bg-gradient: linear-gradient(135deg, #e6f0ff 0%, #fde2e6 100%); /* celeste → rosado */
+    --card-bg: #ffffff;
+    --text-strong: #1f2937;   /* texto oscuro sobre claro */
+    --text-muted: #6b7280;
+    --line: rgba(0,0,0,.10);
+    --primary: #1d74ff;       /* acorde con el icono */
+    --primary-contrast: #ffffff;
+    --shadow-sm: 0 8px 24px rgba(16, 24, 40, 0.12);
+    --google-border: #d1d5db;
+  }
 
-.card-header {
-    border-radius: 10px 10px 0 0 !important;
-    border: none;
-}
+  .auth-wrap{ min-height: calc(100vh - 120px); background: var(--bg-gradient); }
+  .auth-card{ background: var(--card-bg); width: 100%; max-width: 500px; border-radius: var(--radius); box-shadow: var(--shadow-sm); }
 
-.form-control {
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    padding: 12px;
-}
+  .heading-xl{ font-size: clamp(1.5rem, 1.2rem + 1vw, 2rem); font-weight: 700; color: var(--text-strong); }
+  .welcome-title{ margin-top: .75rem; }
+  .subtle{ color: var(--text-muted); }
 
-.form-control:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
+  /* Separador centrado SIN que la línea pase por el texto */
+  .separator{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: .95rem;
+    margin: 12px 0 20px;
+  }
+  .separator::before,
+  .separator::after{
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .separator span{ white-space: nowrap; }
 
-.btn {
-    border-radius: 8px;
-    padding: 12px;
-    font-weight: 500;
-}
+  .btn-google{
+    background:#fff; border:1px solid var(--google-border);
+    border-radius: var(--radius); height:50px;
+    display:flex; align-items:center; justify-content:center; gap:.5rem;
+    font-weight:600; color:#374151;
+  }
+  .btn-google:hover{ background:#f8fafc; }
+  .gicon{
+    font-weight:800; display:inline-flex; width:22px; height:22px;
+    align-items:center; justify-content:center; border-radius:4px;
+    background:#fff; border:1px solid #e5e7eb;
+  }
 
-.btn-danger {
-    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-    border: none;
-}
+  .btn-primary.btn-lg{ height:54px; border-radius:var(--radius); font-weight:700; background:var(--primary); border:none; }
+  .btn-primary.btn-lg:hover{ filter: brightness(0.95); }
 
-.btn-primary {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-    border: none;
-}
+  .form-label{ font-size:.95rem; font-weight:600; color: var(--text-strong); }
+  .form-control{
+    border-radius: var(--radius); height:52px; padding:.9rem 1rem;
+    border:1px solid var(--line); background:#fff; color:var(--text-strong); font-size:1rem;
+  }
+  .form-control::placeholder{ color:#9aa3af; }
 
-.shadow {
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
+  .remember-label{ color: var(--text-strong); font-weight:600; }
+  .form-check-input:checked{ background-color: var(--primary); border-color: var(--primary); }
+
+  .link-accent{ color: var(--primary); }
+  .link-accent:hover{ text-decoration: underline; }
+
+  .form-row{ margin-bottom: 1rem; }
+  .form-row + .form-row{ margin-top: .25rem; }
 </style>
 {% endblock %}
+
