@@ -1,8 +1,9 @@
+{% load visual_pasillo %}
 <!-- ============================= -->
 <!-- CELDA INDIVIDUAL DE BOX       -->
 <!-- ============================= -->
 <td class="time-slot 
-     {% if estado == 'Reservado' %}ocupado
+     {% if estado == 'Reservado' %}tipo-agenda-{{ tipo_agenda_id }}
      {% elif estado == 'Disponible' %}libre
      {% elif estado == 'Inhabilitado' %}inhabilitado
      {% elif estado == 'En mantención' %}mantencion
@@ -16,7 +17,9 @@
     data-estado="{{ estado }}"
     onclick="mostrarDetallePasillo('{{ box.idbox }}', '{{ hora }}')"
     style="cursor: pointer;"
-    title="Box {{ box.idbox }} - {{ hora }} - {{ estado }} - Click para ver detalles o agendar">
+    title="Box {{ box.idbox }} - {{ hora }} - {{ estado }}{% if tipo_agenda %} - {{ tipo_agenda }}{% endif %} - Click para ver detalles o agendar"
+    data-tipo-agenda="{{ tipo_agenda|default:'' }}"
+    data-tipo-agenda-id="{{ tipo_agenda_id|default:'' }}">
   
   <!-- Contenido según estado -->
   {% if estado == 'Reservado' %}

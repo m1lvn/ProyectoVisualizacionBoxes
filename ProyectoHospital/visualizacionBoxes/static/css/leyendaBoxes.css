@@ -243,3 +243,127 @@
 .time-slot.tipo-agenda-10:hover {
     background-color: #ffb300; /* Versión más oscura */
 }
+
+/* ===================================================== */
+/* CLASES CSS ESPECÍFICAS POR TIPO DE AGENDA           */
+/* ===================================================== */
+
+/* Disponible */
+.time-slot.libre {
+    background-color: var(--color-disponible);
+    color: #333;
+}
+
+.time-slot.libre:hover {
+    background-color: #7cb342; /* Versión más oscura */
+}
+
+/* Hora Médica */
+.time-slot.hora-medica {
+    background-color: var(--color-hora-medica);
+    color: white;
+}
+
+.time-slot.hora-medica:hover {
+    background-color: #d84315; /* Versión más oscura */
+}
+
+/* Hora No Médica */
+.time-slot.hora-no-medica {
+    background-color: var(--color-hora-no-medica);
+    color: white;
+}
+
+.time-slot.hora-no-medica:hover {
+    background-color: #ef6c00; /* Versión más oscura */
+}
+
+/* Limpieza */
+.time-slot.limpieza {
+    background-color: var(--color-limpieza);
+    color: white;
+}
+
+.time-slot.limpieza:hover {
+    background-color: #c2185b; /* Versión más oscura */
+}
+
+/* Deshabilitado */
+.time-slot.deshabilitado {
+    background-color: var(--color-deshabilitado);
+    color: white;
+}
+
+.time-slot.deshabilitado:hover {
+    background-color: #757575; /* Versión más oscura */
+}
+
+/* Mantención */
+.time-slot.mantencion {
+    background-color: var(--color-mantencion);
+    color: white;
+}
+
+.time-slot.mantencion:hover {
+    background-color: #0097a7; /* Versión más oscura */
+}
+
+/* Capacitación */
+.time-slot.capacitacion {
+    background-color: var(--color-capacitacion);
+    color: white;
+}
+
+.time-slot.capacitacion:hover {
+    background-color: #303f9f; /* Versión más oscura */
+}
+
+/* Reunión Clínica */
+.time-slot.reunion {
+    background-color: var(--color-reunion);
+    color: white;
+}
+
+.time-slot.reunion:hover {
+    background-color: #7b1fa2; /* Versión más oscura */
+}
+
+/* Bloqueado por Gestión */
+.time-slot.bloqueado-gestion {
+    background-color: var(--color-bloqueado-gestion);
+    color: white;
+}
+
+.time-slot.bloqueado-gestion:hover {
+    background-color: #455a64; /* Versión más oscura */
+}
+
+/* Bloqueo Administrativo */
+.time-slot.bloqueo-admin {
+    background-color: var(--color-bloqueo-admin);
+    color: white;
+}
+
+.time-slot.bloqueo-admin:hover {
+    background-color: #5d4037; /* Versión más oscura */
+}
+
+/* Reservado para Urgencias */
+.time-slot.urgencias {
+    background-color: var(--color-urgencias);
+    color: #333;
+}
+
+.time-slot.urgencias:hover {
+    background-color: #ffb300; /* Versión más oscura */
+}
+
+/* Fallback para tipos no reconocidos */
+.time-slot.ocupado {
+    background-color: #f44336; /* Rojo genérico */
+    color: white;
+}
+
+.time-slot.ocupado:hover {
+    background-color: #d32f2f; /* Versión más oscura */
+}

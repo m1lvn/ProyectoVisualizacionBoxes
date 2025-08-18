@@ -95,6 +95,51 @@ def estado_box_clase_css(estado):
     return estado_clases.get(estado, 'desconocido')
 
 
+@register.filter
+def tipo_agenda_to_css_class(tipo_agenda):
+    """
+    Convierte el tipo de agenda a una clase CSS para styling.
+    
+    Args:
+        tipo_agenda: String con el tipo de agenda
+        
+    Returns:
+        String con la clase CSS correspondiente
+    """
+    if not tipo_agenda:
+        return 'disponible'
+    
+    # Mapeo de tipos de agenda a clases CSS
+    mapeo_css = {
+        'hora médica': 'hora-medica',
+        'hora no médica': 'hora-no-medica', 
+        'limpieza': 'limpieza',
+        'mantención': 'mantencion',
+        'mantención técnica': 'mantencion',
+        'capacitación': 'capacitacion',
+        'reunión clínica': 'reunion',
+        'bloqueado por gestión': 'bloqueado-gestion',
+        'bloqueo administrativo': 'bloqueo-admin',
+        'reservado para urgencias': 'urgencias',
+        'inhabilitado': 'deshabilitado'
+    }
+    
+    # Normalizar el tipo de agenda (minúsculas, sin acentos extra)
+    tipo_normalizado = tipo_agenda.lower().strip()
+    
+    # Buscar coincidencia exacta primero
+    if tipo_normalizado in mapeo_css:
+        return mapeo_css[tipo_normalizado]
+    
+    # Buscar coincidencias parciales
+    for tipo_key, css_class in mapeo_css.items():
+        if tipo_key in tipo_normalizado:
+            return css_class
+    
+    # Si no encuentra coincidencia, usar ocupado como default
+    return 'ocupado'
+
+
 @register.inclusion_tag('visualizacionBoxes/components/box_cell.html')
 def render_box_cell(box, hora, estado, pasillo):
     """

@@ -157,39 +157,137 @@
 /* ========================================================================== */
 /* 7. ESTADOS DE BOXES                                                        */
 /* ========================================================================== */
-.time-slot.libre {
+.visualizacion-pasillo .table-boxes td.time-slot.libre {
   background-color: var(--color-disponible) !important;
+  background: var(--color-disponible) !important;
   color: white !important;
   border: none !important;
 }
 
-.time-slot.ocupado {
+.visualizacion-pasillo .table-boxes td.time-slot.ocupado {
   background-color: var(--color-hora-medica) !important;
+  background: var(--color-hora-medica) !important;
   color: white !important;
   font-weight: 600 !important;
   border: none !important;
 }
 
-.time-slot.inhabilitado {
-  background-color: var(--color-deshabilitado) !important;
-  color: white !important;
-  border: none !important;
-}
-
-.time-slot.mantencion {
-  background-color: var(--color-mantencion) !important;
-  color: white !important;
-  border: none !important;
-}
-
-.time-slot.limpieza {
-  background-color: var(--color-limpieza) !important;
-  color: white !important;
-  border: none !important;
-}
-
-.time-slot.desconocido {
+.visualizacion-pasillo .table-boxes td.time-slot.desconocido {
   background-color: var(--color-hora-no-medica) !important;
+  background: var(--color-hora-no-medica) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* =============== CLASES ESPECÍFICAS PARA TIPOS DE AGENDA =============== */
+/* Usando clases numéricas como en visualización general */
+
+/* Disponible */
+.visualizacion-pasillo .table-boxes td.time-slot.libre {
+  background-color: var(--color-disponible) !important;
+  background: var(--color-disponible) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Hora médica (Tipo 1) */
+.visualizacion-pasillo .table-boxes td.time-slot.tipo-agenda-1 {
+  background-color: var(--color-hora-medica) !important;
+  background: var(--color-hora-medica) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Hora no médica (Tipo 2) */
+.visualizacion-pasillo .table-boxes td.time-slot.tipo-agenda-2 {
+  background-color: var(--color-hora-no-medica) !important;
+  background: var(--color-hora-no-medica) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Limpieza (Tipo 3) */
+.visualizacion-pasillo .table-boxes td.time-slot.tipo-agenda-3 {
+  background-color: var(--color-limpieza) !important;
+  background: var(--color-limpieza) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Deshabilitado (Tipo 4) */
+.visualizacion-pasillo .table-boxes td.time-slot.tipo-agenda-4 {
+  background-color: var(--color-deshabilitado) !important;
+  background: var(--color-deshabilitado) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Mantención (Tipo 5) */
+.visualizacion-pasillo .table-boxes td.time-slot.tipo-agenda-5 {
+  background-color: var(--color-mantencion) !important;
+  background: var(--color-mantencion) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Capacitación (Tipo 6) */
+.visualizacion-pasillo .table-boxes td.time-slot.tipo-agenda-6 {
+  background-color: var(--color-capacitacion) !important;
+  background: var(--color-capacitacion) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Reunión (Tipo 7) */
+.visualizacion-pasillo .table-boxes td.time-slot.tipo-agenda-7 {
+  background-color: var(--color-reunion) !important;
+  background: var(--color-reunion) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Bloqueado gestión (Tipo 8) */
+.visualizacion-pasillo .table-boxes td.time-slot.tipo-agenda-8 {
+  background-color: var(--color-bloqueado-gestion) !important;
+  background: var(--color-bloqueado-gestion) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Bloqueo admin (Tipo 9) */
+.visualizacion-pasillo .table-boxes td.time-slot.tipo-agenda-9 {
+  background-color: var(--color-bloqueo-admin) !important;
+  background: var(--color-bloqueo-admin) !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Urgencias (Tipo 10) */
+.visualizacion-pasillo .table-boxes td.time-slot.tipo-agenda-10 {
+  background-color: var(--color-urgencias) !important;
+  background: var(--color-urgencias) !important;
+  color: #333 !important;
+  border: none !important;
+}
+
+/* Estados especiales */
+.visualizacion-pasillo .table-boxes td.time-slot.inhabilitado {
+  background-color: var(--color-deshabilitado) !important;
+  background: var(--color-deshabilitado) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.visualizacion-pasillo .table-boxes td.time-slot.mantencion {
+  background-color: var(--color-mantencion) !important;
+  background: var(--color-mantencion) !important;
+  color: white !important;
+  border: none !important;
+}
+
+.visualizacion-pasillo .table-boxes td.time-slot.limpieza {
+  background-color: var(--color-limpieza) !important;
+  background: var(--color-limpieza) !important;
   color: white !important;
   border: none !important;
 }

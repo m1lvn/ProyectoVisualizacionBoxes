@@ -385,6 +385,21 @@ const PasilloVisualizador = {
         }
 
         console.log('Respuesta del servidor:', data);
+        console.log('Respuesta del servidor (JSON):', JSON.stringify(data, null, 2));
+        console.log('Agenda completa:', data.agenda);
+        if (data.agenda) {
+            console.log('Agenda (JSON):', JSON.stringify(data.agenda, null, 2));
+            console.log('Observaciones valor:', data.agenda.observaciones);
+            console.log('Observaciones tipo:', typeof data.agenda.observaciones);
+            console.log('Observaciones es string vacío:', data.agenda.observaciones === '');
+            console.log('Observaciones es null:', data.agenda.observaciones === null);
+            console.log('Observaciones es undefined:', data.agenda.observaciones === undefined);
+        }
+        if (data.agenda && data.agenda.observaciones) {
+            console.log('Observaciones encontradas:', data.agenda.observaciones);
+        } else {
+            console.log('Sin observaciones o agenda no encontrada');
+        }
 
         // Generar el contenido HTML incluyendo la hora específica
         return this._generarContenidoModal(data, boxData.fecha, boxData.hora);
@@ -435,6 +450,12 @@ const PasilloVisualizador = {
                 </div>
             `;
         } else {
+            // Debug específico para observaciones
+            console.log('=== GENERANDO CONTENIDO PARA BOX OCUPADO ===');
+            console.log('data.agenda.observaciones:', data.agenda.observaciones);
+            console.log('Tipo:', typeof data.agenda.observaciones);
+            console.log('Es truthy:', !!data.agenda.observaciones);
+            
             contenido += `
                 <div class="alert alert-warning">
                     <h6><i class="bi bi-clock"></i> Box Ocupado</h6>
@@ -442,8 +463,11 @@ const PasilloVisualizador = {
                     <p><strong>Especialidad:</strong> ${data.agenda.especialidad}</p>
                     <p><strong>Tipo de Agenda:</strong> ${data.agenda.tipo_agenda}</p>
                     <p><strong>Horario:</strong> ${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</p>
+                    <p><strong>Observaciones:</strong> ${data.agenda.observaciones || 'Sin observaciones'}</p>
                 </div>
             `;
+            
+            console.log('HTML generado:', contenido);
         }
         
         contenido += `</div></div>`;

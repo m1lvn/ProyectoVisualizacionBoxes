@@ -98,8 +98,71 @@
 /* ========================================================================== */
 /* 7. TIPOS DE AGENDA (FUNCIONALIDAD ORIGINAL MANTENIDA)                     */
 /* ========================================================================== */
-.tipo-agenda-8 {
-    background: linear-gradient(135deg, #6c757d, #5a6268);
+
+/* Disponible */
+.box-item.disponible {
+    background-color: #8BC34A !important;
+    color: white !important;
+}
+
+/* Hora médica (Tipo 1) */
+.box-item.tipo-agenda-1 {
+    background-color: #FF5722 !important;
+    color: white !important;
+}
+
+/* Hora no médica (Tipo 2) */
+.box-item.tipo-agenda-2 {
+    background-color: #FF9800 !important;
+    color: white !important;
+}
+
+/* Limpieza (Tipo 3) */
+.box-item.tipo-agenda-3 {
+    background-color: #E91E63 !important;
+    color: white !important;
+}
+
+/* Deshabilitado (Tipo 4) */
+.box-item.tipo-agenda-4 {
+    background-color: #9E9E9E !important;
+    color: white !important;
+}
+
+/* Mantención (Tipo 5) */
+.box-item.tipo-agenda-5 {
+    background-color: #00BCD4 !important;
+    color: white !important;
+}
+
+/* Capacitación (Tipo 6) */
+.box-item.tipo-agenda-6 {
+    background-color: #3F51B5 !important;
+    color: white !important;
+}
+
+/* Reunión (Tipo 7) */
+.box-item.tipo-agenda-7 {
+    background-color: #9C27B0 !important;
+    color: white !important;
+}
+
+/* Bloqueado gestión (Tipo 8) */
+.box-item.tipo-agenda-8 {
+    background-color: #607D8B !important;
+    color: white !important;
+}
+
+/* Bloqueo admin (Tipo 9) */
+.box-item.tipo-agenda-9 {
+    background-color: #795548 !important;
+    color: white !important;
+}
+
+/* Urgencias (Tipo 10) */
+.box-item.tipo-agenda-10 {
+    background-color: #FFC107 !important;
+    color: #333 !important;
 }
 
 /* ========================================================================== */

@@ -187,7 +187,11 @@ def obtener_detalle_box(request):
         # ===============================
         # BUSCAR AGENDA EN LA HORA ESPECÍFICA
         # ===============================
-        agenda = Agenda.objects.filter(
+        agenda = Agenda.objects.select_related(
+            'idprofesional', 
+            'idprofesional__idespecialidad', 
+            'idtipoagenda'
+        ).filter(
             idbox=box,
             fecha=fecha,
             horainicio__lte=hora_consulta,
@@ -205,17 +209,33 @@ def obtener_detalle_box(request):
         
         if agenda:
             # Box ocupado
+            # Manejar el caso cuando no hay profesional asignado
+            if agenda.idprofesional:
+                profesional_nombre = agenda.idprofesional.nombre
+                profesional_especialidad = agenda.idprofesional.idespecialidad.especialidad
+            else:
+                profesional_nombre = 'Sin profesional asignado'
+                profesional_especialidad = 'N/A'
+            
+            # Obtener observaciones de forma segura
+            try:
+                observaciones_value = agenda.observaciones or ''
+            except AttributeError:
+                observaciones_value = ''
+            
             data = {
                 'disponible': False,
                 'box': box_data,
                 'agenda': {
-                    'profesional': agenda.idprofesional.nombre,
-                    'especialidad': agenda.idprofesional.idespecialidad.especialidad,
+                    'profesional': profesional_nombre,
+                    'especialidad': profesional_especialidad,
                     'tipo_agenda': agenda.idtipoagenda.tipoagenda,
                     'hora_inicio': agenda.horainicio.strftime('%H:%M'),
-                    'hora_fin': agenda.horafin.strftime('%H:%M')
+                    'hora_fin': agenda.horafin.strftime('%H:%M'),
+                    'observaciones': observaciones_value
                 }
             }
+            
         else:
             # Box disponible
             data = {
@@ -349,6 +369,8 @@ def visualizacion_pasillo(request):
         # Estado de boxes
         'estado_por_box_y_hora': estado_datos['estado'],
         'info_por_box_y_hora': estado_datos['info'],
+        'tipo_agenda_por_box_y_hora': estado_datos['tipo_agenda'],
+        'tipo_agenda_id_por_box_y_hora': estado_datos['tipo_agenda_id'],
         
         # Datos de paginación
         'boxes_page': boxes_page,
@@ -392,12 +414,20 @@ def _crear_estado_actual_boxes(boxes, hora_actual, agendas):
         
         if agenda_activa:
             # Box ocupado con agenda activa
+            # Manejar el caso cuando no hay profesional asignado
+            if agenda_activa.idprofesional:
+                profesional_nombre = agenda_activa.idprofesional.nombre
+                especialidad_nombre = agenda_activa.idprofesional.idespecialidad.especialidad
+            else:
+                profesional_nombre = "Sin profesional asignado"
+                especialidad_nombre = "N/A"
+            
             estado[box.idbox] = {
                 'disponible': False,
                 'tipo_agenda': agenda_activa.idtipoagenda.tipoagenda,
                 'tipo_agenda_id': agenda_activa.idtipoagenda.idtipoagenda,
-                'profesional': agenda_activa.idprofesional.nombre,
-                'especialidad': agenda_activa.idprofesional.idespecialidad.especialidad,
+                'profesional': profesional_nombre,
+                'especialidad': especialidad_nombre,
                 'hora_inicio': agenda_activa.horainicio,
                 'hora_fin': agenda_activa.horafin
             }
@@ -579,9 +609,11 @@ def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, nombre_medico=None):
             agendas_por_box[box_id] = []
         agendas_por_box[box_id].append(agenda)
     
-    # Crear matrices de estado e información
+    # Crear matrices de estado, información, tipo de agenda y tipo agenda ID
     estado_por_box_y_hora = {}
     info_por_box_y_hora = {}
+    tipo_agenda_por_box_y_hora = {}
+    tipo_agenda_id_por_box_y_hora = {}
     
     for box in boxes_list:
         box_agendas = agendas_por_box.get(box.idbox, [])
@@ -602,13 +634,29 @@ def _generar_estado_boxes_pasillo(boxes_list, fecha, horas, nombre_medico=None):
                 estado_tipo, info_texto = _determinar_estado_agenda(agenda_en_horario)
                 estado_por_box_y_hora[key] = estado_tipo
                 info_por_box_y_hora[key] = info_texto
+                # Agregar tipo de agenda para el CSS
+                tipo_agenda_por_box_y_hora[key] = agenda_en_horario.idtipoagenda.tipoagenda
+                tipo_agenda_id_por_box_y_hora[key] = agenda_en_horario.idtipoagenda.idtipoagenda
+                
+                # Debug temporal
+                print(f"DEBUG PASILLO - Box {box.idbox} a las {hora}:")
+                print(f"  Key: {key}")
+                print(f"  Estado: {estado_tipo}")
+                print(f"  Info: '{info_texto}'")
+                print(f"  Tipo agenda: {agenda_en_horario.idtipoagenda.tipoagenda}")
+                print(f"  Tipo agenda ID: {agenda_en_horario.idtipoagenda.idtipoagenda}")
+                print(f"  Profesional: {agenda_en_horario.idprofesional}")
             else:
                 estado_por_box_y_hora[key] = "Disponible"
                 info_por_box_y_hora[key] = ""
+                tipo_agenda_por_box_y_hora[key] = ""
+                tipo_agenda_id_por_box_y_hora[key] = ""
     
     return {
         'estado': estado_por_box_y_hora,
-        'info': info_por_box_y_hora
+        'info': info_por_box_y_hora,
+        'tipo_agenda': tipo_agenda_por_box_y_hora,
+        'tipo_agenda_id': tipo_agenda_id_por_box_y_hora
     }
 
 
@@ -631,7 +679,20 @@ def _determinar_estado_agenda(agenda):
     elif 'inhabilitado' in tipo_agenda:
         return "Inhabilitado", "Inhabilitado"
     else:
-        return "Reservado", agenda.idprofesional.nombre
+        # Manejar el caso cuando no hay profesional asignado
+        if agenda.idprofesional:
+            profesional_nombre = agenda.idprofesional.nombre
+        else:
+            # Si no hay profesional, mostrar el tipo de agenda
+            profesional_nombre = agenda.idtipoagenda.tipoagenda
+        
+        # Debug temporal
+        print(f"DEBUG _determinar_estado_agenda:")
+        print(f"  Tipo agenda: {agenda.idtipoagenda.tipoagenda}")
+        print(f"  Profesional: {agenda.idprofesional}")
+        print(f"  Retornando: ('Reservado', '{profesional_nombre}')")
+        
+        return "Reservado", profesional_nombre
 
 
 # ==================== FUNCIONES AUXILIARES GENERALES ====================

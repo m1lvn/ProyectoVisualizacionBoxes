@@ -173,6 +173,7 @@ const BoxModal = {
                     <p><strong>Especialidad:</strong> ${data.agenda.especialidad}</p>
                     <p><strong>Tipo de Agenda:</strong> ${data.agenda.tipo_agenda}</p>
                     <p><strong>Horario:</strong> ${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</p>
+                    <p><strong>Observaciones:</strong> ${data.agenda.observaciones || 'Sin observaciones'}</p>
                 </div>
             `;
         }

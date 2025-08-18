@@ -33,7 +33,11 @@
             {% with key=box.idbox|stringformat:"s"|add:"-"|add:hora %}
               {% with estado=estado_por_box_y_hora|get_item:key %}
                 {% with info=info_por_box_y_hora|get_item:key %}
-                  {% include "visualizacionBoxes/partials_pasillo/celda_box.html" with box=box hora=hora estado=estado info=info %}
+                  {% with tipo_agenda=tipo_agenda_por_box_y_hora|get_item:key %}
+                    {% with tipo_agenda_id=tipo_agenda_id_por_box_y_hora|get_item:key %}
+                      {% include "visualizacionBoxes/partials_pasillo/celda_box.html" with box=box hora=hora estado=estado info=info tipo_agenda=tipo_agenda tipo_agenda_id=tipo_agenda_id %}
+                    {% endwith %}
+                  {% endwith %}
                 {% endwith %}
               {% endwith %}
             {% endwith %}
