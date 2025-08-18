@@ -13,9 +13,54 @@
 
 'use strict';
 
+// TEST: Verificar que el archivo se está cargando
+console.log('visualizacionPasillo.js CARGADO - Inicio del archivo');
+
 // ============================================================================
-// NAMESPACE PRINCIPAL
+// OBJETO PASILLOVISUALIZADOR SIMPLIFICADO
 // ============================================================================
+const PasilloVisualizador = {
+    init() {
+        console.log('PasilloVisualizador.init() ejecutándose...');
+        this.updateCounters();
+    },
+    
+    updateCounters() {
+        try {
+            console.log('Actualizando contadores...');
+            
+            // Contar elementos
+            const timeSlots = document.querySelectorAll('.time-slot');
+            const libres = document.querySelectorAll('.time-slot.libre');
+            const tipoAgenda = document.querySelectorAll('.time-slot[class*="tipo-agenda-"]');
+            const reservados = document.querySelectorAll('.time-slot[data-estado="Reservado"]');
+            
+            // Calcular
+            const totalOcupados = tipoAgenda.length;
+            const porcentaje = timeSlots.length > 0 ? Math.round((totalOcupados / timeSlots.length) * 100) : 0;
+            
+            // Actualizar UI
+            const contadorLibres = document.querySelector('#boxes-libres span');
+            const contadorOcupacion = document.querySelector('#porcentaje-ocupacion span');
+            
+            if (contadorLibres) contadorLibres.textContent = libres.length;
+            if (contadorOcupacion) contadorOcupacion.textContent = porcentaje + '%';
+            
+            console.log('Contadores actualizados:', { libres: libres.length, ocupacion: porcentaje + '%' });
+            
+        } catch (error) {
+            console.error('Error actualizando contadores:', error);
+        }
+    }
+};
+
+console.log('PasilloVisualizador definido correctamente');
+
+// ============================================================================
+// TODO EL CÓDIGO ORIGINAL COMENTADO TEMPORALMENTE
+// ============================================================================
+
+/*
 const PasilloVisualizador = {
     
     // ========================================================================
@@ -72,15 +117,21 @@ const PasilloVisualizador = {
      * Inicializa toda la funcionalidad del visualizador
      */
     init() {
+        console.log('PasilloVisualizador.init() llamado');
+        
         if (this.state.initialized) {
             this.log('Ya inicializado, saltando...');
             return;
         }
 
+        console.log('Estado del documento:', document.readyState);
+        
         // Esperar a que el DOM esté listo
         if (document.readyState === 'loading') {
+            console.log('DOM aún cargando, esperando...');
             document.addEventListener('DOMContentLoaded', () => this._initializeApp());
         } else {
+            console.log('DOM listo, inicializando ahora...');
             this._initializeApp();
         }
     },
@@ -91,11 +142,22 @@ const PasilloVisualizador = {
      */
     _initializeApp() {
         try {
+            console.log('=== INICIANDO PASILLO VISUALIZADOR ===');
+            
             this._loadConfiguration();
+            console.log('Configuración cargada');
+            
             this._cacheElements();
+            console.log('Elementos cacheados');
+            
             this._setupEventListeners();
+            console.log('Event listeners configurados');
+            
             this._initializeVisualization();
+            console.log('Visualización inicializada');
+            
             this._startAutoUpdate();
+            console.log('Auto-update iniciado');
             
             this.state.initialized = true;
             this.log('✅ Visualizador de pasillos inicializado correctamente');
@@ -142,7 +204,20 @@ const PasilloVisualizador = {
         
         // Contadores de estado
         this.dom.counters.libres = document.querySelector('#boxes-libres span');
-        this.dom.counters.ocupados = document.querySelector('#boxes-ocupados span');
+        this.dom.counters.ocupacion = document.querySelector('#porcentaje-ocupacion span');
+
+        // Debug: verificar que encontramos los elementos
+        console.log('=== DEBUG CACHE ELEMENTS ===');
+        console.log('Time slots encontrados:', this.dom.timeSlots.length);
+        console.log('Contador libres:', !!this.dom.counters.libres);
+        console.log('Contador ocupación:', !!this.dom.counters.ocupacion);
+        
+        // Debug: mostrar primeros time slots
+        if (this.dom.timeSlots.length > 0) {
+            console.log('Primer time slot:', this.dom.timeSlots[0]);
+            console.log('Clases del primer time slot:', Array.from(this.dom.timeSlots[0].classList));
+            console.log('Data estado del primer time slot:', this.dom.timeSlots[0].getAttribute('data-estado'));
+        }
 
         this.log('Elementos DOM cacheados:', {
             modal: !!this.dom.modal,
@@ -533,6 +608,23 @@ const PasilloVisualizador = {
      * @private
      */
     _initializeVisualization() {
+        // Debug: verificar si hay elementos con clases tipo-agenda
+        const elementosConTipoAgenda = document.querySelectorAll('[class*="tipo-agenda-"]');
+        console.log('=== DEBUG INICIAL ===');
+        console.log('Elementos con tipo-agenda encontrados:', elementosConTipoAgenda.length);
+        
+        if (elementosConTipoAgenda.length > 0) {
+            console.log('Primer elemento con tipo-agenda:', {
+                elemento: elementosConTipoAgenda[0],
+                clases: Array.from(elementosConTipoAgenda[0].classList),
+                dataEstado: elementosConTipoAgenda[0].getAttribute('data-estado')
+            });
+        }
+        
+        // Debug: verificar si hay elementos con data-estado="Reservado"
+        const elementosReservados = document.querySelectorAll('[data-estado="Reservado"]');
+        console.log('Elementos con data-estado="Reservado":', elementosReservados.length);
+        
         this._updateCounters();
         this._highlightCurrentTime();
     },
@@ -544,20 +636,35 @@ const PasilloVisualizador = {
     _updateCounters() {
         try {
             const states = this._countBoxStates();
+            const total = this.dom.timeSlots.length;
+            
+            // Calcular libres y ocupados
+            const libres = states.libre || 0;
+            const ocupados = (states.ocupado || 0) + (states.inhabilitado || 0) + 
+                           (states.mantencion || 0) + (states.limpieza || 0);
+            
+            // Calcular porcentaje de ocupación
+            const porcentajeOcupacion = total > 0 ? Math.round((ocupados / total) * 100) : 0;
             
             // Actualizar UI
             if (this.dom.counters.libres) {
-                this.dom.counters.libres.textContent = states.libre || 0;
+                this.dom.counters.libres.textContent = libres;
             }
             
-            if (this.dom.counters.ocupados) {
-                this.dom.counters.ocupados.textContent = states.ocupado || 0;
+            if (this.dom.counters.ocupacion) {
+                this.dom.counters.ocupacion.textContent = porcentajeOcupacion + '%';
             }
 
             // Actualizar timestamp
             this._updateTimestamp();
 
-            this.log('Contadores actualizados:', states);
+            console.log('Contadores actualizados:', {
+                total: total,
+                libres: libres,
+                ocupados: ocupados,
+                porcentaje: porcentajeOcupacion + '%',
+                states: states
+            });
 
         } catch (error) {
             this.error('Error al actualizar contadores:', error);
@@ -571,13 +678,27 @@ const PasilloVisualizador = {
      */
     _countBoxStates() {
         const states = {};
+        
+        console.log('=== DEBUG DETALLADO ===');
+        console.log('Total time slots encontrados:', this.dom.timeSlots.length);
 
-        this.dom.timeSlots.forEach(slot => {
+        this.dom.timeSlots.forEach((slot, index) => {
             // Determinar estado basado en clases CSS
             const estado = this._getBoxStateFromClasses(slot);
             states[estado] = (states[estado] || 0) + 1;
+            
+            // Debug detallado para los primeros 10 elementos
+            if (index < 10) {
+                console.log(`Slot ${index + 1}:`, {
+                    clases: Array.from(slot.classList),
+                    dataEstado: slot.getAttribute('data-estado'),
+                    estadoDetectado: estado,
+                    innerHTML: slot.innerHTML.substring(0, 100) + '...'
+                });
+            }
         });
 
+        console.log('Resumen estados encontrados:', states);
         return states;
     },
 
@@ -589,12 +710,28 @@ const PasilloVisualizador = {
      */
     _getBoxStateFromClasses(boxElement) {
         const classList = boxElement.classList;
+        const dataEstado = boxElement.getAttribute('data-estado');
         
+        // Verificar si tiene clase tipo-agenda-X (box reservado)
+        for (let className of classList) {
+            if (className.startsWith('tipo-agenda-')) {
+                return 'ocupado';
+            }
+        }
+        
+        // Verificar otros estados por clase
         if (classList.contains('ocupado')) return 'ocupado';
         if (classList.contains('libre')) return 'libre';
         if (classList.contains('inhabilitado')) return 'inhabilitado';
         if (classList.contains('mantencion')) return 'mantencion';
         if (classList.contains('limpieza')) return 'limpieza';
+        
+        // También verificar por data-estado
+        if (dataEstado === 'Reservado') return 'ocupado';
+        if (dataEstado === 'Disponible') return 'libre';
+        if (dataEstado === 'Inhabilitado') return 'inhabilitado';
+        if (dataEstado === 'En mantención') return 'mantencion';
+        if (dataEstado === 'Limpieza') return 'limpieza';
         
         return 'libre'; // default
     },
@@ -874,10 +1011,13 @@ const PasilloVisualizador = {
     }
 };
 
+// Verificar que el objeto se creó correctamente
+console.log('PasilloVisualizador definido:', typeof PasilloVisualizador);
+
 // ============================================================================
 // INICIALIZACIÓN AUTOMÁTICA
 // ============================================================================
-PasilloVisualizador.init();
+// PasilloVisualizador.init(); // Comentado - se inicializa desde $(document).ready()
 
 // ============================================================================
 // CONFIGURACIÓN ADICIONAL DE MODALES Y HORA ACTUAL
@@ -1475,5 +1615,22 @@ const AgendamientoPanel = {
 
 // Inicializar el panel de agendamiento cuando esté listo el DOM
 $(document).ready(function() {
+    console.log('jQuery disponible:', typeof $);
+    console.log('DOM listo - inicializando componentes...');
+    
     AgendamientoPanel.init();
+    console.log('AgendamientoPanel inicializado');
+    
+    // Verificar si PasilloVisualizador existe
+    console.log('¿PasilloVisualizador existe?', typeof PasilloVisualizador);
+    console.log('PasilloVisualizador:', PasilloVisualizador);
+    
+    try {
+        // También inicializar el PasilloVisualizador
+        console.log('Intentando inicializar PasilloVisualizador...');
+        PasilloVisualizador.init();
+        console.log('PasilloVisualizador inicializado exitosamente');
+    } catch (error) {
+        console.error('Error al inicializar PasilloVisualizador:', error);
+    }
 });

@@ -1,6 +1,7 @@
 # **Sistema de Gestión de Boxes Hospitalarios**
 
 ### **¿Qué es?**
+
 Una aplicación web para **visualizar y gestionar en tiempo real** la ocupación de boxes médicos en hospitales.
 
 ## **El Problema** (que resuelve)
@@ -8,12 +9,12 @@ Una aplicación web para **visualizar y gestionar en tiempo real** la ocupación
 Los hospitales pierden tiempo y recursos por **gestión caótica de boxes**:
 
 * Personal buscando espacios disponibles manualmente
-* Conflictos de horarios constantes  
+* Conflictos de horarios constantes
 * Pacientes esperando innecesariamente
 
 ## **La Solución: Puntos Fuertes Clave**
 
-#### 1. **📊 Doble Visualización Inteligente**
+#### 1. **📊 Doble Visualización**
 
 - **Vista General**: Panorama completo de todos los boxes
 - **Vista por Pasillo**: Detalle específico por área
