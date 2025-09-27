@@ -1,23 +1,28 @@
+#!/bin/bash
 # Script para configurar credenciales AWS Academy en EC2
 # EJECUTAR EN TU INSTANCIA EC2
-
-#!/bin/bash
 
 echo "🔐 Configurando credenciales AWS Academy..."
 
 # Crear directorio AWS si no existe
 mkdir -p ~/.aws
 
-echo "📝 Configurando credenciales..."
-echo "Necesitas copiar las credenciales desde AWS Academy Learner Lab"
+echo "📝 PASOS PARA CONFIGURAR:"
 echo ""
 echo "1. Ve a AWS Academy Learner Lab"
-echo "2. Click en 'AWS Details'"
-echo "3. Click en 'Show' en la sección AWS CLI"
-echo "4. Copia las tres líneas que aparecen"
+echo "2. Asegúrate que el lab esté en estado 'green/ready'"
+echo "3. Click en 'AWS Details'"
+echo "4. Click en 'Show' en AWS CLI credentials"
+echo "5. Verás un bloque como este:"
 echo ""
+echo "[default]"
+echo "aws_access_key_id=ASIA..."
+echo "aws_secret_access_key=abc123..."
+echo "aws_session_token=IQoJb3JpZ2lu..."
+echo ""
+echo "6. Copia TODO ese bloque (4 líneas incluyendo [default])"
 
-read -p "¿Ya tienes las credenciales copiadas? (y/N): " -n 1 -r
+read -p "¿Ya copiaste las 4 líneas completas? (y/N): " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
     echo "Ve por las credenciales y ejecuta este script nuevamente"
