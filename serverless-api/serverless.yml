@@ -8,18 +8,8 @@ provider:
   environment:
     DYNAMODB_TABLE: HospitalData
     STAGE: ${self:custom.stage}
-  iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action:
-            - dynamodb:Query
-            - dynamodb:Scan
-            - dynamodb:GetItem
-            - dynamodb:PutItem
-            - dynamodb:UpdateItem
-            - dynamodb:DeleteItem
-          Resource: "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/HospitalData*"
+  # Usar rol existente de AWS Academy en lugar de crear uno nuevo
+  role: arn:aws:iam::891377117593:role/LabRole
 
 custom:
   stage: ${opt:stage, self:provider.stage, 'dev'}
