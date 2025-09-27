@@ -30,7 +30,7 @@ if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
 fi
 
 echo "🏗️  Desplegando infraestructura y funciones Lambda..."
-serverless deploy --verbose
+npx serverless deploy --verbose
 
 if [ $? -eq 0 ]; then
     echo "✅ Despliegue completado exitosamente"
@@ -41,7 +41,7 @@ if [ $? -eq 0 ]; then
     echo "3. Actualizar frontend Django con la nueva URL de API"
     echo ""
     echo "🔗 Para obtener la URL de la API ejecuta:"
-    echo "   serverless info"
+    echo "   npx serverless info"
 else
     echo "❌ Error durante el despliegue"
     echo "Revisa los logs arriba para más detalles"
