@@ -1,0 +1,25 @@
+{
+  "name": "hospital-boxes-api",
+  "version": "1.0.0",
+  "description": "API Serverless para visualización de boxes hospitalarios",
+  "main": "handler.js",
+  "scripts": {
+    "dev": "serverless offline start",
+    "deploy": "serverless deploy",
+    "logs": "serverless logs -f",
+    "remove": "serverless remove",
+    "test": "jest"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1691.0",
+    "cors": "^2.8.5",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "serverless": "^3.38.0",
+    "serverless-offline": "^13.3.0",
+    "jest": "^29.7.0"
+  },
+  "author": "Tu Nombre",
+  "license": "ISC"
+}

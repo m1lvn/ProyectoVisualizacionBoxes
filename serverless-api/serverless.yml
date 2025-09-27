@@ -1,0 +1,111 @@
+service: hospital-boxes-api
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  environment:
+    DYNAMODB_TABLE: HospitalData
+    STAGE: ${self:custom.stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource: "arn:aws:dynamodb:${aws:region}:${aws:accountId}:table/HospitalData*"
+
+custom:
+  stage: ${opt:stage, self:provider.stage, 'dev'}
+  serverless-offline:
+    httpPort: 3001
+    host: 0.0.0.0
+
+plugins:
+  - serverless-offline
+
+functions:
+  # Obtener boxes por pasillo
+  getBoxes:
+    handler: src/handlers/boxes.getBoxes
+    events:
+      - http:
+          path: /api/boxes
+          method: get
+          cors: true
+  
+  # Obtener agendas
+  getAgendas:
+    handler: src/handlers/agendas.getAgendas
+    events:
+      - http:
+          path: /api/agendas
+          method: get
+          cors: true
+          
+  # Crear agenda
+  createAgenda:
+    handler: src/handlers/agendas.createAgenda
+    events:
+      - http:
+          path: /api/agendas
+          method: post
+          cors: true
+
+  # Obtener pasillos
+  getPasillos:
+    handler: src/handlers/pasillos.getPasillos
+    events:
+      - http:
+          path: /api/pasillos
+          method: get
+          cors: true
+
+  # Migrar datos desde MySQL
+  migrateData:
+    handler: src/handlers/migrate.migrateFromMySQL
+    timeout: 300
+    events:
+      - http:
+          path: /api/migrate
+          method: post
+          cors: true
+
+resources:
+  Resources:
+    HospitalDataTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: HospitalData
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: GSI1PK
+            AttributeType: S
+          - AttributeName: GSI1SK
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI1
+            KeySchema:
+              - AttributeName: GSI1PK
+                KeyType: HASH
+              - AttributeName: GSI1SK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
