@@ -410,3 +410,17 @@ def test_api(request):
         'endpoints': results,
         'timestamp': datetime.now().isoformat()
     })
+
+
+def dashboard_usuario(request):
+    """
+    Dashboard simplificado para usuarios - Redirige a vista principal
+    """
+    return redirect('visualizacionBoxes:visualizacion_general')
+
+
+def redirect_after_login(request):
+    """
+    Redirección después del login - Redirige al dashboard
+    """
+    return redirect('visualizacionBoxes:visualizacion_general')
