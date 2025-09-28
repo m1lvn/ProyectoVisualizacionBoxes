@@ -254,6 +254,21 @@ def visualizacion_pasillo(request):
         box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
     
     # ===============================
+    # GENERAR HORAS PARA LA MATRIZ (como el sistema original)
+    # ===============================
+    # Generar bloques de horario cada 30 minutos de 8:00 a 20:00
+    horas_bloque = []
+    hora_inicio = time(8, 0)  # 8:00 AM
+    hora_fin = time(20, 0)    # 8:00 PM
+    
+    current_time = datetime.combine(fecha, hora_inicio)
+    end_time = datetime.combine(fecha, hora_fin)
+    
+    while current_time <= end_time:
+        horas_bloque.append(current_time.strftime('%H:%M'))
+        current_time += timedelta(minutes=30)
+    
+    # ===============================
     # PAGINACIÓN (igual que visualizacion_general)
     # ===============================
     paginator = Paginator(boxes_filtrados, BOXES_POR_PAGINA)
@@ -272,6 +287,7 @@ def visualizacion_pasillo(request):
     
     context = {
         'boxes': boxes_pagina,  # Usar boxes paginados
+        'horas_bloque': horas_bloque,  # Horarios para la matriz
         'page_obj': boxes_pagina,  # Necesario para la paginación
         'paginator': paginator,     # Necesario para la paginación
         'is_paginated': boxes_pagina.has_other_pages(),  # Necesario para mostrar controles
