@@ -13,8 +13,8 @@
         <select id="pasillo" class="form-select filtro-select" onchange="aplicarFiltros()">
           <option value="">Todos los pasillos</option>
           {% for pasillo in pasillos %}
-            <option value="{{ pasillo.idpasillo }}" 
-                    {% if pasillo.idpasillo|stringformat:"s" == pasillo_seleccionado %}selected{% endif %}>
+            <option value="{{ pasillo.idPasillo }}" 
+                    {% if pasillo.idPasillo|stringformat:"s" == pasillo_seleccionado %}selected{% endif %}>
               {{ pasillo.pasillo }}
             </option>
           {% endfor %}

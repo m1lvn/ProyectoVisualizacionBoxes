@@ -5,22 +5,22 @@
   {% for box in boxes %}
     {% if box.estado_actual == 'disponible' %}
       <div class="box-item disponible" 
-           onclick="mostrarDetalle('{{ box.idbox }}', true)" 
-           title="Box {{ box.idbox }} - {{ box.pasillo }} - Disponible">
-        {{ box.idbox }}
+           onclick="mostrarDetalle('{{ box.idBox }}', true)" 
+           title="Box {{ box.idBox }} - {{ box.pasillo }} - Disponible">
+        {{ box.idBox }}
       </div>
     {% else %}
       {% if box.agenda_actual %}
-        <div class="box-item tipo-agenda-{{ box.agenda_actual.tipoAgenda }}" 
-             onclick="mostrarDetalle('{{ box.idbox }}', false)" 
-             title="Box {{ box.idbox }} - {{ box.pasillo }} - {{ box.agenda_actual.descripcion }}">
-          {{ box.idbox }}
+        <div class="box-item tipo-agenda-{{ box.agenda_actual.idTipoAgenda }}" 
+             onclick="mostrarDetalle('{{ box.idBox }}', false)" 
+             title="Box {{ box.idBox }} - {{ box.pasillo }} - {{ box.agenda_actual.descripcion }}">
+          {{ box.idBox }}
         </div>
       {% else %}
         <div class="box-item disponible" 
-             onclick="mostrarDetalle('{{ box.idbox }}', true)" 
-             title="Box {{ box.idbox }} - {{ box.pasillo }} - Disponible">
-          {{ box.idbox }}
+             onclick="mostrarDetalle('{{ box.idBox }}', true)" 
+             title="Box {{ box.idBox }} - {{ box.pasillo }} - Disponible">
+          {{ box.idBox }}
         </div>
       {% endif %}
     {% endif %}

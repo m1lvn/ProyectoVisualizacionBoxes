@@ -166,14 +166,24 @@ const BoxModal = {
                 </div>
             `;
         } else {
+            // DEBUG: Ver qué datos estamos recibiendo
+            console.log('DEBUG - data.agenda:', data.agenda);
+            
+            const profesional = data.agenda?.profesional || 'No especificado';
+            const especialidad = data.agenda?.especialidad || 'No especificada';
+            const tipoAgenda = data.agenda?.tipo_agenda || 'No especificado';
+            const horaInicio = data.agenda?.hora_inicio || '';
+            const horaFin = data.agenda?.hora_fin || '';
+            const observaciones = data.agenda?.observaciones || 'Sin observaciones';
+            
             contenido += `
                 <div class="alert alert-warning">
                     <h6><i class="bi bi-clock"></i> Box Ocupado</h6>
-                    <p><strong>Profesional:</strong> ${data.agenda.profesional}</p>
-                    <p><strong>Especialidad:</strong> ${data.agenda.especialidad}</p>
-                    <p><strong>Tipo de Agenda:</strong> ${data.agenda.tipo_agenda}</p>
-                    <p><strong>Horario:</strong> ${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</p>
-                    <p><strong>Observaciones:</strong> ${data.agenda.observaciones || 'Sin observaciones'}</p>
+                    <p><strong>Profesional:</strong> ${profesional}</p>
+                    <p><strong>Especialidad:</strong> ${especialidad}</p>
+                    <p><strong>Tipo de Agenda:</strong> ${tipoAgenda}</p>
+                    <p><strong>Horario:</strong> ${horaInicio} - ${horaFin}</p>
+                    <p><strong>Observaciones:</strong> ${observaciones}</p>
                 </div>
             `;
         }

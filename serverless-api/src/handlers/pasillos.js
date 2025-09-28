@@ -29,12 +29,14 @@ module.exports.getPasillos = async (event) => {
       a.nombre.localeCompare(b.nombre)
     );
 
-    // Mapear nombres de campos para coincidir con Django
+    // Mapear nombres de campos para coincidir EXACTAMENTE con MySQL original
     const mappedPasillos = sortedPasillos.map(item => ({
       ...item,
-      idpasillo: item.pasilloId,   // Django espera 'idpasillo'
+      idPasillo: item.pasilloId,   // MySQL original: 'idPasillo'
+      pasillo: item.nombre,        // MySQL original: 'pasillo'
       // Mantener campos originales para compatibilidad
-      pasilloId: item.pasilloId
+      pasilloId: item.pasilloId,
+      nombre: item.nombre
     }));
 
     return {

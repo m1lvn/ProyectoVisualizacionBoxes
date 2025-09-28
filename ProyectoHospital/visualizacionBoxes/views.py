@@ -116,18 +116,18 @@ def visualizacion_general(request):
     # APLICAR FILTROS A BOXES
     # ===============================
     if pasillo_id:
-        boxes = [box for box in boxes if str(box.get('pasilloId', '')) == str(pasillo_id)]
+        boxes = [box for box in boxes if str(box.get('idPasillo', '')) == str(pasillo_id)]
     
     if codigo_box:
-        boxes = [box for box in boxes if codigo_box.lower() in str(box.get('boxId', '')).lower()]
+        boxes = [box for box in boxes if codigo_box.lower() in str(box.get('idBox', '')).lower()]
     
     if nombre_medico:
         # Filtrar por médico en agendas
         agendas_medico = [agenda for agenda in agendas 
                          if nombre_medico.lower() in agenda.get('profesional', '').lower()]
         if agendas_medico:
-            box_ids_medico = list(set([agenda['boxId'] for agenda in agendas_medico]))
-            boxes = [box for box in boxes if box.get('boxId') in box_ids_medico]
+            box_ids_medico = list(set([agenda['idBox'] for agenda in agendas_medico]))
+            boxes = [box for box in boxes if box.get('idBox') in box_ids_medico]
         else:
             boxes = []
     
@@ -137,7 +137,7 @@ def visualizacion_general(request):
     for box in boxes:
         try:
             if isinstance(box, dict):
-                box_id = box.get('idbox')  # API ya devuelve 'idbox'
+                box_id = box.get('idBox')  # MySQL original: 'idBox'
                 if box_id:
                     box['estado_actual'] = calcular_estado_box(box_id, agendas, hora_actual, fecha)
                     box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
@@ -146,7 +146,7 @@ def visualizacion_general(request):
                     if box_id in [175, 1, 2]:  # Algunos boxes específicos
                         print(f"DEBUG - Box {box_id}: estado='{box['estado_actual']}', agenda={box['agenda_actual']}")
                 else:
-                    print(f"WARNING - Box sin idbox: {box}")
+                    print(f"WARNING - Box sin idBox: {box}")
                     box['estado_actual'] = 'disponible'
                     box['agenda_actual'] = None
             else:
@@ -218,17 +218,17 @@ def visualizacion_pasillo(request):
     agendas = get_api_data('agendas', {'fecha': fecha_str})
     
     # Filtrar boxes del pasillo seleccionado
-    boxes_pasillo = [box for box in boxes if str(box.get('idpasillo', '')) == str(pasillo_id)]
+    boxes_pasillo = [box for box in boxes if str(box.get('idPasillo', '')) == str(pasillo_id)]
     
     # Obtener información del pasillo
-    pasillo_info = next((p for p in pasillos if str(p.get('idpasillo', '')) == str(pasillo_id)), None)
+    pasillo_info = next((p for p in pasillos if str(p.get('idPasillo', '')) == str(pasillo_id)), None)
     
     # Calcular estados
     hora_actual = datetime.now().time()
     fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
     
     for box in boxes_pasillo:
-        box_id = box.get('idbox')  # API ya devuelve 'idbox'
+        box_id = box.get('idBox')  # MySQL original: 'idBox'
         box['estado_actual'] = calcular_estado_box(box_id, agendas, hora_actual, fecha)
         box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
     
@@ -261,7 +261,7 @@ def obtener_detalle_box(request):
     agendas = get_api_data('agendas', {'fecha': fecha_str})
     
     # Encontrar el box
-    box = next((b for b in boxes if str(b.get('idbox', '')) == str(box_id)), None)
+    box = next((b for b in boxes if str(b.get('idBox', '')) == str(box_id)), None)
     
     if not box:
         return JsonResponse({'error': 'Box no encontrado'}, status=404)
@@ -269,14 +269,36 @@ def obtener_detalle_box(request):
     # API ya envía campos correctos, no necesitamos mapear
     
     # Obtener agendas del box para la fecha
-    agendas_box = [agenda for agenda in agendas if str(agenda.get('idbox', '')) == str(box_id)]
+    agendas_box = [agenda for agenda in agendas if str(agenda.get('idBox', '')) == str(box_id)]
     
-    # Preparar respuesta
+    # Verificar si el box está disponible
+    hora_actual = datetime.now().time()
+    fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
+    estado = calcular_estado_box(box_id, agendas, hora_actual, fecha)
+    agenda_actual = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
+    
+    # Preparar respuesta en formato que espera el JavaScript
     response_data = {
-        'box': box,
-        'agendas': agendas_box,
+        'box': {
+            'id': box.get('idBox'),
+            'pasillo': box.get('pasillo', ''),
+            'capacidad': box.get('capacidad', ''),
+            'disponible': box.get('disponible', True)
+        },
+        'disponible': estado == 'disponible',
         'fecha': fecha_str,
     }
+    
+    # Si hay agenda actual, agregar sus datos
+    if agenda_actual and estado == 'ocupado':
+        response_data['agenda'] = {
+            'profesional': agenda_actual.get('profesional', 'No especificado'),
+            'especialidad': agenda_actual.get('especialidad', 'No especificada'), 
+            'tipo_agenda': agenda_actual.get('tipoAgenda', 'No especificado'),
+            'hora_inicio': agenda_actual.get('horaInicio', ''),
+            'hora_fin': agenda_actual.get('horaFin', ''),
+            'observaciones': agenda_actual.get('observaciones', ''),
+        }
     
     return JsonResponse(response_data)
 
@@ -359,7 +381,7 @@ def calcular_estado_box(box_id, agendas, hora_actual, fecha):
     fecha_str = fecha.strftime('%Y-%m-%d')
     agendas_box_hoy = [
         agenda for agenda in agendas 
-        if str(agenda.get('idbox', '')) == str(box_id) and agenda.get('fecha') == fecha_str
+        if str(agenda.get('idBox', '')) == str(box_id) and agenda.get('fecha') == fecha_str
     ]
     
     for agenda in agendas_box_hoy:
@@ -382,7 +404,7 @@ def obtener_agenda_actual(box_id, agendas, hora_actual, fecha):
     fecha_str = fecha.strftime('%Y-%m-%d')
     agendas_box_hoy = [
         agenda for agenda in agendas 
-        if str(agenda.get('idbox', '')) == str(box_id) and agenda.get('fecha') == fecha_str
+        if str(agenda.get('idBox', '')) == str(box_id) and agenda.get('fecha') == fecha_str
     ]
     
     for agenda in agendas_box_hoy:

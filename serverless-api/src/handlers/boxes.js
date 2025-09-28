@@ -8,13 +8,14 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 const TABLE_NAME = process.env.DYNAMODB_TABLE || 'HospitalData';
 
 /**
- * Obtener boxes filtrados por pasillo
+ * Obtener boxes filtrados por pasillo con información completa
  */
 module.exports.getBoxes = async (event) => {
   try {
     const { pasillo, disponible } = event.queryStringParameters || {};
     
-    let params = {
+    // Obtener boxes
+    let paramsBoxes = {
       TableName: TABLE_NAME,
       FilterExpression: '#tipo = :tipo',
       ExpressionAttributeNames: { 
@@ -27,25 +28,47 @@ module.exports.getBoxes = async (event) => {
 
     // Filtrar por pasillo si se especifica
     if (pasillo) {
-      params.FilterExpression += ' AND contains(#pasillo, :pasillo)';
-      params.ExpressionAttributeNames['#pasillo'] = 'pasillo';
-      params.ExpressionAttributeValues[':pasillo'] = pasillo;
+      paramsBoxes.FilterExpression += ' AND contains(#pasillo, :pasillo)';
+      paramsBoxes.ExpressionAttributeNames['#pasillo'] = 'pasillo';
+      paramsBoxes.ExpressionAttributeValues[':pasillo'] = pasillo;
     }
 
     // Filtrar por disponibilidad si se especifica
     if (disponible !== undefined) {
-      params.FilterExpression += ' AND #disponible = :disponible';
-      params.ExpressionAttributeNames['#disponible'] = 'disponible';
-      params.ExpressionAttributeValues[':disponible'] = disponible === 'true';
+      paramsBoxes.FilterExpression += ' AND #disponible = :disponible';
+      paramsBoxes.ExpressionAttributeNames['#disponible'] = 'disponible';
+      paramsBoxes.ExpressionAttributeValues[':disponible'] = disponible === 'true';
     }
 
-    const result = await dynamodb.scan(params).promise();
+    // Obtener pasillos para mapear nombres
+    const paramsPasillos = {
+      TableName: TABLE_NAME,
+      FilterExpression: '#tipo = :tipo',
+      ExpressionAttributeNames: { 
+        '#tipo': 'tipo' 
+      },
+      ExpressionAttributeValues: { 
+        ':tipo': 'pasillo' 
+      }
+    };
+
+    const [resultBoxes, resultPasillos] = await Promise.all([
+      dynamodb.scan(paramsBoxes).promise(),
+      dynamodb.scan(paramsPasillos).promise()
+    ]);
     
-    // Mapear nombres de campos para coincidir con Django
-    const mappedItems = result.Items.map(item => ({
+    // Crear mapa de pasillos por ID
+    const pasillosMap = {};
+    resultPasillos.Items.forEach(pasillo => {
+      pasillosMap[pasillo.pasilloId] = pasillo.nombre;
+    });
+    
+    // Mapear nombres de campos para coincidir EXACTAMENTE con MySQL original
+    const mappedItems = resultBoxes.Items.map(item => ({
       ...item,
-      idbox: item.boxId,           // Django espera 'idbox'
-      idpasillo: item.pasilloId,   // Django espera 'idpasillo'
+      idBox: item.boxId,           // MySQL original: 'idBox'
+      idPasillo: item.pasilloId,   // MySQL original: 'idPasillo'
+      pasillo: pasillosMap[item.pasilloId] || item.pasillo || 'Sin pasillo', // MySQL original: 'pasillo'
       // Mantener campos originales para compatibilidad
       boxId: item.boxId,
       pasilloId: item.pasilloId
@@ -61,7 +84,7 @@ module.exports.getBoxes = async (event) => {
       body: JSON.stringify({
         success: true,
         data: mappedItems,
-        count: result.Count,
+        count: resultBoxes.Count,
         timestamp: new Date().toISOString()
       }),
     };

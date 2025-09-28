@@ -60,13 +60,17 @@ module.exports.getAgendas = async (event) => {
       return a.horaInicio.localeCompare(b.horaInicio);
     });
 
-    // Mapear nombres de campos para coincidir con Django
+    // Mapear nombres de campos para coincidir EXACTAMENTE con MySQL original
     const mappedAgendas = sortedAgendas.map(item => ({
       ...item,
-      idbox: item.boxId,                    // Django espera 'idbox'
-      idpasillo: item.pasilloId,           // Django espera 'idpasillo'
-      idagenda: item.agendaId,             // Django espera 'idagenda'
-      idprofesional: item.profesionalId,   // Django espera 'idprofesional'
+      idAgenda: item.agendaId,             // MySQL original: 'idAgenda'
+      idBox: item.boxId,                   // MySQL original: 'idBox'
+      idPasillo: item.pasilloId,          // MySQL original: 'idPasillo'
+      idProfesional: item.profesionalId,  // MySQL original: 'idProfesional'
+      idTipoAgenda: item.tipoAgenda,      // MySQL original: 'idTipoAgenda'
+      // Campos para JavaScript
+      profesional: item.nombreProfesional || item.profesional || 'No especificado',
+      especialidad: item.especialidad || 'No especificada',
       // Mantener campos originales para compatibilidad
       boxId: item.boxId,
       pasilloId: item.pasilloId,
