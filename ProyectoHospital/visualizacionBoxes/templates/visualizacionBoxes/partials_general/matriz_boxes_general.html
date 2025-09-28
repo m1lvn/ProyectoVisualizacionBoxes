@@ -3,26 +3,27 @@
 <!-- ============================= -->
 <div class="boxes-grid">
   {% for box in boxes %}
-    {% if box.estado_actual == 'disponible' %}
+    {% if box.estado_actual == 'ocupado' and box.agenda_actual %}
+      <!-- Box ocupado con agenda -->
+      <div class="box-item tipo-agenda-{{ box.agenda_actual.idTipoAgenda|default:'1' }} ocupado" 
+           onclick="mostrarDetalle('{{ box.idBox }}', false)" 
+           title="Box {{ box.idBox }} - {{ box.pasillo }} - {{ box.agenda_actual.profesional|default:'Ocupado' }}">
+        {{ box.idBox }}
+      </div>
+    {% elif box.estado_actual == 'ocupado' %}
+      <!-- Box ocupado sin agenda específica -->
+      <div class="box-item ocupado" 
+           onclick="mostrarDetalle('{{ box.idBox }}', false)" 
+           title="Box {{ box.idBox }} - {{ box.pasillo }} - Ocupado">
+        {{ box.idBox }}
+      </div>
+    {% else %}
+      <!-- Box disponible -->
       <div class="box-item disponible" 
            onclick="mostrarDetalle('{{ box.idBox }}', true)" 
            title="Box {{ box.idBox }} - {{ box.pasillo }} - Disponible">
         {{ box.idBox }}
       </div>
-    {% else %}
-      {% if box.agenda_actual %}
-        <div class="box-item tipo-agenda-{{ box.agenda_actual.idTipoAgenda }}" 
-             onclick="mostrarDetalle('{{ box.idBox }}', false)" 
-             title="Box {{ box.idBox }} - {{ box.pasillo }} - {{ box.agenda_actual.descripcion }}">
-          {{ box.idBox }}
-        </div>
-      {% else %}
-        <div class="box-item disponible" 
-             onclick="mostrarDetalle('{{ box.idBox }}', true)" 
-             title="Box {{ box.idBox }} - {{ box.pasillo }} - Disponible">
-          {{ box.idBox }}
-        </div>
-      {% endif %}
     {% endif %}
   {% endfor %}
 </div>

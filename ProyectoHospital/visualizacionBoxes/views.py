@@ -252,6 +252,10 @@ def visualizacion_pasillo(request):
         box_id = box.get('idBox')
         box['estado_actual'] = calcular_estado_box(box_id, agendas, hora_actual, fecha)
         box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
+        
+        # DEBUG: Mostrar estados para algunos boxes
+        if box_id in [175, 1, 2] or box['estado_actual'] == 'ocupado':  
+            print(f"DEBUG PASILLO - Box {box_id}: estado='{box['estado_actual']}', agenda={box['agenda_actual']}")
     
     # ===============================
     # GENERAR HORAS PARA LA MATRIZ (como el sistema original)

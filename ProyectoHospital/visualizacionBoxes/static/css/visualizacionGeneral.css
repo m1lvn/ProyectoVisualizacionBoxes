@@ -105,6 +105,12 @@
     color: white !important;
 }
 
+/* Ocupado (genérico) */
+.box-item.ocupado {
+    background-color: #f44336 !important;
+    color: white !important;
+}
+
 /* Hora médica (Tipo 1) */
 .box-item.tipo-agenda-1 {
     background-color: #FF5722 !important;

@@ -30,16 +30,33 @@
             <strong>{{ hora }}</strong>
           </td>
           {% for box in boxes %}
-            <td class="time-slot celda-box libre" 
-                data-box="{{ box.idBox }}" 
-                data-pasillo="{{ box.idPasillo }}"
-                data-hora="{{ hora }}"
-                data-estado="Disponible"
-                title="Box {{ box.idBox }} - {{ hora }}">
-              <div class="slot-content">
-                <!-- Sin mostrar hora en la celda -->
-              </div>
-            </td>
+            {% comment %} Determinar estado del box en esta hora específica {% endcomment %}
+            {% with estado_celda="libre" %}
+            {% if box.estado_actual == 'ocupado' and box.agenda_actual %}
+              {% comment %} Verificar si la agenda actual abarca esta hora {% endcomment %}
+              <td class="time-slot celda-box ocupado tipo-agenda-{{ box.agenda_actual.idTipoAgenda|default:'1' }}" 
+                  data-box="{{ box.idBox }}" 
+                  data-pasillo="{{ box.idPasillo }}"
+                  data-hora="{{ hora }}"
+                  data-estado="Ocupado"
+                  title="Box {{ box.idBox }} - {{ hora }} - {{ box.agenda_actual.profesional|default:'Ocupado' }}">
+                <div class="slot-content">
+                  <!-- Celda ocupada -->
+                </div>
+              </td>
+            {% else %}
+              <td class="time-slot celda-box libre" 
+                  data-box="{{ box.idBox }}" 
+                  data-pasillo="{{ box.idPasillo }}"
+                  data-hora="{{ hora }}"
+                  data-estado="Disponible"
+                  title="Box {{ box.idBox }} - {{ hora }} - Disponible">
+                <div class="slot-content">
+                  <!-- Celda disponible -->
+                </div>
+              </td>
+            {% endif %}
+            {% endwith %}
           {% endfor %}
         </tr>
       {% endfor %}
