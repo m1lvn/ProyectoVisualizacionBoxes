@@ -15,7 +15,8 @@ urlpatterns = [
     path('', views.visualizacion_general, name='visualizacion_general'),
     
     # Vista de visualización por pasillo  
-    path('pasillo/', views.visualizacion_pasillo, name='visualizacion_pasillo'),
+    path('pasillo/', views.seleccionar_pasillo, name='visualizacion_pasillo'),
+    path('pasillo/<int:pasillo_id>/', views.visualizacion_pasillo, name='visualizacion_pasillo_detalle'),
     
     # Vista de reportes
     path('reportes/', views.reportes, name='reportes'),

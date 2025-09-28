@@ -202,15 +202,33 @@ def visualizacion_general(request):
     return render(request, 'visualizacionBoxes/visualizacion_general.html', context)
 
 
-def visualizacion_pasillo(request):
+def seleccionar_pasillo(request):
+    """
+    Vista para seleccionar un pasillo antes de mostrar la visualización detallada
+    """
+    # Obtener lista de pasillos de la API
+    pasillos = get_api_data('pasillos')
+    
+    context = {
+        'pasillos': pasillos,
+        'usando_api': True,
+    }
+    
+    return render(request, 'visualizacionBoxes/seleccionar_pasillo.html', context)
+
+
+def visualizacion_pasillo(request, pasillo_id=None):
     """
     Vista de visualización por pasillo usando API
     """
-    pasillo_id = request.GET.get('pasillo')
+    # Obtener pasillo_id de la URL o de parámetros GET
+    if not pasillo_id:
+        pasillo_id = request.GET.get('pasillo')
+    
     fecha_str = request.GET.get('fecha', datetime.now().strftime('%Y-%m-%d'))
     
     if not pasillo_id:
-        return redirect('visualizacionBoxes:visualizacion_general')
+        return redirect('visualizacionBoxes:visualizacion_pasillo')  # Redirigir a selección
     
     # Obtener datos de la API
     boxes = get_api_data('boxes')
