@@ -134,6 +134,10 @@ def visualizacion_general(request):
             if isinstance(box, dict):
                 box_id = box.get('boxId')
                 if box_id:
+                    # Mapear campos para compatibilidad con templates
+                    box['idbox'] = box_id  # Template espera 'idbox'
+                    box['idpasillo'] = box.get('pasilloId')  # Template espera 'idpasillo'
+                    
                     box['estado_actual'] = calcular_estado_box(box_id, agendas, hora_actual, fecha)
                     box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
                 else:
@@ -161,11 +165,29 @@ def visualizacion_general(request):
         boxes_pagina = paginator.page(paginator.num_pages)
     
     # ===============================
+    # PROCESAR PASILLOS PARA TEMPLATE
+    # ===============================
+    pasillos_procesados = []
+    for pasillo in pasillos:
+        if isinstance(pasillo, dict):
+            # Mapear campos para compatibilidad con templates
+            pasillo_copia = pasillo.copy()
+            pasillo_copia['idpasillo'] = pasillo.get('pasilloId', pasillo.get('idpasillo'))
+            pasillo_copia['nombre'] = pasillo.get('nombre', pasillo.get('pasillo'))
+            pasillos_procesados.append(pasillo_copia)
+        else:
+            print(f"ERROR - Pasillo no es diccionario: {pasillo}")
+    
+    print(f"DEBUG - Pasillos procesados: {len(pasillos_procesados)}")
+    if pasillos_procesados:
+        print(f"DEBUG - Primer pasillo: {pasillos_procesados[0]}")
+    
+    # ===============================
     # PREPARAR CONTEXTO
     # ===============================
     context = {
         'boxes': boxes_pagina,
-        'pasillos': pasillos,
+        'pasillos': pasillos_procesados,  # Usar pasillos procesados
         'fecha': fecha_str,
         'fecha_seleccionada': fecha,
         'filtros': {
@@ -212,8 +234,17 @@ def visualizacion_pasillo(request):
     
     for box in boxes_pasillo:
         box_id = box.get('boxId')
+        # Mapear campos para compatibilidad con templates
+        box['idbox'] = box_id
+        box['idpasillo'] = box.get('pasilloId')
+        
         box['estado_actual'] = calcular_estado_box(box_id, agendas, hora_actual, fecha)
         box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
+    
+    # Mapear campos del pasillo
+    if pasillo_info:
+        pasillo_info['idpasillo'] = pasillo_info.get('pasilloId', pasillo_info.get('idpasillo'))
+        pasillo_info['nombre'] = pasillo_info.get('nombre', pasillo_info.get('pasillo'))
     
     context = {
         'boxes': boxes_pasillo,
@@ -246,6 +277,10 @@ def obtener_detalle_box(request):
     
     if not box:
         return JsonResponse({'error': 'Box no encontrado'}, status=404)
+
+    # Mapear campos para compatibilidad
+    box['idbox'] = box.get('boxId')
+    box['idpasillo'] = box.get('pasilloId')
     
     # Obtener agendas del box para la fecha
     agendas_box = [agenda for agenda in agendas if str(agenda.get('boxId', '')) == str(box_id)]
