@@ -23,11 +23,17 @@ def get_api_data(endpoint, params=None):
     """
     try:
         url = f"{API_BASE_URL}/{endpoint}"
+        print(f"DEBUG - Calling API: {url} with params: {params}")
         response = requests.get(url, params=params, timeout=10)
+        print(f"DEBUG - API Response status: {response.status_code}")
+        
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            print(f"DEBUG - API Response type: {type(data)}, content preview: {str(data)[:200]}...")
+            return data
         else:
             print(f"API Error: {response.status_code} - {endpoint}")
+            print(f"Response text: {response.text[:200]}...")
             return []
     except requests.exceptions.RequestException as e:
         print(f"API Connection Error: {e}")
@@ -82,6 +88,26 @@ def visualizacion_general(request):
     pasillos = get_api_data('pasillos')
     agendas = get_api_data('agendas', {'fecha': fecha_str})
     
+    # Debug: Verificar formato de datos
+    print(f"DEBUG - Boxes type: {type(boxes)}, count: {len(boxes) if boxes else 0}")
+    if boxes and len(boxes) > 0:
+        print(f"DEBUG - First box type: {type(boxes[0])}, content: {boxes[0]}")
+    
+    # Verificar que boxes sea una lista de diccionarios
+    if not isinstance(boxes, list):
+        print(f"ERROR - boxes no es lista: {type(boxes)}")
+        boxes = []
+    
+    # Filtrar boxes que no sean diccionarios
+    valid_boxes = []
+    for box in boxes:
+        if isinstance(box, dict):
+            valid_boxes.append(box)
+        else:
+            print(f"WARNING - Box inválido (no es dict): {type(box)} - {box}")
+    
+    boxes = valid_boxes
+    
     # ===============================
     # APLICAR FILTROS A BOXES
     # ===============================
@@ -105,9 +131,23 @@ def visualizacion_general(request):
     # CALCULAR ESTADO DE BOXES
     # ===============================
     for box in boxes:
-        box_id = box.get('boxId')
-        box['estado_actual'] = calcular_estado_box(box_id, agendas, hora_actual, fecha)
-        box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
+        try:
+            if isinstance(box, dict):
+                box_id = box.get('boxId')
+                if box_id:
+                    box['estado_actual'] = calcular_estado_box(box_id, agendas, hora_actual, fecha)
+                    box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
+                else:
+                    print(f"WARNING - Box sin boxId: {box}")
+                    box['estado_actual'] = 'disponible'
+                    box['agenda_actual'] = None
+            else:
+                print(f"ERROR - Box no es diccionario: {type(box)} - {box}")
+        except Exception as e:
+            print(f"ERROR procesando box: {e}")
+            if isinstance(box, dict):
+                box['estado_actual'] = 'disponible'  
+                box['agenda_actual'] = None
     
     # ===============================
     # PAGINACIÓN
