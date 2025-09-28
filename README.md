@@ -263,6 +263,44 @@ aws sts get-caller-identity
 
 ---
 
+## 🌐 URLs y Endpoints Disponibles
+
+### **API Serverless (Producción):**
+- **Base URL:** `https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api`
+- **Boxes:** `GET /boxes` - Lista todos los boxes
+- **Pasillos:** `GET /pasillos` - Lista todos los pasillos  
+- **Agendas:** `GET /agendas?fecha=YYYY-MM-DD` - Lista agendas por fecha
+- **Crear Agenda:** `POST /agendas` - Crea nueva agenda
+- **Migración:** `POST /migrate` - Migra datos MySQL → DynamoDB
+
+### **Django (Desarrollo):**
+- **Vista Original:** `http://127.0.0.1:8000/` (MySQL)
+- **Vista con API:** `http://127.0.0.1:8000/api/` (DynamoDB)
+- **Test de API:** `http://127.0.0.1:8000/api/test/` (Diagnóstico)
+
+### **Ejemplos de uso de la API:**
+
+```bash
+# Obtener todos los boxes
+curl https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api/boxes
+
+# Obtener agendas para hoy (2025-09-28)
+curl "https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api/agendas?fecha=2025-09-28"
+
+# Crear una nueva agenda
+curl -X POST https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api/agendas \
+  -H "Content-Type: application/json" \
+  -d '{
+    "boxId": 1,
+    "fecha": "2025-09-28", 
+    "horaInicio": "14:00",
+    "horaFin": "16:00",
+    "tipoAgenda": "Consulta"
+  }'
+```
+
+---
+
 ## 📈 Próximos Pasos Recomendados
 
 ### **🎯 Integración Completa con Django:**

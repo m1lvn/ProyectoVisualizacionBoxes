@@ -7,12 +7,17 @@ vistas de visualización y gestión de boxes del hospital.
 
 from django.urls import path
 from . import views
+from . import views_api
 
 app_name = 'visualizacionBoxes'
 
 urlpatterns = [
     # Vista principal - Visualización general de boxes
     path('', views.visualizacion_general, name='visualizacion_general'),
+    
+    # Vista usando API serverless - NUEVA
+    path('api/', views_api.visualizacion_api, name='visualizacion_api'),
+    path('api/test/', views_api.api_test_view, name='api_test'),
     
     # Vista de visualización por pasillo - NUEVA
     path('pasillo/', views.visualizacion_pasillo, name='visualizacion_pasillo'),
