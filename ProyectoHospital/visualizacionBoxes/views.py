@@ -182,11 +182,15 @@ def visualizacion_general(request):
     # ===============================
     context = {
         'boxes': boxes_pagina,
+        'page_obj': boxes_pagina,  # Necesario para la paginación
+        'paginator': paginator,     # Necesario para la paginación
+        'is_paginated': boxes_pagina.has_other_pages(),  # Necesario para mostrar controles
         'pasillos': pasillos,  # API ya envía campos correctos
         'fecha': fecha_str,
         'fecha_seleccionada': fecha,
         'pasillo_seleccionado': pasillo_id,  # Agregar para que funcione el filtro
         'nombre_medico': nombre_medico,  # Agregar para que funcione el filtro
+        'codigo_box': codigo_box,  # Agregar para que funcione el filtro
         'filtros': {
             'pasillo': pasillo_id,
             'medico': nombre_medico,
@@ -268,6 +272,9 @@ def visualizacion_pasillo(request):
     
     context = {
         'boxes': boxes_pagina,  # Usar boxes paginados
+        'page_obj': boxes_pagina,  # Necesario para la paginación
+        'paginator': paginator,     # Necesario para la paginación
+        'is_paginated': boxes_pagina.has_other_pages(),  # Necesario para mostrar controles
         'pasillo_info': pasillo_info,
         'pasillos': pasillos,
         'fecha': fecha_str,

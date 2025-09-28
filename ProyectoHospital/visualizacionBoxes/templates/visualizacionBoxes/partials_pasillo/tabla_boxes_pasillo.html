@@ -3,47 +3,69 @@
 <!-- TABLA DE BOXES PASILLO       -->
 <!-- ============================= -->
 <div class="table-responsive contenedor-tabla">
-  <table class="table table-bordered text-center w-100 table-boxes">
-    
-    <!-- Encabezado -->
-    <thead class="table-light sticky-top">
-      <tr>
-        <th class="celda-hora">
-          <i class="fas fa-clock me-1"></i>Hora
-        </th>
-        {% for box in boxes %}
-          <th class="columna-box" data-pasillo="{{ box.idpasillo.pasillo|lower }}" 
-              title="Pasillo: {{ box.idpasillo.pasillo }}">
-            <div class="box-header">
-              <strong>BOX {{ box.idbox }}</strong>
+  {% if boxes %}
+    <!-- Mostrar boxes en formato simple por ahora -->
+    <div class="row">
+      {% for box in boxes %}
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3 mb-3">
+          <div class="card box-card">
+            <div class="card-header">
+              <strong>BOX {{ box.idBox }}</strong>
+              <small class="text-muted d-block">Pasillo: {{ box.pasillo }}</small>
             </div>
-          </th>
-        {% endfor %}
-      </tr>
-    </thead>
-    
-    <!-- Cuerpo de la tabla -->
-    <tbody>
-      {% for hora in horas %}
-        <tr class="fila-horario" data-hora="{{ hora }}">
-          <td class="celda-hora">
-            <strong>{{ hora }}</strong>
-          </td>
-          {% for box in boxes %}
-            {% with key=box.idbox|stringformat:"s"|add:"-"|add:hora %}
-              {% with estado=estado_por_box_y_hora|get_item:key %}
-                {% with info=info_por_box_y_hora|get_item:key %}
-                  {% with tipo_agenda=tipo_agenda_por_box_y_hora|get_item:key %}
-                    {% with tipo_agenda_id=tipo_agenda_id_por_box_y_hora|get_item:key %}
-                      {% include "visualizacionBoxes/partials_pasillo/celda_box.html" with box=box hora=hora estado=estado info=info tipo_agenda=tipo_agenda tipo_agenda_id=tipo_agenda_id %}
-                    {% endwith %}
-                  {% endwith %}
-                {% endwith %}
-              {% endwith %}
-            {% endwith %}
-          {% endfor %}
-        </tr>
+            <div class="card-body">
+              <div class="estado-box estado-{{ box.estado_actual|default:'libre' }}">
+                {{ box.estado_actual|default:'Libre'|title }}
+              </div>
+              {% if box.agenda_actual %}
+                <small class="text-muted">
+                  {{ box.agenda_actual.profesional }}<br>
+                  {{ box.agenda_actual.hora_inicio }} - {{ box.agenda_actual.hora_fin }}
+                </small>
+              {% endif %}
+            </div>
+          </div>
+        </div>
       {% endfor %}
-    </tbody>
-  </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info text-center">
+      <h5><i class="fas fa-info-circle me-2"></i>Sin Boxes</h5>
+      <p class="mb-0">No se encontraron boxes para mostrar con los filtros actuales.</p>
+    </div>
+  {% endif %}
 </div>
+
+<style>
+.box-card {
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+
+.box-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.estado-box {
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: bold;
+  text-align: center;
+}
+
+.estado-disponible, .estado-libre {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.estado-ocupado {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.estado-inhabilitado {
+  background-color: #f3f3f3;
+  color: #6c757d;
+}
+</style>
