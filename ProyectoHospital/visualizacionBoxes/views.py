@@ -185,6 +185,8 @@ def visualizacion_general(request):
         'pasillos': pasillos,  # API ya envía campos correctos
         'fecha': fecha_str,
         'fecha_seleccionada': fecha,
+        'pasillo_seleccionado': pasillo_id,  # Agregar para que funcione el filtro
+        'nombre_medico': nombre_medico,  # Agregar para que funcione el filtro
         'filtros': {
             'pasillo': pasillo_id,
             'medico': nombre_medico,
@@ -204,46 +206,42 @@ def visualizacion_general(request):
 
 def visualizacion_pasillo(request):
     """
-    Vista de visualización por pasillo usando API - Con pasillo por defecto
+    Vista de visualización por pasillo usando API - Funciona igual que antes de la migración
     """
-    pasillo_id = request.GET.get('pasillo')
+    pasillo_id = request.GET.get('pasillo')  # Solo de filtros superiores
     fecha_str = request.GET.get('fecha', datetime.now().strftime('%Y-%m-%d'))
-    
-    # Si no hay pasillo especificado, usar el primer pasillo disponible
-    if not pasillo_id:
-        pasillos = get_api_data('pasillos')
-        if pasillos:
-            pasillo_id = str(pasillos[0].get('idPasillo'))  # Usar primer pasillo como defecto
-        else:
-            return redirect('visualizacionBoxes:visualizacion_general')
     
     # Obtener datos de la API
     boxes = get_api_data('boxes')
     pasillos = get_api_data('pasillos')
     agendas = get_api_data('agendas', {'fecha': fecha_str})
     
-    # Filtrar boxes del pasillo seleccionado
-    boxes_pasillo = [box for box in boxes if str(box.get('idPasillo', '')) == str(pasillo_id)]
+    # Si hay filtro de pasillo, filtrar boxes
+    if pasillo_id:
+        boxes_pasillo = [box for box in boxes if str(box.get('idPasillo', '')) == str(pasillo_id)]
+        # Obtener información del pasillo específico
+        pasillo_info = next((p for p in pasillos if str(p.get('idPasillo', '')) == str(pasillo_id)), None)
+    else:
+        # Sin filtro: mostrar todos los boxes
+        boxes_pasillo = boxes
+        pasillo_info = None
     
-    # Obtener información del pasillo
-    pasillo_info = next((p for p in pasillos if str(p.get('idPasillo', '')) == str(pasillo_id)), None)
-    
-    # Calcular estados
+    # Calcular estados para todos los boxes
     hora_actual = datetime.now().time()
     fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
     
     for box in boxes_pasillo:
-        box_id = box.get('idBox')  # MySQL original: 'idBox'
+        box_id = box.get('idBox')
         box['estado_actual'] = calcular_estado_box(box_id, agendas, hora_actual, fecha)
         box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
-    
-    # API ya envía campos correctos, no necesitamos mapear
     
     context = {
         'boxes': boxes_pasillo,
         'pasillo_info': pasillo_info,
         'pasillos': pasillos,
         'fecha': fecha_str,
+        'fecha_seleccionada': fecha,
+        'pasillo_seleccionado': pasillo_id,  # Para que funcione el filtro superior
         'filtros': {'pasillo': pasillo_id},
         'usando_api': True,
     }
