@@ -16,6 +16,9 @@ from django.conf import settings
 # API Configuration
 API_BASE_URL = getattr(settings, 'SERVERLESS_API_URL', 'https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api')
 
+# Paginación
+BOXES_POR_PAGINA = 40
+
 
 def get_api_data(endpoint, params=None):
     """
@@ -76,9 +79,6 @@ def visualizacion_general(request):
     nombre_medico = request.GET.get('medico', None)
     codigo_box = request.GET.get('box', None)
     page = request.GET.get('page', 1)
-    
-    # Constantes
-    BOXES_POR_PAGINA = 40
     
     # ===============================
     # VALIDAR Y PROCESAR FECHA
@@ -206,44 +206,90 @@ def visualizacion_general(request):
 
 def visualizacion_pasillo(request):
     """
-    Vista de visualización por pasillo usando API - Funciona igual que antes de la migración
+    Vista de visualización por pasillo usando API - Con paginación restaurada
     """
-    pasillo_id = request.GET.get('pasillo')  # Solo de filtros superiores
+    # Obtener parámetros de filtros y paginación
+    pasillo_id = request.GET.get('pasillo')
     fecha_str = request.GET.get('fecha', datetime.now().strftime('%Y-%m-%d'))
+    nombre_medico = request.GET.get('medico', '')
+    codigo_box = request.GET.get('box', '')
+    jornada_seleccionada = request.GET.get('jornada', '')
+    page = request.GET.get('page', 1)
+    
+    print(f"DEBUG - Filtros pasillo: pasillo_id={pasillo_id}, medico={nombre_medico}, box={codigo_box}, jornada={jornada_seleccionada}")
     
     # Obtener datos de la API
     boxes = get_api_data('boxes')
     pasillos = get_api_data('pasillos')
     agendas = get_api_data('agendas', {'fecha': fecha_str})
     
-    # Si hay filtro de pasillo, filtrar boxes
-    if pasillo_id:
-        boxes_pasillo = [box for box in boxes if str(box.get('idPasillo', '')) == str(pasillo_id)]
-        # Obtener información del pasillo específico
-        pasillo_info = next((p for p in pasillos if str(p.get('idPasillo', '')) == str(pasillo_id)), None)
-    else:
-        # Sin filtro: mostrar todos los boxes
-        boxes_pasillo = boxes
-        pasillo_info = None
+    # Aplicar filtros
+    boxes_filtrados = boxes
     
-    # Calcular estados para todos los boxes
+    # Filtro por pasillo
+    if pasillo_id:
+        boxes_filtrados = [box for box in boxes_filtrados if str(box.get('idPasillo', '')) == str(pasillo_id)]
+    
+    # Filtro por profesional
+    if nombre_medico:
+        agendas_medico = [agenda for agenda in agendas if nombre_medico.lower() in agenda.get('profesional', '').lower()]
+        box_ids_medico = [str(agenda.get('idBox')) for agenda in agendas_medico]
+        boxes_filtrados = [box for box in boxes_filtrados if str(box.get('idBox')) in box_ids_medico]
+    
+    # Filtro por código de box
+    if codigo_box:
+        boxes_filtrados = [box for box in boxes_filtrados if codigo_box.lower() in str(box.get('idBox', '')).lower()]
+    
+    # Calcular estados para todos los boxes filtrados
     hora_actual = datetime.now().time()
     fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
     
-    for box in boxes_pasillo:
+    for box in boxes_filtrados:
         box_id = box.get('idBox')
         box['estado_actual'] = calcular_estado_box(box_id, agendas, hora_actual, fecha)
         box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
     
+    # ===============================
+    # PAGINACIÓN (igual que visualizacion_general)
+    # ===============================
+    paginator = Paginator(boxes_filtrados, BOXES_POR_PAGINA)
+    
+    try:
+        boxes_pagina = paginator.page(page)
+    except PageNotAnInteger:
+        boxes_pagina = paginator.page(1)
+    except EmptyPage:
+        boxes_pagina = paginator.page(paginator.num_pages)
+    
+    # Obtener información del pasillo específico si hay filtro
+    pasillo_info = None
+    if pasillo_id:
+        pasillo_info = next((p for p in pasillos if str(p.get('idPasillo', '')) == str(pasillo_id)), None)
+    
     context = {
-        'boxes': boxes_pasillo,
+        'boxes': boxes_pagina,  # Usar boxes paginados
         'pasillo_info': pasillo_info,
         'pasillos': pasillos,
         'fecha': fecha_str,
         'fecha_seleccionada': fecha,
-        'pasillo_seleccionado': pasillo_id,  # Para que funcione el filtro superior
-        'filtros': {'pasillo': pasillo_id},
+        'pasillo_seleccionado': pasillo_id,
+        'nombre_medico': nombre_medico,
+        'codigo_box': codigo_box,
+        'jornada_seleccionada': jornada_seleccionada,
+        'filtros': {
+            'pasillo': pasillo_id,
+            'medico': nombre_medico,
+            'box': codigo_box,
+            'jornada': jornada_seleccionada
+        },
         'usando_api': True,
+        # Estadísticas con datos totales (no paginados)
+        'estadisticas': {
+            'total_boxes': len(boxes_filtrados),
+            'boxes_disponibles': len([b for b in boxes_filtrados if b.get('estado_actual') == 'disponible']),
+            'boxes_ocupados': len([b for b in boxes_filtrados if b.get('estado_actual') == 'ocupado']),
+            'total_agendas': len(agendas),
+        },
     }
     
     return render(request, 'visualizacionBoxes/visualizacion_pasillo.html', context)
