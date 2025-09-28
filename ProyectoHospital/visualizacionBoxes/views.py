@@ -269,9 +269,10 @@ def visualizacion_pasillo(request):
         current_time += timedelta(minutes=30)
     
     # ===============================
-    # PAGINACIÓN (igual que visualizacion_general)
+    # PAGINACIÓN (8 boxes por página para pasillo)
     # ===============================
-    paginator = Paginator(boxes_filtrados, BOXES_POR_PAGINA)
+    BOXES_POR_PAGINA_PASILLO = 8
+    paginator = Paginator(boxes_filtrados, BOXES_POR_PAGINA_PASILLO)
     
     try:
         boxes_pagina = paginator.page(page)
