@@ -1,0 +1,294 @@
+{% extends 'visualizacionBoxes/base.html' %}
+{% load static %}
+{% load visual_pasillo %}
+
+{% block title %}Visualización por Pasillo{% endblock %}
+
+{% block styles %}
+  <!-- Estilos CSS específicos - orden optimizado -->
+  <link rel="stylesheet" href="{% static 'css/leyendaBoxes.css' %}">
+  <link rel="stylesheet" href="{% static 'css/filtrosSuperioresPasillo.css' %}">
+  <link rel="stylesheet" href="{% static 'css/visualizacionPasillo.css' %}">
+  <!-- Estilos para agendamiento -->
+  <style>
+    /* Layout optimizado con flexbox */
+    .layout-optimizado {
+      display: flex !important;
+      flex-wrap: nowrap;
+      gap: 0.75rem; /* Gap reducido entre columnas */
+      align-items: flex-start;
+    }
+    
+    /* Leyenda - ancho automático según contenido */
+    .col-auto:first-child {
+      flex: 0 0 auto;
+      min-width: 200px;
+      max-width: 250px;
+    }
+    
+    /* Contenido principal - toma todo el espacio restante */
+    .col {
+      flex: 1 1 auto;
+      min-width: 0; /* Permite que se contraiga si es necesario */
+    }
+    
+    /* Panel de agendamiento - ancho automático según contenido */
+    .agendamiento-col {
+      flex: 0 0 auto; /* Auto width según contenido */
+      min-width: fit-content;
+      max-width: none;
+      height: auto !important;     /* Altura automática */
+      min-height: auto !important; /* Sin altura mínima */
+      max-height: none !important; /* Sin altura máxima */
+    }
+    
+    .panel-agendamiento-container {
+      position: sticky;
+      top: 20px;
+      max-height: none !important; /* Sobrescribir cualquier limitación */
+      overflow-y: visible !important; /* Sin scroll forzado */
+      width: 100% !important; /* Ancho completo del contenedor */
+      padding: 0 !important; /* Sin padding interno */
+      margin: 0 !important; /* Sin márgenes */
+      box-sizing: border-box; /* Incluir padding en el ancho */
+    }
+    
+    .contenido-principal {
+      min-height: auto !important; /* Sobrescribir min-height que causa espacios */
+      height: auto !important;
+      width: 100%;
+    }
+    
+    /* Sobrescribir el min-height del contenedor general */
+    .visualizacion-pasillo {
+      min-height: auto !important; /* Eliminar altura mínima forzada */
+      height: auto !important;
+    }
+    
+    .leyenda-lateral {
+      position: sticky;
+      top: 20px;
+      width: 100%;
+    }
+    
+    /* Responsive design mejorado */
+    @media (max-width: 1400px) {
+      .agendamiento-col {
+        flex: 0 0 auto;
+        min-width: fit-content;
+      }
+    }
+    
+    @media (max-width: 1200px) {
+      .layout-optimizado {
+        flex-wrap: wrap;
+      }
+      
+      .col-auto:first-child {
+        flex: 0 0 100%;
+        max-width: none;
+        order: 1;
+      }
+      
+      .col {
+        flex: 0 0 100%;
+        order: 2;
+      }
+      
+      .agendamiento-col {
+        flex: 0 0 100%;
+        max-width: none;
+        order: 3;
+        min-width: auto;
+      }
+      
+      .panel-agendamiento-container {
+        position: relative;
+        top: 0;
+        max-height: none;
+        width: 100%;
+      }
+    }
+    
+    @media (max-width: 768px) {
+      .layout-optimizado {
+        gap: 0.5rem;
+      }
+      
+      .col-auto:first-child {
+        min-width: unset;
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <!-- Meta tags para JavaScript -->
+  <meta name="fecha" content="{{ fecha|date:'Y-m-d' }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <!-- Incluir componentes de navegación y filtros -->
+  {% include "visualizacionBoxes/header.html" %}
+  {% include "visualizacionBoxes/filtrosSuperioresPasillo.html" %}
+
+  <div class="container-fluid mt-3 px-4 visualizacion-pasillo">
+    <div class="row g-2 layout-optimizado">
+      
+      <!-- ============================= -->
+      <!-- LEYENDA LATERAL               -->
+      <!-- ============================= -->
+      <div class="col-auto">
+        <aside class="leyenda-lateral">
+          {% include "visualizacionBoxes/leyendaBoxes.html" %}
+        </aside>
+      </div>
+
+      <!-- ============================= -->
+      <!-- CONTENIDO PRINCIPAL           -->
+      <!-- ============================= -->
+      <div class="col">
+        <main class="contenido-principal">
+          {% include "visualizacionBoxes/partials_pasillo/tabla_boxes_pasillo.html" %}
+          
+          <!-- Paginación si existe -->
+          {% if is_paginated %}
+            {% include "visualizacionBoxes/partials_pasillo/paginacion_pasillo.html" %}
+          {% endif %}
+        </main>
+      </div>
+
+      <!-- ============================= -->
+      <!-- PANEL DE AGENDAMIENTO         -->
+      <!-- ============================= -->
+      {% if user.is_authenticated %}
+        {% if user.perfilusuario.es_administrador or user.perfilusuario.es_personal_administrativo %}
+        {# Solo para administradores y personal administrativo #}
+        <div class="col-auto agendamiento-col">
+          <aside class="panel-agendamiento-container">
+            {% include "visualizacionBoxes/partials_agendamiento/panel_agendamiento.html" %}
+          </aside>
+        </div>
+        {% else %}
+      <!-- Panel de información para usuarios sin permisos de agendamiento -->
+      <div class="col-auto">
+        <aside class="info-panel">
+          {% include "visualizacionBoxes/partials_pasillo/panel_info_pasillo.html" %}
+        </aside>
+      </div>
+        {% endif %}
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ============================= -->
+  <!-- MODAL DE DETALLES             -->
+  <!-- ============================= -->
+  {% include "visualizacionBoxes/partials_pasillo/modal_detalle.html" %}
+{% endblock %}
+
+{% block scripts %}
+  <!-- Configuración global para JavaScript -->
+  <script>
+    // URLs para AJAX
+    window.detalleBoxUrl = "{% url 'visualizacionBoxes:detalle_box' %}";
+    window.medicosUrls = {
+        buscar_medicos: "{% url 'visualizacionBoxes:buscar_medicos' %}"
+    };
+    
+    // Configuración del pasillo
+    window.pasilloConfig = {
+      HORA_ACTUAL: '{{ hora_actual|time:"H:i" }}',
+      FECHA_ACTUAL: '{{ fecha|date:"Y-m-d" }}',
+      PASILLO_ID: {{ pasillo_seleccionado|default:'null' }},
+      PASILLO_NOMBRE: '{{ pasillo_actual.pasillo|default:"" }}',
+      TOTAL_BOXES: {{ boxes|length }},
+      ACTUALIZAR_CADA: 30000,
+      DEBUG: false
+    };
+  </script>
+  
+  <!-- jQuery necesario para el módulo de agendamiento -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+  
+  <script src="{% static 'js/boxModal.js' %}"></script>
+  <script src="{% static 'js/visualizacionPasillo_simple.js' %}"></script>
+  
+  <!-- Script para funcionalidad de agendamiento -->
+  {% if user.is_authenticated %}
+    {% if user.perfilusuario.es_administrador or user.perfilusuario.es_personal_administrativo %}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Inicializar funcionalidad de agendamiento
+      initAgendamiento();
+      
+      // Función para limpiar formulario
+      document.getElementById('btn-limpiar-form')?.addEventListener('click', function() {
+        document.getElementById('form-agendamiento').reset();
+        document.getElementById('input-fecha').value = '{{ fecha|date:"Y-m-d" }}';
+      });
+      
+      // Validación de horas
+      const horaInicio = document.getElementById('input-hora-inicio');
+      const horaFin = document.getElementById('input-hora-fin');
+      
+      if (horaInicio && horaFin) {
+        horaInicio.addEventListener('change', function() {
+          if (horaFin.value && horaInicio.value >= horaFin.value) {
+            const [hora, minuto] = horaInicio.value.split(':');
+            const nuevaHora = parseInt(hora) + 1;
+            horaFin.value = `${nuevaHora.toString().padStart(2, '0')}:${minuto}`;
+          }
+        });
+      }
+      
+      // Búsqueda de profesionales
+      const busquedaProfesional = document.getElementById('busqueda-profesional');
+      const selectProfesional = document.getElementById('select-profesional');
+      
+      if (busquedaProfesional && selectProfesional) {
+        busquedaProfesional.addEventListener('input', function() {
+          const termino = this.value.toLowerCase();
+          const opciones = selectProfesional.options;
+          
+          for (let i = 1; i < opciones.length; i++) {
+            const opcion = opciones[i];
+            const texto = opcion.textContent.toLowerCase();
+            
+            if (texto.includes(termino)) {
+              opcion.style.display = '';
+            } else {
+              opcion.style.display = 'none';
+            }
+          }
+        });
+      }
+    });
+    
+    function initAgendamiento() {
+      console.log('Agendamiento inicializado');
+      
+      // Seleccionar box desde tabla
+      document.addEventListener('click', function(e) {
+        if (e.target.closest('.time-slot')) {
+          const slot = e.target.closest('.time-slot');
+          const boxId = slot.dataset.boxId;
+          const hora = slot.dataset.hora;
+          const fecha = slot.dataset.fecha;
+          
+          // Prellenar formulario si el box está disponible
+          if (slot.dataset.disponible === 'true') {
+            const selectBox = document.getElementById('select-box');
+            const inputFecha = document.getElementById('input-fecha');
+            const inputHoraInicio = document.getElementById('input-hora-inicio');
+            
+            if (selectBox) selectBox.value = boxId;
+            if (inputFecha) inputFecha.value = fecha;
+            if (inputHoraInicio) inputHoraInicio.value = hora;
+          }
+        }
+      });
+    }
+  </script>
+    {% endif %}
+  {% endif %}
+{% endblock %}

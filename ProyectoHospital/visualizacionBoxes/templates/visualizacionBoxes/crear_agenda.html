@@ -1,0 +1,128 @@
+{% extends "visualizacionBoxes/base.html" %}
+{% load static %}
+
+{% block title %}Crear Agenda{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <h1>📅 Crear Nueva Agenda</h1>
+        <div class="alert alert-info">
+            🚀 Creando agenda vía API Serverless
+        </div>
+    </div>
+
+    <form method="POST" class="agenda-form">
+        {% csrf_token %}
+        
+        <div class="form-group">
+            <label for="boxId">🏥 Box:</label>
+            <select name="boxId" id="boxId" required>
+                <option value="">Seleccionar Box</option>
+                {% for box in boxes %}
+                    <option value="{{ box.boxId }}">
+                        Box {{ box.boxId }} - {{ box.pasillo }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="fecha">📅 Fecha:</label>
+            <input type="date" name="fecha" id="fecha" required 
+                   value="{{ request.GET.fecha|default_if_none:'' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="horaInicio">⏰ Hora Inicio:</label>
+            <input type="time" name="horaInicio" id="horaInicio" required>
+        </div>
+
+        <div class="form-group">
+            <label for="horaFin">⏱️ Hora Fin:</label>
+            <input type="time" name="horaFin" id="horaFin" required>
+        </div>
+
+        <div class="form-group">
+            <label for="tipoAgenda">📋 Tipo de Agenda:</label>
+            <select name="tipoAgenda" id="tipoAgenda">
+                <option value="Consulta">Consulta</option>
+                <option value="Procedimiento">Procedimiento</option>
+                <option value="Urgencia">Urgencia</option>
+                <option value="Control">Control</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="profesional">👨‍⚕️ Profesional:</label>
+            <input type="text" name="profesional" id="profesional" 
+                   placeholder="Nombre del médico/profesional">
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-success">
+                ✅ Crear Agenda
+            </button>
+            <a href="{% url 'visualizacionBoxes:visualizacion_general' %}" class="btn btn-secondary">
+                🔙 Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+.agenda-form {
+    max-width: 600px;
+    margin: 0 auto;
+    background: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.form-actions {
+    text-align: center;
+    margin-top: 30px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    margin: 0 10px;
+    text-decoration: none;
+    border-radius: 5px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.btn-success {
+    background: #28a745;
+    color: white;
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+}
+</style>
+{% endblock %}
