@@ -60,8 +60,17 @@ def migrate_boxes(mysql_conn, dynamodb_table):
     print("🏥 Migrando boxes...")
     
     cursor = mysql_conn.cursor(dictionary=True)
+    
+    # Primero, verificar qué columnas existen
+    cursor.execute("DESCRIBE box")
+    columns = cursor.fetchall()
+    print("🔍 Columnas disponibles en tabla 'box':")
+    for col in columns:
+        print(f"  - {col['Field']} ({col['Type']})")
+    
+    # Consulta ajustada sin columnas que no existen
     cursor.execute("""
-        SELECT b.idBox, b.capacidad, b.idPasillo, p.pasillo, b.tipoBox
+        SELECT b.idBox, b.capacidad, b.idPasillo, p.pasillo
         FROM box b 
         JOIN pasillo p ON b.idPasillo = p.idPasillo 
         ORDER BY b.idBox
@@ -80,7 +89,7 @@ def migrate_boxes(mysql_conn, dynamodb_table):
             'capacidad': box.get('capacidad', 1) or 1,
             'pasilloId': box['idPasillo'],
             'pasillo': box['pasillo'],
-            'tipobox': box.get('tipoBox', 'Standard'),
+            'tipobox': 'Standard',  # Valor por defecto ya que la columna no existe
             'disponible': True,
             'numerocamas': box.get('capacidad', 1) or 1,
             'createdAt': datetime.now().isoformat()
