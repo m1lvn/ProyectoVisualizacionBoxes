@@ -41,6 +41,16 @@ module.exports.getBoxes = async (event) => {
 
     const result = await dynamodb.scan(params).promise();
     
+    // Mapear nombres de campos para coincidir con Django
+    const mappedItems = result.Items.map(item => ({
+      ...item,
+      idbox: item.boxId,           // Django espera 'idbox'
+      idpasillo: item.pasilloId,   // Django espera 'idpasillo'
+      // Mantener campos originales para compatibilidad
+      boxId: item.boxId,
+      pasilloId: item.pasilloId
+    }));
+    
     return {
       statusCode: 200,
       headers: {
@@ -50,7 +60,7 @@ module.exports.getBoxes = async (event) => {
       },
       body: JSON.stringify({
         success: true,
-        data: result.Items,
+        data: mappedItems,
         count: result.Count,
         timestamp: new Date().toISOString()
       }),

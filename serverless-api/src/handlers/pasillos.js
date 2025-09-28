@@ -29,6 +29,14 @@ module.exports.getPasillos = async (event) => {
       a.nombre.localeCompare(b.nombre)
     );
 
+    // Mapear nombres de campos para coincidir con Django
+    const mappedPasillos = sortedPasillos.map(item => ({
+      ...item,
+      idpasillo: item.pasilloId,   // Django espera 'idpasillo'
+      // Mantener campos originales para compatibilidad
+      pasilloId: item.pasilloId
+    }));
+
     return {
       statusCode: 200,
       headers: {
@@ -38,7 +46,7 @@ module.exports.getPasillos = async (event) => {
       },
       body: JSON.stringify({
         success: true,
-        data: sortedPasillos,
+        data: mappedPasillos,
         count: result.Count,
         timestamp: new Date().toISOString()
       }),

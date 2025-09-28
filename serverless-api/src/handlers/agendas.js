@@ -60,6 +60,20 @@ module.exports.getAgendas = async (event) => {
       return a.horaInicio.localeCompare(b.horaInicio);
     });
 
+    // Mapear nombres de campos para coincidir con Django
+    const mappedAgendas = sortedAgendas.map(item => ({
+      ...item,
+      idbox: item.boxId,                    // Django espera 'idbox'
+      idpasillo: item.pasilloId,           // Django espera 'idpasillo'
+      idagenda: item.agendaId,             // Django espera 'idagenda'
+      idprofesional: item.profesionalId,   // Django espera 'idprofesional'
+      // Mantener campos originales para compatibilidad
+      boxId: item.boxId,
+      pasilloId: item.pasilloId,
+      agendaId: item.agendaId,
+      profesionalId: item.profesionalId
+    }));
+
     return {
       statusCode: 200,
       headers: {
@@ -69,7 +83,7 @@ module.exports.getAgendas = async (event) => {
       },
       body: JSON.stringify({
         success: true,
-        data: sortedAgendas,
+        data: mappedAgendas,
         count: result.Count,
         timestamp: new Date().toISOString()
       }),
