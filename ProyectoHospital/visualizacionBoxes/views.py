@@ -273,6 +273,28 @@ def visualizacion_pasillo(request):
         current_time += timedelta(minutes=30)
     
     # ===============================
+    # GENERAR DATOS ESPECÍFICOS POR HORA PARA LA MATRIZ
+    # ===============================
+    # Crear diccionarios para estados y agendas por box+hora
+    estados_por_box_hora = {}
+    agendas_por_box_hora = {}
+    
+    for box in boxes_filtrados:
+        box_id = box.get('idBox')
+        for hora in horas_bloque:
+            key = f"{box_id}-{hora}"
+            estados_por_box_hora[key] = calcular_estado_box_en_hora_especifica(box_id, agendas, hora, fecha)
+            agendas_por_box_hora[key] = obtener_agenda_en_hora_especifica(box_id, agendas, hora, fecha)
+    
+    # Debug: Mostrar algunos estados específicos
+    print(f"DEBUG PASILLO - Estados por hora para Box 1:")
+    for hora in horas_bloque[:5]:  # Solo primeras 5 horas
+        key = f"1-{hora}"
+        estado = estados_por_box_hora.get(key, 'disponible')
+        agenda = agendas_por_box_hora.get(key)
+        print(f"  {hora}: {estado} - {agenda.get('profesional') if agenda else 'Sin agenda'}")
+    
+    # ===============================
     # PAGINACIÓN (8 boxes por página para pasillo)
     # ===============================
     BOXES_POR_PAGINA_PASILLO = 8
@@ -293,6 +315,8 @@ def visualizacion_pasillo(request):
     context = {
         'boxes': boxes_pagina,  # Usar boxes paginados
         'horas_bloque': horas_bloque,  # Horarios para la matriz
+        'estados_por_box_hora': estados_por_box_hora,  # Estados específicos por celda
+        'agendas_por_box_hora': agendas_por_box_hora,  # Agendas específicas por celda
         'page_obj': boxes_pagina,  # Necesario para la paginación
         'paginator': paginator,     # Necesario para la paginación
         'is_paginated': boxes_pagina.has_other_pages(),  # Necesario para mostrar controles
@@ -325,10 +349,11 @@ def visualizacion_pasillo(request):
 
 def obtener_detalle_box(request):
     """
-    API AJAX para obtener detalles de un box específico
+    API AJAX para obtener detalles de un box específico en un bloque horario específico
     """
     box_id = request.GET.get('box_id')
     fecha_str = request.GET.get('fecha', datetime.now().strftime('%Y-%m-%d'))
+    hora_str = request.GET.get('hora')  # Nuevo parámetro de hora específica
     
     if not box_id:
         return JsonResponse({'error': 'Box ID requerido'}, status=400)
@@ -342,17 +367,26 @@ def obtener_detalle_box(request):
     
     if not box:
         return JsonResponse({'error': 'Box no encontrado'}, status=404)
-
-    # API ya envía campos correctos, no necesitamos mapear
     
     # Obtener agendas del box para la fecha
     agendas_box = [agenda for agenda in agendas if str(agenda.get('idBox', '')) == str(box_id)]
     
-    # Verificar si el box está disponible
-    hora_actual = datetime.now().time()
+    # Si se especifica una hora, usar esa hora, sino usar la hora actual
+    if hora_str:
+        # Validar formato de hora
+        try:
+            datetime.strptime(hora_str, '%H:%M')  # Solo validar, no convertir
+            hora_especifica = hora_str
+        except ValueError:
+            return JsonResponse({'error': 'Formato de hora inválido. Use HH:MM'}, status=400)
+    else:
+        hora_especifica = datetime.now().strftime('%H:%M')  # Convertir a string
+    
     fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()
-    estado = calcular_estado_box(box_id, agendas, hora_actual, fecha)
-    agenda_actual = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
+    
+    # Calcular estado específico para esa hora
+    estado_hora = calcular_estado_box_en_hora_especifica(box_id, agendas, hora_especifica, fecha)
+    agenda_hora = obtener_agenda_en_hora_especifica(box_id, agendas, hora_especifica, fecha)
     
     # Preparar respuesta en formato que espera el JavaScript
     response_data = {
@@ -362,20 +396,25 @@ def obtener_detalle_box(request):
             'capacidad': box.get('capacidad', ''),
             'disponible': box.get('disponible', True)
         },
-        'disponible': estado == 'disponible',
+        'disponible': estado_hora == 'disponible',
         'fecha': fecha_str,
+        'hora': hora_especifica,  # Usar la hora procesada (string)
+        'bloque_horario': f"{hora_especifica} - Box {box_id}",
     }
     
-    # Si hay agenda actual, agregar sus datos
-    if agenda_actual and estado == 'ocupado':
+    # Si hay agenda en esa hora específica, agregar sus datos
+    if agenda_hora and estado_hora == 'ocupado':
         response_data['agenda'] = {
-            'profesional': agenda_actual.get('profesional', 'No especificado'),
-            'especialidad': agenda_actual.get('especialidad', 'No especificada'), 
-            'tipo_agenda': agenda_actual.get('tipoAgenda', 'No especificado'),
-            'hora_inicio': agenda_actual.get('horaInicio', ''),
-            'hora_fin': agenda_actual.get('horaFin', ''),
-            'observaciones': agenda_actual.get('observaciones', ''),
+            'profesional': agenda_hora.get('profesional', 'No especificado'),
+            'especialidad': agenda_hora.get('especialidad', 'No especificada'), 
+            'tipo_agenda': agenda_hora.get('tipoAgenda', 'No especificado'),
+            'hora_inicio': agenda_hora.get('horaInicio', ''),
+            'hora_fin': agenda_hora.get('horaFin', ''),
+            'observaciones': agenda_hora.get('observaciones', ''),
         }
+        response_data['mensaje'] = f"Box ocupado en el horario {agenda_hora.get('horaInicio', '')} - {agenda_hora.get('horaFin', '')}"
+    else:
+        response_data['mensaje'] = f"Box disponible en el horario {hora_especifica}"
     
     return JsonResponse(response_data)
 
@@ -451,7 +490,87 @@ def perfil_usuario(request):
 # FUNCIONES AUXILIARES
 # ===============================
 
+def calcular_estado_box_en_hora_especifica(box_id, agendas, hora_especifica, fecha):
+    """
+    Calcular el estado de un box en una hora específica de la matriz
+    """
+    fecha_str = fecha.strftime('%Y-%m-%d')
+    agendas_box_hoy = [
+        agenda for agenda in agendas 
+        if str(agenda.get('idBox', '')) == str(box_id) and agenda.get('fecha') == fecha_str
+    ]
+    
+    # Convertir hora específica a objeto time
+    try:
+        hora_especifica_obj = datetime.strptime(hora_especifica, '%H:%M').time()
+    except ValueError:
+        return 'disponible'
+    
+    for agenda in agendas_box_hoy:
+        try:
+            hora_inicio = datetime.strptime(agenda.get('horaInicio', ''), '%H:%M').time()
+            hora_fin = datetime.strptime(agenda.get('horaFin', ''), '%H:%M').time()
+            
+            # Verificar si la hora específica está dentro del rango de la agenda
+            if hora_inicio <= hora_especifica_obj < hora_fin:  # < para que no incluya el final
+                return 'ocupado'
+        except ValueError:
+            continue
+    
+    return 'disponible'
+
+
+def obtener_agenda_en_hora_especifica(box_id, agendas, hora_especifica, fecha):
+    """
+    Obtener la agenda específica de un box en una hora determinada
+    """
+    fecha_str = fecha.strftime('%Y-%m-%d')
+    agendas_box_hoy = [
+        agenda for agenda in agendas 
+        if str(agenda.get('idBox', '')) == str(box_id) and agenda.get('fecha') == fecha_str
+    ]
+    
+    # Convertir hora específica a objeto time
+    try:
+        hora_especifica_obj = datetime.strptime(hora_especifica, '%H:%M').time()
+    except ValueError:
+        return None
+    
+    for agenda in agendas_box_hoy:
+        try:
+            hora_inicio = datetime.strptime(agenda.get('horaInicio', ''), '%H:%M').time()
+            hora_fin = datetime.strptime(agenda.get('horaFin', ''), '%H:%M').time()
+            
+            # Verificar si la hora específica está dentro del rango de la agenda
+            if hora_inicio <= hora_especifica_obj < hora_fin:
+                return agenda
+        except ValueError:
+            continue
+    
+    return None
+
+
 def calcular_estado_box(box_id, agendas, hora_actual, fecha):
+    """
+    Calcular el estado actual de un box basado en las agendas
+    """
+    fecha_str = fecha.strftime('%Y-%m-%d')
+    agendas_box_hoy = [
+        agenda for agenda in agendas 
+        if str(agenda.get('idBox', '')) == str(box_id) and agenda.get('fecha') == fecha_str
+    ]
+    
+    for agenda in agendas_box_hoy:
+        try:
+            hora_inicio = datetime.strptime(agenda.get('horaInicio', ''), '%H:%M').time()
+            hora_fin = datetime.strptime(agenda.get('horaFin', ''), '%H:%M').time()
+            
+            if hora_inicio <= hora_actual <= hora_fin:
+                return 'ocupado'
+        except ValueError:
+            continue
+    
+    return 'disponible'
     """
     Calcular el estado actual de un box basado en las agendas
     """

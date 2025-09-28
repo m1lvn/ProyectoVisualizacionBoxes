@@ -30,16 +30,17 @@
             <strong>{{ hora }}</strong>
           </td>
           {% for box in boxes %}
-            {% comment %} Determinar estado del box en esta hora específica {% endcomment %}
-            {% with estado_celda="libre" %}
-            {% if box.estado_actual == 'ocupado' and box.agenda_actual %}
-              {% comment %} Verificar si la agenda actual abarca esta hora {% endcomment %}
-              <td class="time-slot celda-box ocupado tipo-agenda-{{ box.agenda_actual.idTipoAgenda|default:'1' }}" 
+            {% comment %} Usar estado específico calculado para esta hora {% endcomment %}
+            {% with clave_celda=box.idBox|stringformat:"s"|add:"-"|add:hora %}
+            {% with estado_hora=estados_por_box_hora|default_if_none:"{}"|get_item:clave_celda %}
+            {% with agenda_hora=agendas_por_box_hora|default_if_none:"{}"|get_item:clave_celda %}
+            {% if estado_hora == 'ocupado' %}
+              <td class="time-slot celda-box ocupado tipo-agenda-{{ agenda_hora.idTipoAgenda|default:'1' }}" 
                   data-box="{{ box.idBox }}" 
                   data-pasillo="{{ box.idPasillo }}"
                   data-hora="{{ hora }}"
                   data-estado="Ocupado"
-                  title="Box {{ box.idBox }} - {{ hora }} - {{ box.agenda_actual.profesional|default:'Ocupado' }}">
+                  title="Box {{ box.idBox }} - {{ hora }} - {{ agenda_hora.profesional|default:'Ocupado' }}">
                 <div class="slot-content">
                   <!-- Celda ocupada -->
                 </div>
@@ -56,6 +57,8 @@
                 </div>
               </td>
             {% endif %}
+            {% endwith %}
+            {% endwith %}
             {% endwith %}
           {% endfor %}
         </tr>

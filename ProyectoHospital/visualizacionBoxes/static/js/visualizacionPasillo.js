@@ -513,7 +513,7 @@ const PasilloVisualizador = {
                     <p><strong>Pasillo:</strong> ${data.box.pasillo}</p>
                     <p><strong>Capacidad:</strong> ${data.box.capacidad || 'No especificada'}</p>
                     <p><strong>Fecha:</strong> ${fecha}</p>
-                    ${hora ? `<p><strong>Hora consultada:</strong> ${hora}</p>` : `<p><strong>Estado actual:</strong> ${new Date().toLocaleTimeString()}</p>`}
+                    ${hora ? `<p><strong>Bloque horario:</strong> ${hora}</p>` : `<p><strong>Estado actual:</strong> ${new Date().toLocaleTimeString()}</p>`}
                     <hr>
         `;
         
@@ -521,24 +521,27 @@ const PasilloVisualizador = {
             contenido += `
                 <div class="alert alert-success">
                     <h6><i class="bi bi-check-circle"></i> Box Disponible</h6>
-                    <p>Este box está libre en ${hora ? 'la hora consultada' : 'este momento'}.</p>
+                    <p>${data.mensaje || `Este box está libre en ${hora ? 'la hora consultada' : 'este momento'}.`}</p>
                 </div>
             `;
         } else {
             // Debug específico para observaciones
             console.log('=== GENERANDO CONTENIDO PARA BOX OCUPADO ===');
-            console.log('data.agenda.observaciones:', data.agenda.observaciones);
-            console.log('Tipo:', typeof data.agenda.observaciones);
-            console.log('Es truthy:', !!data.agenda.observaciones);
+            console.log('data.agenda.observaciones:', data.agenda?.observaciones);
+            console.log('Tipo:', typeof data.agenda?.observaciones);
+            console.log('Es truthy:', !!data.agenda?.observaciones);
             
             contenido += `
                 <div class="alert alert-warning">
-                    <h6><i class="bi bi-clock"></i> Box Ocupado</h6>
-                    <p><strong>Profesional:</strong> ${data.agenda.profesional}</p>
-                    <p><strong>Especialidad:</strong> ${data.agenda.especialidad}</p>
-                    <p><strong>Tipo de Agenda:</strong> ${data.agenda.tipo_agenda}</p>
-                    <p><strong>Horario:</strong> ${data.agenda.hora_inicio} - ${data.agenda.hora_fin}</p>
-                    <p><strong>Observaciones:</strong> ${data.agenda.observaciones || 'Sin observaciones'}</p>
+                    <h6><i class="bi bi-clock"></i> Box Ocupado en este horario</h6>
+                    ${data.mensaje ? `<p class="mb-2"><strong>${data.mensaje}</strong></p>` : ''}
+                    <div class="mt-3">
+                        <p><strong>Profesional:</strong> ${data.agenda?.profesional || 'No especificado'}</p>
+                        <p><strong>Especialidad:</strong> ${data.agenda?.especialidad || 'No especificada'}</p>
+                        <p><strong>Tipo de Agenda:</strong> ${data.agenda?.tipo_agenda || 'No especificado'}</p>
+                        <p><strong>Horario completo:</strong> ${data.agenda?.hora_inicio || ''} - ${data.agenda?.hora_fin || ''}</p>
+                        ${data.agenda?.observaciones ? `<p><strong>Observaciones:</strong> ${data.agenda.observaciones}</p>` : ''}
+                    </div>
                 </div>
             `;
             
