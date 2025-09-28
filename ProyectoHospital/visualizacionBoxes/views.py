@@ -29,8 +29,17 @@ def get_api_data(endpoint, params=None):
         
         if response.status_code == 200:
             data = response.json()
-            print(f"DEBUG - API Response type: {type(data)}, content preview: {str(data)[:200]}...")
-            return data
+            print(f"DEBUG - API Response type: {type(data)}")
+            
+            # La API devuelve {success: true, data: [...]}
+            # Necesitamos extraer solo la lista de 'data'
+            if isinstance(data, dict) and 'data' in data:
+                actual_data = data['data']
+                print(f"DEBUG - Extracted data type: {type(actual_data)}, count: {len(actual_data) if isinstance(actual_data, list) else 'N/A'}")
+                return actual_data
+            else:
+                print(f"DEBUG - Unexpected API response format: {str(data)[:200]}...")
+                return []
         else:
             print(f"API Error: {response.status_code} - {endpoint}")
             print(f"Response text: {response.text[:200]}...")
@@ -89,24 +98,14 @@ def visualizacion_general(request):
     agendas = get_api_data('agendas', {'fecha': fecha_str})
     
     # Debug: Verificar formato de datos
-    print(f"DEBUG - Boxes type: {type(boxes)}, count: {len(boxes) if boxes else 0}")
+    print(f"DEBUG - Final boxes type: {type(boxes)}, count: {len(boxes) if boxes else 0}")
     if boxes and len(boxes) > 0:
-        print(f"DEBUG - First box type: {type(boxes[0])}, content: {boxes[0]}")
+        print(f"DEBUG - First box: {boxes[0] if isinstance(boxes, list) else 'Not a list'}")
     
-    # Verificar que boxes sea una lista de diccionarios
+    # Verificar que boxes sea una lista
     if not isinstance(boxes, list):
-        print(f"ERROR - boxes no es lista: {type(boxes)}")
+        print(f"ERROR - boxes no es lista después del procesamiento: {type(boxes)}")
         boxes = []
-    
-    # Filtrar boxes que no sean diccionarios
-    valid_boxes = []
-    for box in boxes:
-        if isinstance(box, dict):
-            valid_boxes.append(box)
-        else:
-            print(f"WARNING - Box inválido (no es dict): {type(box)} - {box}")
-    
-    boxes = valid_boxes
     
     # ===============================
     # APLICAR FILTROS A BOXES
