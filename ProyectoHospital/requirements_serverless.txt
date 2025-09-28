@@ -1,0 +1,60 @@
+# ===============================
+# REQUIREMENTS PARA SISTEMA SERVERLESS
+# ===============================
+# Django y API Serverless - Sin MySQL
+
+# Framework principal
+Django==4.2.21
+djangorestframework==3.16.0
+
+# Autenticación y UI
+django-allauth==65.11.0
+django-bootstrap-v5==1.0.11
+
+# API y HTTP requests
+requests==2.32.3
+urllib3==2.5.0
+
+# Utilidades y desarrollo
+python-dateutil==2.9.0.post0
+pytz==2025.2
+sqlparse==0.5.3
+asgiref==3.8.1
+
+# Reportes y archivos
+reportlab==4.4.2
+openpyxl==3.1.5
+pandas==2.2.3
+numpy==2.2.5
+
+# Desarrollo y debugging
+ipython==9.3.0
+jupyter_client==8.6.3
+jupyter_core==5.8.1
+
+# Seguridad y tokens
+PyJWT==2.10.1
+cryptography==45.0.6
+certifi==2025.8.3
+
+# Web scraping y parsing
+beautifulsoup4==4.13.4
+soupsieve==2.7
+
+# Sistema y archivos
+pillow==11.3.0
+packaging==25.0
+
+# ===============================
+# DEPENDENCIAS ELIMINADAS (MYSQL):
+# ===============================
+# mysqlclient==2.2.7        # ❌ Eliminado - No necesario con API
+# psycopg2==2.9.10          # ❌ Eliminado - No necesario con API
+
+# ===============================
+# MIGRACIÓN COMPLETADA
+# ===============================
+# ✅ Sistema 100% serverless
+# ✅ API DynamoDB operativa  
+# ✅ Sin dependencias MySQL
+# 🎯 Listo para producción

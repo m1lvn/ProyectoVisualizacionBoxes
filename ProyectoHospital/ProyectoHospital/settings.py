@@ -79,21 +79,26 @@ TEMPLATES = [
 WSGI_APPLICATION = 'ProyectoHospital.wsgi.application'
 
 
-# Database
+# Database - DESHABILITADA: Sistema usa API Serverless + DynamoDB
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
+# CONFIGURACIÓN ANTERIOR (MySQL) - BACKUP:
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'bdHospital', 
+#         'USER': 'root',
+#         'PASSWORD': '123456',
+#         'HOST': 'localhost',
+#         'PORT': '3306',
+#     }
+# }
+
+# NUEVA CONFIGURACIÓN - SOLO AUTENTICACIÓN CON SQLite
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'bdHospital',
-        'USER': 'root',
-        'PASSWORD': '123456',
-        'HOST': 'localhost',  # o la IP de tu servidor
-        'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            'charset': 'utf8mb4',  # Añadido para mejor soporte de caracteres
-        }
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'auth.sqlite3',  # Solo para auth de usuarios
     }
 }
 
