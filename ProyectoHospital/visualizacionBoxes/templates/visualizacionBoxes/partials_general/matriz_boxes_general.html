@@ -1,24 +1,28 @@
-{% load box_filters %}
-
 <!-- ============================= -->
 <!-- MATRIZ DE BOXES - GENERAL      -->
 <!-- ============================= -->
 <div class="boxes-grid">
   {% for box in boxes %}
-    {% with estado=estado_boxes|lookup:box.idbox %}
-      {% if estado.disponible %}
-        <div class="box-item disponible" 
-             onclick="mostrarDetalle('{{ box.idbox }}', true)" 
-             title="Box {{ box.idbox }} - {{ box.idpasillo.pasillo }} - Disponible">
+    {% if box.estado_actual == 'disponible' %}
+      <div class="box-item disponible" 
+           onclick="mostrarDetalle('{{ box.idbox }}', true)" 
+           title="Box {{ box.idbox }} - {{ box.pasillo }} - Disponible">
+        {{ box.idbox }}
+      </div>
+    {% else %}
+      {% if box.agenda_actual %}
+        <div class="box-item tipo-agenda-{{ box.agenda_actual.tipoAgenda }}" 
+             onclick="mostrarDetalle('{{ box.idbox }}', false)" 
+             title="Box {{ box.idbox }} - {{ box.pasillo }} - {{ box.agenda_actual.descripcion }}">
           {{ box.idbox }}
         </div>
       {% else %}
-        <div class="box-item tipo-agenda-{{ estado.tipo_agenda_id }}" 
-             onclick="mostrarDetalle('{{ box.idbox }}', false)" 
-             title="Box {{ box.idbox }} - {{ box.idpasillo.pasillo }} - {{ estado.tipo_agenda }}">
+        <div class="box-item disponible" 
+             onclick="mostrarDetalle('{{ box.idbox }}', true)" 
+             title="Box {{ box.idbox }} - {{ box.pasillo }} - Disponible">
           {{ box.idbox }}
         </div>
       {% endif %}
-    {% endwith %}
+    {% endif %}
   {% endfor %}
 </div>

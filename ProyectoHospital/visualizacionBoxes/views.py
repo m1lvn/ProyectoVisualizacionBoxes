@@ -102,6 +102,11 @@ def visualizacion_general(request):
     if boxes and len(boxes) > 0:
         print(f"DEBUG - First box: {boxes[0] if isinstance(boxes, list) else 'Not a list'}")
     
+    print(f"DEBUG - Agendas count: {len(agendas) if agendas else 0}")
+    if agendas:
+        print(f"DEBUG - Primera agenda: {agendas[0]}")
+        print(f"DEBUG - Fecha actual: {fecha_str}, Hora actual: {hora_actual}")
+    
     # Verificar que boxes sea una lista
     if not isinstance(boxes, list):
         print(f"ERROR - boxes no es lista después del procesamiento: {type(boxes)}")
@@ -140,6 +145,10 @@ def visualizacion_general(request):
                     
                     box['estado_actual'] = calcular_estado_box(box_id, agendas, hora_actual, fecha)
                     box['agenda_actual'] = obtener_agenda_actual(box_id, agendas, hora_actual, fecha)
+                    
+                    # DEBUG: Mostrar algunos boxes con estado
+                    if box_id in [175, 1, 2]:  # Algunos boxes específicos
+                        print(f"DEBUG - Box {box_id}: estado='{box['estado_actual']}', agenda={box['agenda_actual']}")
                 else:
                     print(f"WARNING - Box sin boxId: {box}")
                     box['estado_actual'] = 'disponible'
