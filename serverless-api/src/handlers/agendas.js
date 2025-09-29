@@ -294,6 +294,22 @@ module.exports.createAgenda = async (event) => {
       Item: newAgenda
     }).promise();
 
+    // ===========================
+    // PUBLICAR EVENTO DE AGENDA CREADA (SNS)
+    // ===========================
+    try {
+      // Extraer información del usuario desde el JWT
+      const user = require('../utils/auth').extractUserFromEvent(event);
+      const createdBy = user ? user.email : 'unknown';
+      
+      // Publicar evento de agenda creada
+      const { publishAgendaCreatedEvent } = require('../utils/sns-events');
+      await publishAgendaCreatedEvent(newAgenda, createdBy);
+    } catch (eventError) {
+      console.error('Error publishing agenda created event:', eventError);
+      // No fallar la creación si hay error publicando el evento
+    }
+
     return {
       statusCode: 201,
       headers: {

@@ -10,6 +10,11 @@ provider:
     STAGE: ${self:custom.stage}
     USER_POOL_ID: !Ref HospitalUserPool
     USER_POOL_CLIENT_ID: !Ref HospitalUserPoolClient
+    # SNS Topics ARNs
+    USER_EVENTS_TOPIC_ARN: !Ref UserEventsTopic
+    AGENDA_EVENTS_TOPIC_ARN: !Ref AgendaEventsTopic
+    NOTIFICATIONS_TOPIC_ARN: !Ref NotificationsTopic
+    BOX_EVENTS_TOPIC_ARN: !Ref BoxEventsTopic
   # Usar rol existente de AWS Academy en lugar de crear uno nuevo
   role: arn:aws:iam::891377117593:role/LabRole
   logs:
@@ -145,6 +150,34 @@ functions:
           authorizer:
             name: cognitoJwt
 
+  # ===========================
+  # EVENT HANDLERS (SNS SUBSCRIBERS)
+  # ===========================
+  
+  # Handler para eventos de usuario
+  userEventsHandler:
+    handler: src/handlers/user-events-handler.handleUserEvents
+    events:
+      - sns:
+          arn: !Ref UserEventsTopic
+          topicName: ${self:custom.stage}-hospital-user-events
+  
+  # Handler para eventos de agenda
+  agendaEventsHandler:
+    handler: src/handlers/agenda-events-handler.handleAgendaEvents
+    events:
+      - sns:
+          arn: !Ref AgendaEventsTopic
+          topicName: ${self:custom.stage}-hospital-agenda-events
+          
+  # Handler para notificaciones
+  notificationHandler:
+    handler: src/handlers/notification-handler.handleNotifications
+    events:
+      - sns:
+          arn: !Ref NotificationsTopic
+          topicName: ${self:custom.stage}-hospital-notifications
+
 resources:
   Resources:
     HospitalDataTable:
@@ -268,6 +301,34 @@ resources:
         UserPoolId: !Ref HospitalUserPool
         Precedence: 3
 
+    # ===========================
+    # SNS TOPICS FOR DECOUPLED COMMUNICATION
+    # ===========================
+    
+    UserEventsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.stage}-hospital-user-events
+        DisplayName: "Hospital User Events"
+        
+    AgendaEventsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.stage}-hospital-agenda-events
+        DisplayName: "Hospital Agenda Events"
+        
+    NotificationsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.stage}-hospital-notifications
+        DisplayName: "Hospital System Notifications"
+        
+    BoxEventsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.stage}-hospital-box-events
+        DisplayName: "Hospital Box State Events"
+
   Outputs:
     UserPoolId:
       Value: !Ref HospitalUserPool
@@ -278,3 +339,24 @@ resources:
       Value: !Ref HospitalUserPoolClient  
       Export:
         Name: ${self:custom.stage}-UserPoolClientId
+        
+    # SNS Topics Outputs
+    UserEventsTopicArn:
+      Value: !Ref UserEventsTopic
+      Export:
+        Name: ${self:custom.stage}-UserEventsTopicArn
+        
+    AgendaEventsTopicArn:
+      Value: !Ref AgendaEventsTopic
+      Export:
+        Name: ${self:custom.stage}-AgendaEventsTopicArn
+        
+    NotificationsTopicArn:
+      Value: !Ref NotificationsTopic
+      Export:
+        Name: ${self:custom.stage}-NotificationsTopicArn
+        
+    BoxEventsTopicArn:
+      Value: !Ref BoxEventsTopic
+      Export:
+        Name: ${self:custom.stage}-BoxEventsTopicArn

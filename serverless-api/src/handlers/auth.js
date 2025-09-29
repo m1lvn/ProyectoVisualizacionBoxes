@@ -35,6 +35,31 @@ module.exports.login = async (event) => {
     }
 
     const auth = out.AuthenticationResult || {};
+    
+    // ===========================
+    // PUBLICAR EVENTO DE LOGIN (SNS)
+    // ===========================
+    try {
+      // Decodificar JWT para obtener información del usuario
+      const idToken = auth.IdToken;
+      if (idToken) {
+        const payload = idToken.split('.')[1];
+        const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4);
+        const decoded = JSON.parse(Buffer.from(paddedPayload, 'base64').toString());
+        
+        // Extraer información del usuario
+        const userGroups = decoded['cognito:groups'] || [];
+        const hospitalId = decoded['custom:hospital_id'] || 'HOSPITAL_001';
+        
+        // Importar y publicar evento de login
+        const { publishUserLoginEvent } = require('../utils/sns-events');
+        await publishUserLoginEvent(username, userGroups, hospitalId);
+      }
+    } catch (eventError) {
+      // No fallar el login si hay error publicando el evento
+      console.error('Error publishing login event:', eventError);
+    }
+    
     return response(200, {
       ok: true,
       idToken: auth.IdToken,
