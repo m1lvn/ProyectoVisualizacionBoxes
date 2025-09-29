@@ -107,7 +107,7 @@ functions:
   # Migrar datos desde MySQL (solo Admin)
   migrateData:
     handler: src/handlers/migrate.migrateFromMySQL
-    timeout: 300
+    timeout: 30
     events:
       - httpApi:
           path: /api/migrate
