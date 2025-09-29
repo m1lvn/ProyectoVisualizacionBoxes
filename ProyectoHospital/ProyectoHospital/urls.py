@@ -29,6 +29,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),  # URLs de autenticación (legacy)
     path('auth/', include('visualizacionBoxes.auth_urls')),  # Nueva autenticación Cognito
-    path('dashboard/', include('visualizacionBoxes.urls')),  # Dashboard protegido
-    path('', root_redirect, name='root'),  # Redirigir URL raíz
+    path('', include('visualizacionBoxes.urls')),  # URLs principales directamente en la raíz
 ]

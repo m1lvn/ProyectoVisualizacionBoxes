@@ -16,12 +16,15 @@ urlpatterns = [
     
     # Vista de visualización por pasillo  
     path('pasillo/', views.visualizacion_pasillo, name='visualizacion_pasillo'),
+    path('visualizacion-pasillo/', views.visualizacion_pasillo, name='visualizacion_pasillo_alt'),  # URL alternativa
     
-    # Vista de reportes
+    # Vista de reportes - Múltiples rutas para compatibilidad
     path('reportes/', views.reportes, name='reportes'),
+    path('reports/', views.reportes, name='reportes_alt'),  # URL en inglés
     
     # URLs de autenticación y perfil de usuario
     path('perfil/', views.perfil_usuario, name='perfil_usuario'),
+    path('profile/', views.perfil_usuario, name='perfil_usuario_alt'),  # URL en inglés
     path('dashboard/', views.dashboard_usuario, name='dashboard_usuario'),
     path('redirect-after-login/', views.redirect_after_login, name='redirect_after_login'),
     
