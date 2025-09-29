@@ -167,6 +167,16 @@ functions:
           arn: !Ref NotificationsTopic
           topicName: ${self:custom.stage}-hospital-notifications
 
+  # ===========================
+  # SETUP TEST USERS (Custom Resource)
+  # ===========================
+  
+  setupTestUsers:
+    handler: src/handlers/setup-test-users.handler
+    timeout: 300  # 5 minutos para crear todos los usuarios
+    environment:
+      COGNITO_USER_POOL_ID: !Ref HospitalUserPool
+
 resources:
   Resources:
     HospitalDataTable:
@@ -317,6 +327,24 @@ resources:
       Properties:
         TopicName: ${self:custom.stage}-hospital-box-events
         DisplayName: "Hospital Box State Events"
+
+    # ===========================
+    # CUSTOM RESOURCE PARA CREAR USUARIOS DE PRUEBA
+    # ===========================
+    
+    TestUsersInitializer:
+      Type: AWS::CloudFormation::CustomResource
+      DependsOn:
+        - HospitalUserPool
+        - HospitalUserPoolClient
+        - AdminGroup
+        - PersonalGroup
+        - PersonalAdministrativoGroup
+      Properties:
+        ServiceToken: !GetAtt SetupTestUsersLambdaFunction.Arn
+        UserPoolId: !Ref HospitalUserPool
+        # Trigger update when any of these change
+        Version: "1.0"
 
   Outputs:
     UserPoolId:
