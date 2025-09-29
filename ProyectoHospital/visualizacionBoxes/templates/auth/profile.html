@@ -97,26 +97,33 @@
         </div>
         
         <div class="user-info">
-            <div><label>Email:</label> <span>{{ user_data.email|default:"No disponible" }}</span></div>
+            <div><label>Email:</label> <span>{{ request.session.user_email|default:"No disponible" }}</span></div>
         </div>
         
         <div class="user-info">
-            <div><label>Hospital ID:</label> <span>{{ user_data.hospital_id|default:"No asignado" }}</span></div>
+            <div><label>Hospital ID:</label> <span>{{ request.session.user_hospital_id|default:"HOSPITAL_001" }}</span></div>
         </div>
         
+        {% if request.session.user_pasillo_asignado %}
         <div class="user-info">
-            <div><label>Pasillo Asignado:</label> <span>{{ user_data.pasillo_asignado|default:"No asignado" }}</span></div>
+            <div><label>Pasillo Asignado:</label> <span>{{ request.session.user_pasillo_asignado }}</span></div>
         </div>
+        {% endif %}
         
         <div class="user-info">
             <label>Roles/Grupos:</label>
             <div class="groups">
-                {% if user_data.groups %}
-                    {% for group in user_data.groups %}
-                        <span class="group-badge">{{ group }}</span>
+                {% if request.session.user_groups %}
+                    {% for group in request.session.user_groups %}
+                        <span class="group-badge">
+                            {% if group == 'Admin' %}👑 Administrador
+                            {% elif group == 'PersonalAdministrativo' %}📋 Personal Administrativo
+                            {% elif group == 'Personal' %}🩺 Personal Médico
+                            {% else %}{{ group }}{% endif %}
+                        </span>
                     {% endfor %}
                 {% else %}
-                    <span class="group-badge">Sin roles asignados</span>
+                    <span class="group-badge">👤 Usuario</span>
                 {% endif %}
             </div>
         </div>

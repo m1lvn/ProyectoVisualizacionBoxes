@@ -160,21 +160,21 @@
       <!-- ============================= -->
       <!-- PANEL DE AGENDAMIENTO         -->
       <!-- ============================= -->
-      {% if user.is_authenticated %}
-        {% if user.perfilusuario.es_administrador or user.perfilusuario.es_personal_administrativo %}
-        {# Solo para administradores y personal administrativo #}
+      {% if request.session.jwt_token %}
+        {% comment %} Solo para administradores y personal administrativo con JWT tokens {% endcomment %}
+        {% if 'Admin' in request.session.user_groups or 'PersonalAdministrativo' in request.session.user_groups %}
         <div class="col-auto agendamiento-col">
           <aside class="panel-agendamiento-container">
             {% include "visualizacionBoxes/partials_agendamiento/panel_agendamiento.html" %}
           </aside>
         </div>
         {% else %}
-      <!-- Panel de información para usuarios sin permisos de agendamiento -->
-      <div class="col-auto">
-        <aside class="info-panel">
-          {% include "visualizacionBoxes/partials_pasillo/panel_info_pasillo.html" %}
-        </aside>
-      </div>
+        <!-- Panel de información para usuarios sin permisos de agendamiento -->
+        <div class="col-auto">
+          <aside class="info-panel">
+            {% include "visualizacionBoxes/partials_pasillo/panel_info_pasillo.html" %}
+          </aside>
+        </div>
         {% endif %}
       {% endif %}
     </div>

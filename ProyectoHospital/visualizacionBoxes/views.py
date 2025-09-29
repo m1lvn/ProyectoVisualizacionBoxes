@@ -474,15 +474,25 @@ def buscar_medicos(request):
 
 def reportes(request):
     """
-    Vista de reportes usando API
+    Vista de reportes usando API - Solo para Admins y Personal Administrativo
     """
+    # Verificar permisos JWT
+    if not request.session.get('jwt_token'):
+        messages.error(request, 'Acceso no autorizado. Debe iniciar sesión.')
+        return redirect('auth:login')
+    
+    user_groups = request.session.get('user_groups', [])
+    if 'Admin' not in user_groups and 'PersonalAdministrativo' not in user_groups:
+        messages.error(request, 'No tiene permisos para acceder a los reportes.')
+        return redirect('visualizacionBoxes:visualizacion_general')
+    
     fecha_inicio = request.GET.get('fecha_inicio', datetime.now().strftime('%Y-%m-%d'))
     fecha_fin = request.GET.get('fecha_fin', datetime.now().strftime('%Y-%m-%d'))
     
     # Obtener datos de la API
-    boxes = get_api_data('boxes')
-    pasillos = get_api_data('pasillos')
-    agendas = get_api_data('agendas', {'fecha': fecha_inicio})  # Por simplicidad, una fecha
+    boxes = get_api_data('boxes', request=request)
+    pasillos = get_api_data('pasillos', request=request)
+    agendas = get_api_data('agendas', {'fecha': fecha_inicio}, request=request)  # Por simplicidad, una fecha
     
     # Calcular estadísticas
     estadisticas = {
@@ -499,6 +509,7 @@ def reportes(request):
         'fecha_inicio': fecha_inicio,
         'fecha_fin': fecha_fin,
         'usando_api': True,
+        'user_groups': user_groups,  # Para uso en el template
     }
     
     return render(request, 'visualizacionBoxes/reportes.html', context)
