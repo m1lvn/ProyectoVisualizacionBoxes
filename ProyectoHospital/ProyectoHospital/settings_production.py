@@ -29,7 +29,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']  # Añadido para desarrollo
 
 # API SERVERLESS CONFIGURATION
 # Production Serverless API Configuration
-SERVERLESS_API_URL = 'https://r8qjc8hqrl.execute-api.us-east-1.amazonaws.com/dev/api'
+SERVERLESS_API_URL = 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com/api'
 SERVERLESS_AUTH_URL = 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com'
 
 

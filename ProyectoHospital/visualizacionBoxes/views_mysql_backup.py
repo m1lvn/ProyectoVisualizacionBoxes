@@ -14,7 +14,7 @@ import requests
 from django.conf import settings
 
 # API Configuration
-API_BASE_URL = getattr(settings, 'SERVERLESS_API_URL', 'https://r8qjc8hqrl.execute-api.us-east-1.amazonaws.com/dev/api')
+API_BASE_URL = getattr(settings, 'SERVERLESS_API_URL', 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com/api')
 AUTH_BASE_URL = getattr(settings, 'SERVERLESS_AUTH_URL', 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com')
 
 
