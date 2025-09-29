@@ -1,53 +1,570 @@
-# 🏥 Sistema de Visualización de Boxes Hospitalarios
-## Migración Completa: MySQL → Serverless + DynamoDB
+# 🏥 Sistema de Visualización de Boxes Hospitalarios - Arquitectura Serverless Completa
 
-Este proyecto ha sido **completamente migrado** de una arquitectura tradicional Django + MySQL a una **arquitectura serverless moderna** manteniendo toda la funcionalidad original.
+> **Sistema de gestión hospitalaria con arquitectura serverless moderna, autenticación Cognito, comunicación desacoplada SNS y base de datos DynamoDB**
 
----
-
-## 🚀 **Estado del Proyecto: COMPLETAMENTE FUNCIONAL**
-
-### ✅ **Migración Exitosa:**
-- **180 boxes** migrados y funcionando
-- **48 pasillos** con visualización completa
-- **Sistema de agendas** operativo
-- **Paginación** implementada (40 boxes página general, 8 boxes página pasillo)
-- **Filtros** funcionando correctamente
-- **Estados de boxes** con colores apropiados
-- **Modals de detalle** operativos
-- **Naming MySQL** mantenido para compatibilidad
+[![AWS](https://img.shields.io/badge/AWS-Serverless-orange.svg)](https://aws.amazon.com/serverless/)
+[![Django](https://img.shields.io/badge/Django-4.2-green.svg)](https://djangoproject.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-18.x-brightgreen.svg)](https://nodejs.org/)
+[![DynamoDB](https://img.shields.io/badge/DynamoDB-NoSQL-blue.svg)](https://aws.amazon.com/dynamodb/)
+[![Cognito](https://img.shields.io/badge/Cognito-Auth-red.svg)](https://aws.amazon.com/cognito/)
+[![SNS](https://img.shields.io/badge/SNS-Events-yellow.svg)](https://aws.amazon.com/sns/)
 
 ---
 
-## 🏗️ **Arquitectura Final**
+## 📋 **RESUMEN EJECUTIVO**
 
-```mermaid
-graph TD
-    A[Django Frontend<br/>SQLite Auth] --> B[API Gateway]
-    B --> C[AWS Lambda Functions]
-    C --> D[DynamoDB<br/>HospitalData Table]
-    
-    E[Usuario] --> A
-    A --> F[Templates HTML]
-    A --> G[Static Files CSS/JS]
+Sistema hospitalario completo con **arquitectura serverless**, diseñado para la gestión y visualización de boxes hospitalarios en tiempo real. Implementa **comunicación desacoplada**, **autenticación robusta** y **escalabilidad automática**.
+
+### **🎯 Características Principales:**
+- 🏥 **Gestión de Boxes**: Visualización en tiempo real, estados dinámicos
+- 📅 **Sistema de Agendas**: Creación, edición y gestión completa
+- 🔐 **Autenticación Cognito**: JWT tokens, roles granulares
+- 📢 **Comunicación SNS**: Eventos asíncronos desacoplados  
+- 📊 **Multi-tenant**: Soporte para múltiples hospitales
+- ⚡ **Serverless**: Auto-scaling, zero-maintenance
+- 💾 **DynamoDB**: Single-table design optimizado
+
+---
+
+## 🏗️ **ARQUITECTURA DEL SISTEMA**
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Django Web    │────│   API Gateway    │────│  Lambda Layer   │
+│   Application   │    │   + JWT Auth     │    │  (Node.js 18)   │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                                │                        │
+                                ▼                        ▼
+                       ┌──────────────────┐    ┌─────────────────┐
+                       │  Amazon Cognito  │    │   DynamoDB      │
+                       │  (Authentication)│    │ (HospitalData)  │
+                       └──────────────────┘    └─────────────────┘
+                                                        │
+                                                        ▼
+                       ┌──────────────────────────────────────────┐
+                       │            SNS Topics                   │
+                       │  • USER_EVENTS  • AGENDA_EVENTS        │
+                       │  • NOTIFICATIONS • BOX_EVENTS           │
+                       └──────────────────────────────────────────┘
 ```
 
-### **Stack Tecnológico:**
-- **Frontend**: Django 4.2.21 + Bootstrap + jQuery
-- **API**: Node.js 18.x + Serverless Framework 3.40.0
-- **Base de Datos**: AWS DynamoDB (single-table design)
-- **Infraestructura**: AWS Lambda + API Gateway
-- **Autenticación**: SQLite local (solo para usuarios)
-- **Deploy**: Compatible con AWS Academy
+### **🔄 Requerimientos Arquitectónicos Cumplidos:**
+- ✅ **DynamoDB**: Almacenamiento de preferencias por usuario
+- ✅ **SNS**: Comunicación desacoplada con patrón de mensajería
+- ✅ **Microservicios REST**: API Gateway + Lambda functions
+- ✅ **Amazon Cognito**: Sistema de autenticación completo
+- ✅ **JWT Tokens**: Autorización en todos los endpoints
 
 ---
 
-## 📦 **Instalación Completa Desde Cero**
+## 🛠️ **INSTALACIÓN PASO A PASO**
 
-### **1. Prerrequisitos**
+### **PASO 1: Prerrequisitos del Sistema**
+
+#### **1.1 Instalar Software Base**
+
 ```bash
-# Instalar Node.js 18+
-https://nodejs.org/
+# Node.js 18+ (Requerido para Serverless Framework)
+# Descargar desde: https://nodejs.org/
+node --version  # Debe mostrar v18.x.x o superior
+
+# Python 3.8+ (Para Django)
+python --version  # Debe mostrar Python 3.8+ 
+
+# Git (Para clonar el repositorio)
+git --version
+```
+
+#### **1.2 Configurar AWS CLI**
+
+```bash
+# Instalar AWS CLI
+# Windows: https://aws.amazon.com/cli/
+# Linux/Mac: 
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# Verificar instalación
+aws --version
+```
+
+### **PASO 2: Configurar Credenciales AWS**
+
+#### **2.1 AWS Academy (Recomendado para desarrollo)**
+
+```bash
+# Ir a AWS Academy Lab
+# Copiar las credenciales del "AWS CLI" section
+# Pegar en ~/.aws/credentials (Linux/Mac) o C:\Users\{username}\.aws\credentials (Windows)
+
+[default]
+aws_access_key_id = YOUR_ACCESS_KEY
+aws_secret_access_key = YOUR_SECRET_KEY  
+aws_session_token = YOUR_SESSION_TOKEN
+region = us-east-1
+
+# Verificar credenciales
+aws sts get-caller-identity
+```
+
+#### **2.2 Configurar Región**
+
+```bash
+# Configurar región por defecto
+aws configure set region us-east-1
+
+# Verificar configuración
+aws configure list
+```
+
+### **PASO 3: Clonar y Configurar el Proyecto**
+
+#### **3.1 Clonar Repositorio**
+
+```bash
+# Clonar el proyecto
+git clone <URL_DEL_REPOSITORIO>
+cd ProyectoVisualizacionBoxes
+
+# Verificar estructura
+ls -la
+# Debe mostrar:
+# ├── ProyectoHospital/     (Django frontend)
+# ├── serverless-api/       (Backend serverless)
+# ├── diagrama_arquitectura.md
+# └── README.md
+```
+
+#### **3.2 Configurar Backend Serverless**
+
+```bash
+# Ir al directorio del backend
+cd serverless-api
+
+# Instalar Serverless Framework globalmente
+npm install -g serverless@3.40.0
+
+# Verificar instalación
+serverless --version
+
+# Instalar dependencias del proyecto
+npm install
+
+# Verificar package.json
+cat package.json
+```
+
+#### **3.3 Configurar Frontend Django**
+
+```bash
+# Ir al directorio de Django
+cd ../ProyectoHospital
+
+# Crear entorno virtual de Python
+python -m venv .venv
+
+# Activar entorno virtual
+# Windows:
+.venv\Scripts\activate
+# Linux/Mac:
+source .venv/bin/activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Verificar instalación
+pip list
+```
+
+### **PASO 4: Desplegar Infraestructura AWS**
+
+#### **4.1 Desplegar Backend Serverless**
+
+```bash
+# Ir al directorio serverless
+cd serverless-api
+
+# Desplegar infraestructura completa
+serverless deploy --stage dev
+
+# Esto creará:
+# ✅ API Gateway con endpoints
+# ✅ Cognito User Pool + grupos
+# ✅ DynamoDB table
+# ✅ 13 Lambda functions
+# ✅ 4 SNS topics + handlers
+# ✅ CloudWatch logs
+
+# ⏱️ Tiempo estimado: 5-10 minutos
+```
+
+#### **4.2 Obtener URLs de Despliegue**
+
+```bash
+# Obtener información del despliegue
+serverless info --stage dev
+
+# Copiar las URLs que aparecen:
+# - https://XXXXXXXXXX.execute-api.us-east-1.amazonaws.com
+# Esta será tu API_URL
+```
+
+### **PASO 5: Configurar URLs en Django**
+
+#### **5.1 Actualizar Configuración**
+
+```bash
+# Editar archivo de configuración
+cd ../ProyectoHospital/ProyectoHospital
+nano settings.py  # o usar tu editor preferido
+
+# Actualizar las siguientes líneas con tu URL del paso 4.2:
+SERVERLESS_API_URL = 'https://TU_API_ID.execute-api.us-east-1.amazonaws.com/api'
+SERVERLESS_AUTH_URL = 'https://TU_API_ID.execute-api.us-east-1.amazonaws.com'
+
+# Ejemplo:
+SERVERLESS_API_URL = 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com/api'
+SERVERLESS_AUTH_URL = 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com'
+```
+
+#### **5.2 Configurar Base de Datos Local**
+
+```bash
+# Crear base de datos SQLite local (solo para autenticación Django)
+python manage.py migrate
+
+# Crear superusuario
+python manage.py createsuperuser
+# Email: admin@hospital.com
+# Password: (crear una contraseña segura)
+```
+
+### **PASO 6: Crear Usuarios en Cognito**
+
+#### **6.1 Crear Usuario Admin**
+
+```bash
+# Ir al directorio serverless
+cd serverless-api
+
+# Ejecutar comando de creación de usuario
+serverless invoke -f createUser --stage dev --data '{
+  "email": "admin@hospital.com",
+  "password": "TuPasswordSeguro123!",
+  "group": "Admin",
+  "hospitalId": "HOSPITAL_001",
+  "firstName": "Admin",
+  "lastName": "Hospital"
+}'
+```
+
+#### **6.2 Migrar Datos (Opcional)**
+
+```bash
+# Si tienes datos existentes, ejecutar migración
+serverless invoke -f migrateData --stage dev
+
+# Esto migrará:
+# ✅ Boxes existentes
+# ✅ Pasillos
+# ✅ Agendas de muestra
+```
+
+### **PASO 7: Iniciar el Sistema**
+
+#### **7.1 Iniciar Servidor Django**
+
+```bash
+# Ir al directorio Django
+cd ProyectoHospital
+
+# Activar entorno virtual (si no está activo)
+# Windows:
+.venv\Scripts\activate
+# Linux/Mac:
+source .venv/bin/activate
+
+# Iniciar servidor de desarrollo
+python manage.py runserver 0.0.0.0:8000
+
+# 🌐 La aplicación estará disponible en: http://localhost:8000
+```
+
+#### **7.2 Acceso Inicial**
+
+```bash
+# Abrir navegador en: http://localhost:8000
+# Hacer login con las credenciales creadas en el paso 6.1:
+# Email: admin@hospital.com  
+# Password: TuPasswordSeguro123!
+```
+
+---
+
+## 🧪 **VERIFICACIÓN Y TESTING**
+
+### **Test 1: Verificar Conectividad API**
+
+```bash
+# Verificar que las APIs respondan correctamente
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+     https://TU_API_ID.execute-api.us-east-1.amazonaws.com/api/boxes
+
+# Debe retornar: {"success": true, "data": [...]}
+```
+
+### **Test 2: Verificar Eventos SNS**
+
+```bash
+# Monitorear logs de eventos en tiempo real
+aws logs tail /aws/lambda/hospital-boxes-api-dev-userEventsHandler --follow --region us-east-1
+
+# Hacer login en la web y verificar que aparezcan logs
+```
+
+### **Test 3: Crear Agenda de Prueba**
+
+1. **Login** en la aplicación web
+2. **Ir a crear agenda** desde la interfaz
+3. **Completar formulario** con datos de prueba
+4. **Verificar** que se cree correctamente
+5. **Monitorear logs SNS** de eventos de agenda:
+
+```bash
+aws logs tail /aws/lambda/hospital-boxes-api-dev-agendaEventsHandler --follow --region us-east-1
+```
+
+---
+
+## 🔧 **CONFIGURACIÓN AVANZADA**
+
+### **Configurar Multiple Hospitales**
+
+```javascript
+// En serverless-api/src/handlers/
+// Crear usuarios adicionales con diferentes hospital_id
+{
+  "email": "admin@hospital2.com",
+  "hospitalId": "HOSPITAL_002",
+  "group": "Admin"
+}
+```
+
+### **Configurar Roles Personalizados**
+
+```bash
+# Crear usuario con rol Personal (limitado a un pasillo)
+serverless invoke -f createUser --stage dev --data '{
+  "email": "personal@hospital.com",
+  "group": "Personal", 
+  "pasilloAsignado": "1",
+  "hospitalId": "HOSPITAL_001"
+}'
+```
+
+### **Monitoreo en Producción**
+
+```bash
+# Ver métricas de performance
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/Lambda \
+  --metric-name Duration \
+  --dimensions Name=FunctionName,Value=hospital-boxes-api-dev-getBoxes \
+  --start-time 2023-09-29T00:00:00Z \
+  --end-time 2023-09-29T23:59:59Z \
+  --period 3600 \
+  --statistics Average
+```
+
+---
+
+## 🚨 **SOLUCIÓN DE PROBLEMAS COMUNES**
+
+### **Error: "Unauthorized" en APIs**
+
+```bash
+# Verificar que el JWT token esté en la sesión de Django
+# En el navegador, abrir DevTools → Application → Session Storage
+# Verificar que exista: jwt_token
+
+# Si no existe, hacer logout y login nuevamente
+```
+
+### **Error: "ValidationException" en DynamoDB**
+
+```bash
+# Verificar que la tabla DynamoDB se haya creado correctamente
+aws dynamodb describe-table --table-name HospitalData --region us-east-1
+
+# Si no existe, redesplegar:
+cd serverless-api
+serverless deploy --stage dev --force
+```
+
+### **Error: "SNS topic does not exist"**
+
+```bash
+# Verificar que los topics SNS existan
+aws sns list-topics --region us-east-1 | grep hospital
+
+# Si faltan topics, redesplegar con force:
+serverless deploy --stage dev --force
+```
+
+### **Error de Credenciales AWS**
+
+```bash
+# Verificar credenciales actuales
+aws sts get-caller-identity
+
+# Si están expiradas (común en AWS Academy), renovar:
+# 1. Ir a AWS Academy Lab
+# 2. Copiar nuevas credenciales  
+# 3. Actualizar ~/.aws/credentials
+# 4. Redesplegar: serverless deploy --stage dev
+```
+
+---
+
+## 📊 **ESTRUCTURA DEL PROYECTO**
+
+```
+ProyectoVisualizacionBoxes/
+├── 📁 ProyectoHospital/              # Django Frontend
+│   ├── 📁 ProyectoHospital/          # Configuración Django
+│   │   ├── settings.py               # ⚙️ URLs API configuradas aquí
+│   │   ├── urls.py
+│   │   └── wsgi.py
+│   ├── 📁 visualizacionBoxes/        # App principal
+│   │   ├── views.py                  # 🎯 Lógica de vistas
+│   │   ├── auth_views.py             # 🔐 Autenticación Cognito
+│   │   ├── models.py                 # 📊 Modelos Django locales
+│   │   ├── 📁 templates/             # 🎨 Templates HTML
+│   │   ├── 📁 static/                # 🎨 CSS, JS, assets
+│   │   └── 📁 migrations/            # 📋 Migraciones SQLite
+│   ├── db.sqlite3                    # 💾 BD local (solo auth)
+│   └── requirements.txt              # 📦 Dependencias Python
+│
+├── 📁 serverless-api/                # Backend Serverless
+│   ├── serverless.yml               # 🏗️ Infraestructura como código
+│   ├── package.json                 # 📦 Dependencias Node.js
+│   ├── 📁 src/
+│   │   ├── 📁 handlers/              # 🔧 Lambda functions
+│   │   │   ├── auth.js               # 🔐 Autenticación
+│   │   │   ├── boxes.js              # 📦 Gestión boxes
+│   │   │   ├── agendas.js            # 📅 Gestión agendas
+│   │   │   ├── pasillos.js           # 🏥 Gestión pasillos
+│   │   │   ├── user-events-handler.js # 📢 Eventos usuario
+│   │   │   ├── agenda-events-handler.js # 📢 Eventos agenda
+│   │   │   └── notification-handler.js # 📢 Notificaciones
+│   │   └── 📁 utils/                 # 🛠️ Utilidades
+│   │       ├── auth.js               # 🔐 JWT utilities
+│   │       ├── dynamodb.js           # 💾 DB utilities
+│   │       └── sns-events.js         # 📢 SNS publishers
+│   
+├── diagrama_arquitectura.md         # 🏗️ Documentación arquitectura
+├── README.md                        # 📖 Este archivo
+└── 📁 .aws/                         # ⚙️ Configuración AWS (crear local)
+    └── credentials                   # 🔑 Credenciales AWS
+```
+
+---
+
+## 📈 **MÉTRICAS Y MONITOREO**
+
+### **CloudWatch Dashboards**
+
+```bash
+# Acceder a métricas en AWS Console:
+# https://console.aws.amazon.com/cloudwatch/
+
+# Métricas importantes:
+# • Lambda Invocations
+# • API Gateway 4XX/5XX errors  
+# • DynamoDB Read/Write capacity
+# • SNS Messages Published/Failed
+```
+
+### **Logs Estructurados**
+
+```bash
+# Ver logs de cada componente:
+
+# 1. Eventos de Usuario
+aws logs tail /aws/lambda/hospital-boxes-api-dev-userEventsHandler --follow
+
+# 2. Eventos de Agenda  
+aws logs tail /aws/lambda/hospital-boxes-api-dev-agendaEventsHandler --follow
+
+# 3. API Principal
+aws logs tail /aws/lambda/hospital-boxes-api-dev-getBoxes --follow
+
+# 4. Autenticación
+aws logs tail /aws/lambda/hospital-boxes-api-dev-login --follow
+```
+
+---
+
+## 🤝 **CONTRIBUIR AL PROYECTO**
+
+### **Guidelines de Desarrollo**
+
+1. **Fork** el repositorio
+2. **Crear rama** feature: `git checkout -b feature/nueva-funcionalidad`
+3. **Hacer cambios** siguiendo los patterns existentes
+4. **Testing** completo en entorno dev
+5. **Pull Request** con descripción detallada
+
+### **Agregar Nuevas Funcionalidades**
+
+```bash
+# Para agregar nuevo endpoint:
+# 1. Crear handler en serverless-api/src/handlers/
+# 2. Agregar ruta en serverless.yml
+# 3. Redesplegar: serverless deploy --stage dev
+# 4. Actualizar frontend en Django
+```
+
+---
+
+## � **SOPORTE Y CONTACTO**
+
+### **Documentación Adicional**
+- 🏗️ **Arquitectura Completa**: Ver `diagrama_arquitectura.md`
+- 📊 **API Reference**: Ver comentarios en archivos handlers/
+- 🔐 **Security Guide**: Configuración Cognito en serverless.yml
+
+### **Issues Comunes**
+- **Performance**: Verificar CloudWatch metrics
+- **Seguridad**: Validar JWT tokens y grupos Cognito
+- **Escalabilidad**: DynamoDB auto-scaling configurado
+
+---
+
+## 📄 **LICENCIA**
+
+Este proyecto está bajo la licencia MIT. Ver archivo `LICENSE` para más detalles.
+
+---
+
+## 🎉 **¡Felicidades!**
+
+Si has llegado hasta aquí, tienes un **sistema hospitalario serverless completamente funcional** con:
+
+- ✅ **14 boxes** visualizados en tiempo real
+- ✅ **3 pasillos** con navegación
+- ✅ **18 agendas** de muestra funcionando
+- ✅ **Autenticación Cognito** robusta
+- ✅ **Eventos SNS** procesándose asíncronamente
+- ✅ **Arquitectura escalable** y mantenible
+
+**🚀 ¡Tu sistema está listo para producción!**
+
+---
+
+*Última actualización: Septiembre 29, 2025*  
+*Versión: 2.0 - Arquitectura Serverless Completa*
 
 # Instalar Python 3.8+
 https://python.org/

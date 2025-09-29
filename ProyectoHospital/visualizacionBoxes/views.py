@@ -391,9 +391,9 @@ def obtener_detalle_box(request):
     if not box_id:
         return JsonResponse({'error': 'Box ID requerido'}, status=400)
     
-    # Obtener datos de la API
-    boxes = get_api_data('boxes')
-    agendas = get_api_data('agendas', {'fecha': fecha_str})
+    # Obtener datos de la API - CORREGIDO: Agregar request=request para JWT
+    boxes = get_api_data('boxes', request=request)
+    agendas = get_api_data('agendas', {'fecha': fecha_str}, request=request)
     
     # Encontrar el box
     box = next((b for b in boxes if str(b.get('idBox', '')) == str(box_id)), None)
@@ -462,7 +462,7 @@ def buscar_medicos(request):
         return JsonResponse({'medicos': []})
     
     # Obtener agendas para extraer médicos
-    agendas = get_api_data('agendas')
+    agendas = get_api_data('agendas', request=request)
     
     # Extraer médicos únicos
     medicos = set()
@@ -710,7 +710,7 @@ def crear_agenda(request):
             messages.error(request, '❌ Error al crear agenda')
     
     # GET - Mostrar formulario
-    boxes = get_api_data('boxes')
+    boxes = get_api_data('boxes', request=request)
     context = {
         'boxes': boxes,
         'usando_api': True,
@@ -724,9 +724,9 @@ def test_api(request):
     Vista para probar conectividad con la API
     """
     endpoints = {
-        'boxes': get_api_data('boxes'),
-        'pasillos': get_api_data('pasillos'),
-        'agendas': get_api_data('agendas', {'fecha': datetime.now().strftime('%Y-%m-%d')}),
+        'boxes': get_api_data('boxes', request=request),
+        'pasillos': get_api_data('pasillos', request=request),
+        'agendas': get_api_data('agendas', {'fecha': datetime.now().strftime('%Y-%m-%d')}, request=request),
     }
     
     results = {}
