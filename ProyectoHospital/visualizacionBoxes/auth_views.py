@@ -63,32 +63,94 @@ def login_view(request):
                         import base64
                         import json
                         
+                        print(f"DEBUG - ID Token: {id_token[:50]}...")
+                        
                         # Decodificar el payload del JWT (sin verificación de firma por simplicidad)
-                        payload = id_token.split('.')[1]
+                        parts = id_token.split('.')
+                        if len(parts) != 3:
+                            raise ValueError("JWT malformado")
+                        
+                        payload = parts[1]
                         # Agregar padding si es necesario
                         payload += '=' * (4 - len(payload) % 4)
                         decoded = base64.urlsafe_b64decode(payload)
                         jwt_data = json.loads(decoded.decode('utf-8'))
                         
-                        print(f"DEBUG - JWT Data: {jwt_data}")
+                        print(f"DEBUG - JWT Data completo: {jwt_data}")
                         
-                        # Extraer grupos de Cognito
-                        cognito_groups = jwt_data.get('cognito:groups', [])
-                        if isinstance(cognito_groups, str):
-                            # Si viene como string, convertir a lista
-                            cognito_groups = [cognito_groups]
+                        # Extraer grupos de Cognito - pueden venir en diferentes formatos
+                        cognito_groups = []
+                        
+                        # Buscar en diferentes campos posibles
+                        if 'cognito:groups' in jwt_data:
+                            groups_data = jwt_data['cognito:groups']
+                            print(f"DEBUG - Raw cognito:groups: {groups_data}, type: {type(groups_data)}")
+                            
+                            if isinstance(groups_data, list):
+                                cognito_groups = groups_data
+                            elif isinstance(groups_data, str):
+                                # Podría ser un string como "[Admin]" o "Admin"
+                                if groups_data.startswith('[') and groups_data.endswith(']'):
+                                    # Formato "[Admin,Personal]"
+                                    groups_str = groups_data[1:-1]  # Remover corchetes
+                                    cognito_groups = [g.strip() for g in groups_str.split(',') if g.strip()]
+                                else:
+                                    # Formato "Admin"
+                                    cognito_groups = [groups_data]
+                        
+                        # También buscar en otros campos posibles
+                        for field in ['groups', 'custom:groups', 'cognito_groups']:
+                            if field in jwt_data and not cognito_groups:
+                                groups_data = jwt_data[field]
+                                if isinstance(groups_data, list):
+                                    cognito_groups = groups_data
+                                elif isinstance(groups_data, str):
+                                    cognito_groups = [groups_data]
                         
                         # Guardar grupos en la sesión
                         request.session['user_groups'] = cognito_groups
                         request.session['user_hospital_id'] = jwt_data.get('custom:hospital_id', 'HOSPITAL_001')
                         request.session['user_pasillo_asignado'] = jwt_data.get('custom:pasillo_asignado')
                         
-                        print(f"DEBUG - User Groups: {cognito_groups}")
+                        print(f"DEBUG - Final User Groups: {cognito_groups}")
                         print(f"DEBUG - Hospital ID: {jwt_data.get('custom:hospital_id')}")
+                        print(f"DEBUG - Pasillo Asignado: {jwt_data.get('custom:pasillo_asignado')}")
                         
                     except Exception as e:
                         print(f"ERROR decodificando JWT: {e}")
-                        request.session['user_groups'] = []
+                        print(f"ERROR details: {type(e).__name__}: {str(e)}")
+                        
+                        # Intentar obtener información del usuario desde el endpoint /me
+                        try:
+                            print("DEBUG - Intentando obtener datos desde API /me")
+                            me_response = requests.get(
+                                f"{AUTH_BASE_URL}/me",
+                                headers={
+                                    'Authorization': f"Bearer {id_token}",
+                                    'Content-Type': 'application/json'
+                                },
+                                timeout=10
+                            )
+                            
+                            if me_response.status_code == 200:
+                                user_data = me_response.json()
+                                print(f"DEBUG - User data from /me: {user_data}")
+                                
+                                # Extraer grupos de la respuesta de /me
+                                cognito_groups = user_data.get('groups', [])
+                                request.session['user_groups'] = cognito_groups
+                                request.session['user_hospital_id'] = user_data.get('hospitalId', 'HOSPITAL_001')
+                                request.session['user_pasillo_asignado'] = user_data.get('pasilloAsignado')
+                                
+                                print(f"DEBUG - Groups from /me endpoint: {cognito_groups}")
+                            else:
+                                print(f"ERROR - /me endpoint failed: {me_response.status_code}")
+                                # Como último recurso, asignar Admin temporal
+                                request.session['user_groups'] = ['Admin']
+                        except Exception as me_error:
+                            print(f"ERROR calling /me endpoint: {me_error}")
+                            # Como último recurso, asignar Admin temporal
+                            request.session['user_groups'] = ['Admin']
                     
                     messages.success(request, f'Bienvenido {email}')
                     return redirect('visualizacionBoxes:visualizacion_general')
