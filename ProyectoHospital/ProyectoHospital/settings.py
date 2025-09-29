@@ -45,6 +45,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'visualizacionBoxes.middleware.AuthenticationMiddleware',  # Middleware de autenticación JWT
 ]
 
 ROOT_URLCONF = 'ProyectoHospital.urls'

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil de Usuario - Sistema Hospitalario</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 20px;
+        }
+        
+        .user-info {
+            margin-bottom: 20px;
+        }
+        
+        .user-info label {
+            font-weight: bold;
+            color: #495057;
+            display: inline-block;
+            width: 150px;
+        }
+        
+        .user-info span {
+            color: #6c757d;
+        }
+        
+        .groups {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        
+        .group-badge {
+            background: #1976d2;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        
+        .actions {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>👤 Perfil de Usuario</h1>
+            <p>Información de su cuenta en el sistema</p>
+        </div>
+        
+        <div class="user-info">
+            <div><label>Email:</label> <span>{{ user_data.email|default:"No disponible" }}</span></div>
+        </div>
+        
+        <div class="user-info">
+            <div><label>Hospital ID:</label> <span>{{ user_data.hospital_id|default:"No asignado" }}</span></div>
+        </div>
+        
+        <div class="user-info">
+            <div><label>Pasillo Asignado:</label> <span>{{ user_data.pasillo_asignado|default:"No asignado" }}</span></div>
+        </div>
+        
+        <div class="user-info">
+            <label>Roles/Grupos:</label>
+            <div class="groups">
+                {% if user_data.groups %}
+                    {% for group in user_data.groups %}
+                        <span class="group-badge">{{ group }}</span>
+                    {% endfor %}
+                {% else %}
+                    <span class="group-badge">Sin roles asignados</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="actions">
+            <a href="{% url 'visualizacionBoxes:visualizacion_general' %}" class="btn btn-primary">
+                🏠 Ir al Dashboard
+            </a>
+            <a href="/auth/logout/" class="btn btn-danger">
+                🚪 Cerrar Sesión
+            </a>
+        </div>
+    </div>
+</body>
+</html>

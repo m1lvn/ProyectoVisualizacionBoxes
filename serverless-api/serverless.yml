@@ -115,6 +115,36 @@ functions:
           authorizer:
             name: cognitoJwt
 
+  # Listar clientes (solo Admin)
+  listClients:
+    handler: src/handlers/personalization.listClients
+    events:
+      - httpApi:
+          path: /api/config
+          method: get
+          authorizer:
+            name: cognitoJwt
+
+  # Obtener configuración de cliente
+  getClientConfig:
+    handler: src/handlers/personalization.getClientConfig
+    events:
+      - httpApi:
+          path: /api/config/{clientId}
+          method: get
+          authorizer:
+            name: cognitoJwt
+
+  # Actualizar configuración de cliente (solo Admin)
+  updateClientConfig:
+    handler: src/handlers/personalization.updateClientConfig
+    events:
+      - httpApi:
+          path: /api/config/{clientId}
+          method: put
+          authorizer:
+            name: cognitoJwt
+
 resources:
   Resources:
     HospitalDataTable:

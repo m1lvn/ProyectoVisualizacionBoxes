@@ -16,9 +16,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from django.shortcuts import redirect
+
+def root_redirect(request):
+    """Redirigir la URL raíz a login si no está autenticado, sino al dashboard"""
+    if request.session.get('jwt_token'):
+        return redirect('visualizacionBoxes:visualizacion_general')
+    else:
+        return redirect('auth:login')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('allauth.urls')),  # URLs de autenticación
-    path('', include('visualizacionBoxes.urls')),
+    path('accounts/', include('allauth.urls')),  # URLs de autenticación (legacy)
+    path('auth/', include('visualizacionBoxes.auth_urls')),  # Nueva autenticación Cognito
+    path('dashboard/', include('visualizacionBoxes.urls')),  # Dashboard protegido
+    path('', root_redirect, name='root'),  # Redirigir URL raíz
 ]

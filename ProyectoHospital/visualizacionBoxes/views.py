@@ -21,14 +21,20 @@ AUTH_BASE_URL = getattr(settings, 'SERVERLESS_AUTH_URL', 'https://utcn9m1wwg.exe
 BOXES_POR_PAGINA = 40
 
 
-def get_api_data(endpoint, params=None):
+def get_api_data(endpoint, params=None, request=None):
     """
-    Helper function to get data from API with error handling
+    Helper function to get data from API with JWT authentication
     """
     try:
         url = f"{API_BASE_URL}/{endpoint}"
         print(f"DEBUG - Calling API: {url} with params: {params}")
-        response = requests.get(url, params=params, timeout=10)
+        
+        # Preparar headers con JWT token si está disponible
+        headers = {'Content-Type': 'application/json'}
+        if request and request.session.get('jwt_token'):
+            headers['Authorization'] = f"Bearer {request.session.get('jwt_token')}"
+        
+        response = requests.get(url, params=params, headers=headers, timeout=10)
         print(f"DEBUG - API Response status: {response.status_code}")
         
         if response.status_code == 200:
@@ -224,9 +230,9 @@ def visualizacion_pasillo(request):
     print(f"DEBUG - Filtros pasillo: pasillo_id={pasillo_id}, medico={nombre_medico}, box={codigo_box}, jornada={jornada_seleccionada}")
     
     # Obtener datos de la API
-    boxes = get_api_data('boxes')
-    pasillos = get_api_data('pasillos')
-    agendas = get_api_data('agendas', {'fecha': fecha_str})
+    boxes = get_api_data('boxes', request=request)
+    pasillos = get_api_data('pasillos', request=request)
+    agendas = get_api_data('agendas', {'fecha': fecha_str}, request=request)
     
     # Aplicar filtros
     boxes_filtrados = boxes

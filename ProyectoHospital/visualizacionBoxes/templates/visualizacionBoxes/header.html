@@ -31,36 +31,34 @@
         {% endif %}
 
         <!-- Opciones de autenticación -->
-        {% if user.is_authenticated %}
-          <!-- Usuario autenticado -->
+        {% if request.session.jwt_token %}
+          <!-- Usuario autenticado con JWT -->
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle d-flex align-items-center text-dark" href="#" id="accountDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
               <i class="bi bi-person-circle fs-4 me-2"></i>
-              <span class="d-none d-lg-inline">{{ user.perfilusuario.nombre_completo }}</span>
+              <span class="d-none d-lg-inline">{{ request.session.user_email|default:"Usuario" }}</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="accountDropdown">
               <li class="dropdown-item-text">
                 <small class="text-muted">
-                  <i class="bi bi-person-badge me-1"></i>{{ user.perfilusuario.tipo_usuario.nombre }}
+                  <i class="bi bi-person-badge me-1"></i>
+                  {% if 'Admin' in request.session.user_groups %}Administrador
+                  {% elif 'PersonalAdministrativo' in request.session.user_groups %}Personal Administrativo
+                  {% elif 'Personal' in request.session.user_groups %}Personal Médico
+                  {% else %}Usuario{% endif %}
                 </small>
               </li>
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="#" onclick="alert('Próximamente')">
+              <li><a class="dropdown-item" href="/auth/profile/">
                 <i class="bi bi-person me-2"></i>Perfil
               </a></li>
-              {% if user.perfilusuario.puede_gestionar_usuarios %}
-              {# Temporalmente comentado hasta implementar la vista gestionar_usuarios #}
-              <li><a class="dropdown-item" href="#" onclick="alert('Gestión de usuarios - Próximamente')">
-                <i class="bi bi-people me-2"></i>Gestionar Usuarios
-              </a></li>
-              {% endif %}
-              {% if user.perfilusuario.puede_configurar_sistema %}
+              {% if 'Admin' in request.session.user_groups %}
               <li><a class="dropdown-item" href="/admin/" target="_blank">
                 <i class="bi bi-gear me-2"></i>Administración
               </a></li>
               {% endif %}
               <li><hr class="dropdown-divider"></li>
-              <li><a class="dropdown-item text-danger" href="{% url 'account_logout' %}">
+              <li><a class="dropdown-item text-danger" href="/auth/logout/">
                 <i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión
               </a></li>
             </ul>
@@ -68,13 +66,8 @@
         {% else %}
           <!-- Usuario no autenticado -->
           <li class="nav-item">
-            <a class="nav-link text-primary fw-semibold" href="{% url 'account_login' %}">
+            <a class="nav-link text-primary fw-semibold" href="/auth/login/">
               <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar Sesión
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="btn btn-primary btn-sm" href="{% url 'account_signup' %}">
-              <i class="bi bi-person-plus me-1"></i>Registrarse
             </a>
           </li>
         {% endif %}
