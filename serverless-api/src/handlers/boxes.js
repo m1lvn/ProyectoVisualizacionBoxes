@@ -60,18 +60,22 @@ module.exports.getBoxes = async (event) => {
     // Crear mapa de pasillos por ID
     const pasillosMap = {};
     resultPasillos.Items.forEach(pasillo => {
-      pasillosMap[pasillo.pasilloId] = pasillo.nombre;
+      // Los pasillos ahora usan nombres MySQL
+      pasillosMap[pasillo.idPasillo] = pasillo.pasillo;
     });
     
     // Mapear nombres de campos para coincidir EXACTAMENTE con MySQL original
     const mappedItems = resultBoxes.Items.map(item => ({
       ...item,
-      idBox: item.boxId,           // MySQL original: 'idBox'
-      idPasillo: item.pasilloId,   // MySQL original: 'idPasillo'
-      pasillo: pasillosMap[item.pasilloId] || item.pasillo || 'Sin pasillo', // MySQL original: 'pasillo'
-      // Mantener campos originales para compatibilidad
-      boxId: item.boxId,
-      pasilloId: item.pasilloId
+      // Los datos ya vienen con nombres MySQL desde el migrate_local.py corregido
+      idBox: item.idBox,           // MySQL original: 'idBox' 
+      idPasillo: item.idPasillo,   // MySQL original: 'idPasillo'
+      pasillo: item.pasillo || pasillosMap[item.idPasillo] || 'Sin pasillo', // MySQL original: 'pasillo'
+      capacidad: item.capacidad,   // MySQL original: 'capacidad'
+      disponible: item.disponible, // Para compatibilidad
+      // Mantener campos originales para compatibilidad con código legacy
+      boxId: item.idBox,          // Legacy compatibility
+      pasilloId: item.idPasillo   // Legacy compatibility
     }));
     
     return {
