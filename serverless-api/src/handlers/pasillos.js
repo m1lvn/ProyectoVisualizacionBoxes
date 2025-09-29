@@ -29,15 +29,13 @@ module.exports.getPasillos = async (event) => {
       (a.pasillo || '').localeCompare(b.pasillo || '')
     );
 
-    // Mapear nombres de campos para coincidir EXACTAMENTE con MySQL original
+    // Mapear solo campos MySQL puros
     const mappedPasillos = sortedPasillos.map(item => ({
-      ...item,
-      // Los datos ya vienen con nombres MySQL desde migrate_local.py corregido
-      idPasillo: item.idPasillo,   // MySQL original: 'idPasillo'
-      pasillo: item.pasillo,       // MySQL original: 'pasillo' 
-      // Mantener campos legacy para compatibilidad
-      pasilloId: item.idPasillo,   // Legacy compatibility
-      nombre: item.pasillo         // Legacy compatibility
+      // Campos MySQL principales
+      idPasillo: item.idPasillo,
+      pasillo: item.pasillo,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
     }));
 
     return {
@@ -77,18 +75,18 @@ module.exports.getPasillos = async (event) => {
  */
 module.exports.getPasilloBoxes = async (event) => {
   try {
-    const { pasilloId } = event.pathParameters;
+    const { idPasillo } = event.pathParameters;
     
     const params = {
       TableName: TABLE_NAME,
       FilterExpression: '#tipo = :tipo AND #idPasillo = :idPasillo',
       ExpressionAttributeNames: { 
         '#tipo': 'tipo',
-        '#idPasillo': 'idPasillo'  // Campo MySQL correcto
+        '#idPasillo': 'idPasillo'
       },
       ExpressionAttributeValues: { 
         ':tipo': 'box',
-        ':idPasillo': parseInt(pasilloId)
+        ':idPasillo': parseInt(idPasillo)
       }
     };
 
@@ -110,7 +108,7 @@ module.exports.getPasilloBoxes = async (event) => {
         success: true,
         data: sortedBoxes,
         count: result.Count,
-        pasilloId: parseInt(pasilloId)
+        idPasillo: parseInt(idPasillo)
       }),
     };
   } catch (error) {

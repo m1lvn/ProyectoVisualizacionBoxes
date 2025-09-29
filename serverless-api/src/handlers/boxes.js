@@ -64,18 +64,16 @@ module.exports.getBoxes = async (event) => {
       pasillosMap[pasillo.idPasillo] = pasillo.pasillo;
     });
     
-    // Mapear nombres de campos para coincidir EXACTAMENTE con MySQL original
+    // Mapear solo campos MySQL puros
     const mappedItems = resultBoxes.Items.map(item => ({
-      ...item,
-      // Los datos ya vienen con nombres MySQL desde el migrate_local.py corregido
-      idBox: item.idBox,           // MySQL original: 'idBox' 
-      idPasillo: item.idPasillo,   // MySQL original: 'idPasillo'
-      pasillo: item.pasillo || pasillosMap[item.idPasillo] || 'Sin pasillo', // MySQL original: 'pasillo'
-      capacidad: item.capacidad,   // MySQL original: 'capacidad'
-      disponible: item.disponible, // Para compatibilidad
-      // Mantener campos originales para compatibilidad con código legacy
-      boxId: item.idBox,          // Legacy compatibility
-      pasilloId: item.idPasillo   // Legacy compatibility
+      // Campos MySQL principales
+      idBox: item.idBox,
+      idPasillo: item.idPasillo,
+      pasillo: item.pasillo || pasillosMap[item.idPasillo] || 'Sin pasillo',
+      capacidad: item.capacidad,
+      disponible: item.disponible,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
     }));
     
     return {
@@ -115,12 +113,12 @@ module.exports.getBoxes = async (event) => {
  */
 module.exports.getBoxDetail = async (event) => {
   try {
-    const { boxId } = event.pathParameters;
+    const { idBox } = event.pathParameters;
     
     const params = {
       TableName: TABLE_NAME,
       Key: {
-        PK: `BOX#${boxId}`,
+        PK: `BOX#${idBox}`,
         SK: 'METADATA'
       }
     };
