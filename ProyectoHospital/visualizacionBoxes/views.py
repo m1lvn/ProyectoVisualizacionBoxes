@@ -12,6 +12,7 @@ from django.contrib import messages
 from datetime import datetime, time, timedelta
 import requests
 from django.conf import settings
+from django.contrib.auth.decorators import login_required
 
 # API Configuration
 API_BASE_URL = getattr(settings, 'SERVERLESS_API_URL', 'https://hrpik4srp3.execute-api.us-east-1.amazonaws.com/dev/api')
@@ -702,3 +703,16 @@ def redirect_after_login(request):
     Redirección después del login - Redirige al dashboard
     """
     return redirect('visualizacionBoxes:visualizacion_general')
+
+@login_required
+def vista_protegida(request):
+    """
+    Ejemplo de vista protegida con autenticación Cognito/Django.
+    Solo usuarios autenticados pueden acceder.
+    """
+    context = {
+        'usuario': request.user,
+        'mensaje': '¡Acceso permitido solo para usuarios autenticados!',
+        'usando_api': True,
+    }
+    return render(request, 'visualizacionBoxes/vista_protegida.html', context)
