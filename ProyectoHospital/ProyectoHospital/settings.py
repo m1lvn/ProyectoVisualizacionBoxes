@@ -17,8 +17,9 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '*']
 
 # API SERVERLESS CONFIGURATION
 # Serverless API Configuration
-SERVERLESS_API_URL = 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com/api'
-SERVERLESS_AUTH_URL = 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com'
+SERVERLESS_API_URL = 'https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/api'
+SERVERLESS_AUTH_URL = 'https://44wvhl6j05.execute-api.us-east-1.amazonaws.com'
+SERVERLESS_API_BASE_URL = 'https://44wvhl6j05.execute-api.us-east-1.amazonaws.com'
 
 # Application definition
 INSTALLED_APPS = [

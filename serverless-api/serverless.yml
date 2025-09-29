@@ -347,6 +347,12 @@ resources:
         Version: "1.0"
 
   Outputs:
+    # API Gateway URL
+    ApiGatewayUrl:
+      Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Export:
+        Name: ${self:custom.stage}-ApiGatewayUrl
+        
     UserPoolId:
       Value: !Ref HospitalUserPool
       Export:
