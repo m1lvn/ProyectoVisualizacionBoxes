@@ -8,6 +8,8 @@ provider:
   environment:
     DYNAMODB_TABLE: HospitalData
     STAGE: ${self:custom.stage}
+    USER_POOL_ID: !Ref HospitalUserPool
+    USER_POOL_CLIENT_ID: !Ref HospitalUserPoolClient
   # Usar rol existente de AWS Academy en lugar de crear uno nuevo
   role: arn:aws:iam::891377117593:role/LabRole
 
@@ -21,6 +23,10 @@ plugins:
   - serverless-offline
 
 functions:
+  # JWT Authorizer
+  jwtAuthorizer:
+    handler: src/middleware/jwtAuth.authorize
+    
   # Obtener boxes por pasillo
   getBoxes:
     handler: src/handlers/boxes.getBoxes
@@ -99,3 +105,103 @@ resources:
               ProjectionType: ALL
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
+
+    # Cognito User Pool
+    HospitalUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: hospital-users-${self:custom.stage}
+        AutoVerifiedAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireUppercase: true
+            RequireLowercase: true
+            RequireNumbers: true
+            RequireSymbols: false
+        Schema:
+          - Name: email
+            AttributeDataType: String
+            Required: true
+            Mutable: true
+          - Name: given_name
+            AttributeDataType: String
+            Required: true
+            Mutable: true
+          - Name: family_name
+            AttributeDataType: String
+            Required: true
+            Mutable: true
+          - Name: hospital_id
+            AttributeDataType: String
+            Required: false
+            Mutable: true
+          - Name: pasillo_asignado
+            AttributeDataType: String
+            Required: false
+            Mutable: true
+          - Name: role
+            AttributeDataType: String
+            Required: false
+            Mutable: true
+        UsernameAttributes:
+          - email
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: false
+          
+    # Cognito App Client
+    HospitalUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: hospital-web-client-${self:custom.stage}
+        UserPoolId: !Ref HospitalUserPool
+        GenerateSecret: false
+        ExplicitAuthFlows:
+          - ADMIN_NO_SRP_AUTH
+          - USER_SRP_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+        PreventUserExistenceErrors: ENABLED
+        TokenValidityUnits:
+          AccessToken: minutes
+          IdToken: minutes
+          RefreshToken: days
+        AccessTokenValidity: 30  # 30 minutes
+        IdTokenValidity: 30     # 30 minutes  
+        RefreshTokenValidity: 30 # 30 days
+        
+    # Cognito User Pool Groups
+    AdminGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Admin
+        Description: "Administrators with full system access and management capabilities"
+        UserPoolId: !Ref HospitalUserPool
+        Precedence: 1
+        
+    PersonalGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Personal
+        Description: "Medical and nursing staff with access to assigned corridor only"
+        UserPoolId: !Ref HospitalUserPool
+        Precedence: 2
+        
+    PersonalAdministrativoGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: PersonalAdministrativo
+        Description: "Administrative staff with booking and reporting access to all corridors"
+        UserPoolId: !Ref HospitalUserPool
+        Precedence: 3
+
+  Outputs:
+    UserPoolId:
+      Value: !Ref HospitalUserPool
+      Export:
+        Name: ${self:custom.stage}-UserPoolId
+        
+    UserPoolClientId:
+      Value: !Ref HospitalUserPoolClient  
+      Export:
+        Name: ${self:custom.stage}-UserPoolClientId

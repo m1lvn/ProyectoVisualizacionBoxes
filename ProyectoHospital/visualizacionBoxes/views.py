@@ -244,6 +244,28 @@ def visualizacion_pasillo(request):
     if codigo_box:
         boxes_filtrados = [box for box in boxes_filtrados if codigo_box.lower() in str(box.get('idBox', '')).lower()]
     
+    # Filtro por jornada
+    if jornada_seleccionada:
+        # Filtrar agendas por jornada y luego boxes por esas agendas
+        if jornada_seleccionada == 'AM':
+            # AM: 08:00 - 11:59
+            agendas_jornada = [agenda for agenda in agendas 
+                             if agenda.get('horaInicio', '00:00') >= '08:00' and agenda.get('horaInicio', '00:00') < '12:00']
+        elif jornada_seleccionada == 'PM':
+            # PM: 12:00 - 19:59
+            agendas_jornada = [agenda for agenda in agendas 
+                             if agenda.get('horaInicio', '00:00') >= '12:00' and agenda.get('horaInicio', '00:00') < '20:00']
+        else:
+            agendas_jornada = agendas
+        
+        # Obtener boxes que tienen agendas en la jornada seleccionada
+        if agendas_jornada:
+            box_ids_jornada = list(set([str(agenda.get('idBox')) for agenda in agendas_jornada]))
+            boxes_filtrados = [box for box in boxes_filtrados if str(box.get('idBox')) in box_ids_jornada]
+        else:
+            # Si no hay agendas en esa jornada, mostrar boxes vacíos (para permitir agendamiento)
+            pass
+    
     # Calcular estados para todos los boxes filtrados
     hora_actual = datetime.now().time()
     fecha = datetime.strptime(fecha_str, '%Y-%m-%d').date()

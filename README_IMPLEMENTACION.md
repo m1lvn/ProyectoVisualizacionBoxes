@@ -18,6 +18,7 @@ Sistema de visualización de boxes hospitalarios migrado completamente a arquite
 ### ✅ **YA IMPLEMENTADO**
 
 #### 1. **Arquitectura Serverless Core**
+
 - **API Gateway**: Endpoints RESTful configurados
 - **AWS Lambda**: Handlers para boxes, pasillos, agendas
 - **DynamoDB**: Single-table design con 180+ boxes, 48 pasillos
@@ -33,6 +34,7 @@ Endpoints Activos:
 ```
 
 #### 2. **Base de Datos DynamoDB**
+
 ```
 Tabla: HospitalData
 Estructura:
@@ -44,6 +46,7 @@ GSI1: Consultas por fecha/hora
 ```
 
 #### 3. **Frontend Django**
+
 - Consume API serverless exclusivamente
 - Visualización por pasillo con matrix horaria
 - Sistema de filtros y paginación
@@ -52,27 +55,32 @@ GSI1: Consultas por fecha/hora
 ### ❌ **PENDIENTE DE IMPLEMENTAR**
 
 #### 1. **🔐 Login Amazon Cognito**
+
 - User Pool configuration
 - App Client setup
 - Registro/Login/Logout
 - JWT token management
 
 #### 2. **👤 Sistema de Autorización**
+
 - Roles y permisos en DynamoDB
 - Middleware JWT validation
 - Permission-based access control
 
 #### 3. **🎨 Módulo Personalización**
+
 - Multi-tenant architecture
 - Client-specific configuration
 - Custom themes and branding
 
 #### 4. **🔒 Validación JWT Global**
+
 - JWT middleware en todos los endpoints
 - Token verification
 - Permission enforcement
 
 #### 5. **📋 Documentación**
+
 - Diagrama de arquitectura completo
 - API documentation
 - Deployment guide
@@ -84,9 +92,11 @@ GSI1: Consultas por fecha/hora
 ### **FASE 1: Fundación de Seguridad (3-4 días)**
 
 #### 1.1 **Setup Amazon Cognito**
+
 **Objetivo**: Configurar autenticación centralizada
 
 **Tareas**:
+
 - [ ] Crear Cognito User Pool
 - [ ] Configurar App Client (Web)
 - [ ] Definir atributos personalizados
@@ -94,23 +104,32 @@ GSI1: Consultas por fecha/hora
 - [ ] Configurar políticas de contraseñas
 
 **Entregables**:
+
 ```
 AWS Resources:
 ├── User Pool: hospital-users
 ├── App Client: hospital-web-client
-└── User Groups: [Admin, Medico, Enfermera, Visualizador]
+└── User Groups: [Admin, Personal, PersonalAdministrativo]
 ```
 
+**Estructura de Permisos**:
+- **Admin**: Acceso completo a todo el sistema (todos los pasillos, reportes, configuración)
+- **Personal**: Acceso limitado al pasillo asignado únicamente (atributo pasillo_asignado)
+- **PersonalAdministrativo**: Acceso a todos los pasillos + permisos de booking y reportes
+
 #### 1.2 **JWT Middleware Serverless**
+
 **Objetivo**: Validar tokens en API Gateway
 
 **Tareas**:
+
 - [ ] Crear función Lambda authorizer
 - [ ] Implementar JWT verification
 - [ ] Manejar refresh tokens
 - [ ] Error handling y logging
 
 **Entregables**:
+
 ```javascript
 // src/middleware/jwtAuth.js
 module.exports.authorize = async (event) => {
@@ -122,9 +141,11 @@ module.exports.authorize = async (event) => {
 ### **FASE 2: Sistema de Autorización (2-3 días)**
 
 #### 2.1 **Esquema de Permisos DynamoDB**
+
 **Objetivo**: Estructura de datos para roles y permisos
 
 **Esquema Propuesto**:
+
 ```
 DynamoDB Table: HospitalData
 
@@ -145,7 +166,9 @@ Attributes: { clientId: "hospital1", assignedAt: "2025-09-28" }
 ```
 
 #### 2.2 **Middleware de Autorización**
+
 **Tareas**:
+
 - [ ] Función de verificación de permisos
 - [ ] Cache de permisos por usuario
 - [ ] Decoradores para endpoints
@@ -154,9 +177,11 @@ Attributes: { clientId: "hospital1", assignedAt: "2025-09-28" }
 ### **FASE 3: Personalización Multi-tenant (2-3 días)**
 
 #### 3.1 **Configuración por Cliente**
+
 **Objetivo**: Personalización por organización
 
 **Esquema DynamoDB**:
+
 ```
 Client Configuration:
 PK: CLIENT#hospital1
@@ -176,7 +201,9 @@ Attributes: {
 ```
 
 #### 3.2 **API de Personalización**
+
 **Tareas**:
+
 - [ ] Endpoint GET /config/{clientId}
 - [ ] Endpoint PUT /config/{clientId}
 - [ ] Validación de configuración
@@ -185,14 +212,18 @@ Attributes: {
 ### **FASE 4: Integración Frontend (2-3 días)**
 
 #### 4.1 **Cognito Integration**
+
 **Tareas**:
+
 - [ ] AWS Amplify Auth setup
 - [ ] Login/Logout components
 - [ ] Token storage y refresh
 - [ ] Protected routes
 
 #### 4.2 **Dynamic UI**
+
 **Tareas**:
+
 - [ ] Cargar configuración por cliente
 - [ ] Aplicar estilos dinámicos
 - [ ] Mostrar contenido según permisos
@@ -201,12 +232,14 @@ Attributes: {
 ### **FASE 5: Testing y Documentación (1-2 días)**
 
 #### 5.1 **Testing Integral**
+
 - [ ] Tests unitarios middleware
 - [ ] Tests de integración API
 - [ ] Tests end-to-end frontend
 - [ ] Performance testing
 
 #### 5.2 **Documentación**
+
 - [ ] Diagrama de arquitectura
 - [ ] API documentation
 - [ ] Guía de despliegue
@@ -306,6 +339,7 @@ Attributes: {
 ## 🛠️ Tecnologías y Herramientas
 
 ### **Backend**
+
 - **AWS Lambda**: Node.js 18.x runtime
 - **API Gateway**: RESTful endpoints
 - **DynamoDB**: NoSQL database
@@ -313,18 +347,21 @@ Attributes: {
 - **IAM**: Authorization policies
 
 ### **Frontend**
+
 - **Django**: Current web framework
 - **Bootstrap**: UI components
 - **JavaScript**: Client-side logic
 - **AWS Amplify**: Future Cognito integration
 
 ### **DevOps**
+
 - **Serverless Framework**: Deployment automation
 - **AWS Academy**: Development environment
 - **CloudWatch**: Monitoring and logging
 - **S3**: Static assets storage
 
 ### **Security**
+
 - **JWT**: Token-based authentication
 - **HTTPS**: Encrypted communications
 - **CORS**: Cross-origin policies
@@ -334,51 +371,57 @@ Attributes: {
 
 ## ⏱️ Timeline y Estimaciones
 
-| Fase | Duración | Recursos | Entregables |
-|------|----------|----------|-------------|
-| **Fase 1: Seguridad** | 3-4 días | 1 Dev | Cognito + JWT Middleware |
-| **Fase 2: Autorización** | 2-3 días | 1 Dev | Permisos + Roles |
-| **Fase 3: Personalización** | 2-3 días | 1 Dev | Multi-tenant + UI |
-| **Fase 4: Integración** | 2-3 días | 1 Dev | Frontend + API |
-| **Fase 5: Testing** | 1-2 días | 1 Dev | Docs + Tests |
-| **TOTAL** | **10-15 días** | **1 Dev** | **Sistema Completo** |
+| Fase                               | Duración             | Recursos        | Entregables                |
+| ---------------------------------- | --------------------- | --------------- | -------------------------- |
+| **Fase 1: Seguridad**        | 3-4 días             | 1 Dev           | Cognito + JWT Middleware   |
+| **Fase 2: Autorización**    | 2-3 días             | 1 Dev           | Permisos + Roles           |
+| **Fase 3: Personalización** | 2-3 días             | 1 Dev           | Multi-tenant + UI          |
+| **Fase 4: Integración**     | 2-3 días             | 1 Dev           | Frontend + API             |
+| **Fase 5: Testing**          | 1-2 días             | 1 Dev           | Docs + Tests               |
+| **TOTAL**                    | **10-15 días** | **1 Dev** | **Sistema Completo** |
 
 ---
 
 ## 📝 Checklist de Implementación
 
 ### **Preparación**
+
 - [ ] Revisar acceso a AWS Academy
 - [ ] Validar permisos de Cognito
 - [ ] Backup del estado actual
 - [ ] Configurar entorno de desarrollo
 
 ### **Fase 1: Cognito Setup**
+
 - [ ] Crear User Pool
-- [ ] Configurar App Client  
+- [ ] Configurar App Client
 - [ ] Definir grupos de usuarios
 - [ ] Implementar JWT authorizer
 - [ ] Testing básico de autenticación
 
 ### **Fase 2: Authorization**
+
 - [ ] Diseñar esquema de permisos
 - [ ] Implementar middleware autorización
 - [ ] Crear roles por defecto
 - [ ] Testing de permisos
 
 ### **Fase 3: Customization**
+
 - [ ] Esquema multi-tenant
 - [ ] API de configuración
 - [ ] UI dinámica
 - [ ] Testing personalización
 
 ### **Fase 4: Integration**
+
 - [ ] Frontend con Cognito
 - [ ] Manejo de permisos en UI
 - [ ] Error handling
 - [ ] Testing end-to-end
 
 ### **Fase 5: Documentation**
+
 - [ ] Diagrama arquitectura
 - [ ] API documentation
 - [ ] Manual deployment
@@ -389,6 +432,7 @@ Attributes: {
 ## 🔧 Comandos de Desarrollo
 
 ### **Despliegue Serverless**
+
 ```bash
 # Instalar dependencias
 npm install
@@ -404,6 +448,7 @@ serverless remove --stage dev
 ```
 
 ### **Frontend Django**
+
 ```bash
 # Activar entorno virtual
 .venv\Scripts\activate
@@ -419,6 +464,7 @@ python manage.py migrate
 ```
 
 ### **Testing**
+
 ```bash
 # Tests unitarios
 npm test
@@ -435,18 +481,21 @@ python manage.py test
 ## 🚨 Consideraciones de Seguridad
 
 ### **JWT Tokens**
+
 - Expiración corta (15-30 min)
 - Refresh token rotation
 - Secure storage en cliente
 - Logout token blacklisting
 
 ### **API Security**
+
 - Rate limiting por usuario
 - Input validation estricta
 - SQL injection protection
 - CORS configurado correctamente
 
 ### **Data Protection**
+
 - Cifrado en tránsito (HTTPS)
 - Cifrado en reposo (DynamoDB)
 - Logs sin información sensible
