@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'django_cognito_jwt',
 ]
 
 MIDDLEWARE = [
@@ -96,6 +97,12 @@ TIME_ZONE = 'America/Santiago'
 USE_I18N = True
 USE_TZ = True
 
+
+#Info Cognito
+COGNITO_USER_POOL_ID = 'us-east-1_0VcouMoQ8'
+COGNITO_APP_CLIENT_ID = '555d9ec5lslpogerru5t2oh3hi'
+COGNITO_AWS_REGION = 'us-east-1' 
+
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
@@ -111,6 +118,8 @@ SITE_ID = 1
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
+    'django_cognito_jwt.backends.CognitoBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 
 # Allauth settings
