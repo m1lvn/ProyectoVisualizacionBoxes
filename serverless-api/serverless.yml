@@ -12,6 +12,19 @@ provider:
     USER_POOL_CLIENT_ID: !Ref HospitalUserPoolClient
   # Usar rol existente de AWS Academy en lugar de crear uno nuevo
   role: arn:aws:iam::891377117593:role/LabRole
+  logs:
+    httpApi: true
+  httpApi:
+    authorizers:
+      cognitoJwt:
+        type: jwt
+        identitySource: $request.header.Authorization
+        issuerUrl:
+          Fn::Sub:
+            - https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPoolId}
+            - { UserPoolId: { Ref: HospitalUserPool } }
+        audience:
+          - { Ref: HospitalUserPoolClient }
 
 custom:
   stage: ${opt:stage, self:provider.stage, 'dev'}
@@ -23,7 +36,31 @@ plugins:
   - serverless-offline
 
 functions:
-  # JWT Authorizer
+  # Endpoints de Autenticación
+  login:
+    handler: src/handlers/auth.login
+    events:
+      - httpApi:
+          method: POST
+          path: /auth/login
+          
+  refresh:
+    handler: src/handlers/auth.refresh
+    events:
+      - httpApi:
+          method: POST
+          path: /auth/refresh
+          
+  me:
+    handler: src/handlers/auth.me
+    events:
+      - httpApi:
+          method: GET
+          path: /me
+          authorizer:
+            name: cognitoJwt
+  
+  # JWT Authorizer (mantenemos para casos avanzados)
   jwtAuthorizer:
     handler: src/middleware/jwtAuth.authorize
     
@@ -160,6 +197,7 @@ resources:
         ExplicitAuthFlows:
           - ADMIN_NO_SRP_AUTH
           - ALLOW_USER_SRP_AUTH
+          - ALLOW_USER_PASSWORD_AUTH
           - ALLOW_REFRESH_TOKEN_AUTH
         PreventUserExistenceErrors: ENABLED
         TokenValidityUnits:
