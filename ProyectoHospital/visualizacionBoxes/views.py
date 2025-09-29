@@ -32,7 +32,11 @@ def get_api_data(endpoint, params=None, request=None):
         # Preparar headers con JWT token si está disponible
         headers = {'Content-Type': 'application/json'}
         if request and request.session.get('jwt_token'):
-            headers['Authorization'] = f"Bearer {request.session.get('jwt_token')}"
+            jwt_token = request.session.get('jwt_token')
+            headers['Authorization'] = f"Bearer {jwt_token}"
+            print(f"DEBUG - JWT Token found in session: {jwt_token[:50]}...")
+        else:
+            print("DEBUG - No JWT token found in session or request not provided")
         
         response = requests.get(url, params=params, headers=headers, timeout=10)
         print(f"DEBUG - API Response status: {response.status_code}")
@@ -100,9 +104,9 @@ def visualizacion_general(request):
     # ===============================
     # OBTENER DATOS DE LA API
     # ===============================
-    boxes = get_api_data('boxes')
-    pasillos = get_api_data('pasillos')
-    agendas = get_api_data('agendas', {'fecha': fecha_str})
+    boxes = get_api_data('boxes', request=request)
+    pasillos = get_api_data('pasillos', request=request)
+    agendas = get_api_data('agendas', {'fecha': fecha_str}, request=request)
     
     # Debug: Verificar formato de datos
     print(f"DEBUG - Final boxes type: {type(boxes)}, count: {len(boxes) if boxes else 0}")
