@@ -122,8 +122,9 @@ async function migratePasillos(connection, results) {
         GSI1PK: `PASILLO#${pasillo.idPasillo}`,
         GSI1SK: 'METADATA',
         tipo: 'pasillo',
-        pasilloId: pasillo.idPasillo,
-        nombre: pasillo.pasillo,
+        // Campos MySQL
+        idPasillo: pasillo.idPasillo,
+        pasillo: pasillo.pasillo,
         createdAt: new Date().toISOString()
       };
 
@@ -161,9 +162,10 @@ async function migrateBoxes(connection, results) {
         GSI1PK: `PASILLO#${box.idPasillo}`,
         GSI1SK: `BOX#${box.idBox}`,
         tipo: 'box',
-        boxId: box.idBox,
+        // Campos MySQL
+        idBox: box.idBox,
         capacidad: box.capacidad || 1,
-        pasilloId: box.idPasillo,
+        idPasillo: box.idPasillo,
         pasillo: box.pasillo,
         disponible: true,
         createdAt: new Date().toISOString()
@@ -200,8 +202,9 @@ async function migrateEspecialidades(connection, results) {
         GSI1PK: `ESPECIALIDAD#${especialidad.idEspecialidad}`,
         GSI1SK: 'METADATA',
         tipo: 'especialidad',
-        especialidadId: especialidad.idEspecialidad,
-        nombre: especialidad.especialidad,
+        // Campos MySQL
+        idEspecialidad: especialidad.idEspecialidad,
+        especialidad: especialidad.especialidad,
         createdAt: new Date().toISOString()
       };
 
@@ -239,9 +242,10 @@ async function migrateProfesionales(connection, results) {
         GSI1PK: `ESPECIALIDAD#${profesional.idEspecialidad}`,
         GSI1SK: `PROFESIONAL#${profesional.idProfesional}`,
         tipo: 'profesional',
-        profesionalId: profesional.idProfesional,
+        // Campos MySQL
+        idProfesional: profesional.idProfesional,
         nombre: profesional.nombre,
-        especialidadId: profesional.idEspecialidad,
+        idEspecialidad: profesional.idEspecialidad,
         especialidad: profesional.especialidad,
         createdAt: new Date().toISOString()
       };
@@ -277,8 +281,9 @@ async function migrateTiposAgenda(connection, results) {
         GSI1PK: `TIPOAGENDA#${tipo.idTipoAgenda}`,
         GSI1SK: 'METADATA',
         tipo: 'tipoagenda',
-        tipoAgendaId: tipo.idTipoAgenda,
-        nombre: tipo.tipoAgenda,
+        // Campos MySQL
+        idTipoAgenda: tipo.idTipoAgenda,
+        tipoAgenda: tipo.tipoAgenda,
         createdAt: new Date().toISOString()
       };
 
@@ -321,17 +326,19 @@ async function migrateAgendas(connection, results) {
         GSI1PK: `BOX#${agenda.idBox}`,
         GSI1SK: `${agenda.fecha}#${agenda.horaInicio}`,
         tipo: 'agenda',
-        agendaId: agenda.idAgenda,
+        // Campos MySQL
+        idAgenda: agenda.idAgenda,
         fecha: agenda.fecha,
         horaInicio: agenda.horaInicio,
         horaFin: agenda.horaFin,
         observaciones: agenda.observaciones || '',
-        boxId: agenda.idBox,
-        pasilloId: agenda.idPasillo,
-        tipoAgendaId: agenda.idTipoAgenda,
+        idBox: agenda.idBox,
+        idPasillo: agenda.idPasillo,
+        idTipoAgenda: agenda.idTipoAgenda,
         tipoAgenda: agenda.tipoAgenda,
-        profesionalId: agenda.idProfesional,
-        profesionalNombre: agenda.profesional_nombre,
+        idProfesional: agenda.idProfesional,
+        profesional: agenda.profesional_nombre || 'No especificado',
+        especialidad: 'No especificada', // Se puede resolver después
         createdAt: new Date().toISOString()
       };
 

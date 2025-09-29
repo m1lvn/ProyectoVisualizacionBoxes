@@ -12,7 +12,7 @@ const TABLE_NAME = process.env.DYNAMODB_TABLE || 'HospitalData';
  */
 module.exports.getAgendas = async (event) => {
   try {
-    const { fecha, boxId, pasilloId, profesionalId } = event.queryStringParameters || {};
+    const { fecha, idBox, idPasillo, idProfesional } = event.queryStringParameters || {};
     
     let params = {
       TableName: TABLE_NAME,
@@ -32,22 +32,22 @@ module.exports.getAgendas = async (event) => {
       params.ExpressionAttributeValues[':fecha'] = fecha;
     }
 
-    if (boxId) {
+    if (idBox) {
       params.FilterExpression += ' AND #idBox = :idBox';
-      params.ExpressionAttributeNames['#idBox'] = 'idBox';  // Campo MySQL
-      params.ExpressionAttributeValues[':idBox'] = parseInt(boxId);
+      params.ExpressionAttributeNames['#idBox'] = 'idBox';
+      params.ExpressionAttributeValues[':idBox'] = parseInt(idBox);
     }
 
-    if (pasilloId) {
+    if (idPasillo) {
       params.FilterExpression += ' AND #idPasillo = :idPasillo';
-      params.ExpressionAttributeNames['#idPasillo'] = 'idPasillo';  // Campo MySQL
-      params.ExpressionAttributeValues[':idPasillo'] = parseInt(pasilloId);
+      params.ExpressionAttributeNames['#idPasillo'] = 'idPasillo';
+      params.ExpressionAttributeValues[':idPasillo'] = parseInt(idPasillo);
     }
 
-    if (profesionalId) {
+    if (idProfesional) {
       params.FilterExpression += ' AND #idProfesional = :idProfesional';
-      params.ExpressionAttributeNames['#idProfesional'] = 'idProfesional';  // Campo MySQL
-      params.ExpressionAttributeValues[':idProfesional'] = parseInt(profesionalId);
+      params.ExpressionAttributeNames['#idProfesional'] = 'idProfesional';
+      params.ExpressionAttributeValues[':idProfesional'] = parseInt(idProfesional);
     }
 
     const result = await dynamodb.scan(params).promise();
@@ -60,24 +60,23 @@ module.exports.getAgendas = async (event) => {
       return a.horaInicio.localeCompare(b.horaInicio);
     });
 
-    // Mapear nombres de campos para coincidir EXACTAMENTE con MySQL original
+    // Los datos ya vienen con nombres MySQL desde migrate_local.py corregido
     const mappedAgendas = sortedAgendas.map(item => ({
-      ...item,
-      // Los datos ya vienen con nombres MySQL desde migrate_local.py corregido
-      idAgenda: item.idAgenda,             // MySQL original: 'idAgenda'
-      idBox: item.idBox,                   // MySQL original: 'idBox'
-      idPasillo: item.idPasillo,          // MySQL original: 'idPasillo' (si existe)
-      idProfesional: item.idProfesional,  // MySQL original: 'idProfesional'
-      idTipoAgenda: item.idTipoAgenda,    // MySQL original: 'idTipoAgenda'
-      // Campos desnormalizados para JavaScript
-      profesional: item.profesional || 'No especificado',
-      especialidad: item.especialidad || 'No especificada',
-      tipoAgenda: item.tipoAgenda || 'No especificado',
-      // Mantener campos legacy para compatibilidad
-      boxId: item.idBox,                  // Legacy compatibility
-      pasilloId: item.idPasillo,         // Legacy compatibility
-      agendaId: item.idAgenda,            // Legacy compatibility
-      profesionalId: item.idProfesional  // Legacy compatibility
+      // Campos MySQL principales
+      idAgenda: item.idAgenda,
+      idBox: item.idBox,
+      idPasillo: item.idPasillo,
+      idProfesional: item.idProfesional,
+      idTipoAgenda: item.idTipoAgenda,
+      fecha: item.fecha,
+      horaInicio: item.horaInicio,
+      horaFin: item.horaFin,
+      observaciones: item.observaciones,
+      profesional: item.profesional,
+      especialidad: item.especialidad,
+      tipoAgenda: item.tipoAgenda,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
     }));
 
     return {
@@ -113,19 +112,15 @@ module.exports.getAgendas = async (event) => {
 };
 
 /**
- * Crear nueva agenda
+ * Crear nueva agenda - usando nombres MySQL
  */
 module.exports.createAgenda = async (event) => {
   try {
-    // Validaciones básicas - usar nombre de campo que viene en POST
     const body = JSON.parse(event.body);
-    const { boxId, idBox, fecha, horaInicio, horaFin, tipoAgenda, profesionalId, idprofesional, observaciones } = body;
+    const { idBox, fecha, horaInicio, horaFin, idTipoAgenda, idProfesional, observaciones } = body;
 
-    // Manejar diferentes nombres de campos para compatibilidad
-    const finalBoxId = boxId || idBox;
-    const finalProfesionalId = profesionalId || idprofesional;
-
-    if (!finalBoxId || !fecha || !horaInicio || !horaFin || !tipoAgenda) {
+    // Validaciones básicas
+    if (!idBox || !fecha || !horaInicio || !horaFin || !idTipoAgenda) {
       return {
         statusCode: 400,
         headers: {
@@ -134,7 +129,7 @@ module.exports.createAgenda = async (event) => {
         },
         body: JSON.stringify({
           success: false,
-          error: 'Campos requeridos: boxId (o idBox), fecha, horaInicio, horaFin, tipoAgenda'
+          error: 'Campos requeridos: idBox, fecha, horaInicio, horaFin, idTipoAgenda'
         })
       };
     }
@@ -165,7 +160,7 @@ module.exports.createAgenda = async (event) => {
       },
       ExpressionAttributeValues: { 
         ':tipo': 'agenda',
-        ':idBox': parseInt(finalBoxId),
+        ':idBox': parseInt(idBox),
         ':fecha': fecha
       }
     };
@@ -196,19 +191,19 @@ module.exports.createAgenda = async (event) => {
     const newAgenda = {
       PK: `AGENDA#${agendaId}`,
       SK: `${fecha}#${horaInicio}`,
-      GSI1PK: `BOX#${finalBoxId}`,
+      GSI1PK: `BOX#${idBox}`,
       GSI1SK: `${fecha}#${horaInicio}`,
       tipo: 'agenda',
-      // Usar nombres de MySQL directamente
+      // Campos MySQL
       idAgenda: agendaId,
-      idBox: parseInt(finalBoxId),
+      idBox: parseInt(idBox),
       fecha,
       horaInicio,
       horaFin,
-      idTipoAgenda: tipoAgenda,
-      tipoAgenda: tipoAgenda,      // Desnormalizado para consultas
-      idProfesional: finalProfesionalId ? parseInt(finalProfesionalId) : null,
-      profesional: 'No especificado', // Se resolverá después
+      idTipoAgenda: idTipoAgenda,
+      tipoAgenda: idTipoAgenda,  // Desnormalizado para consultas
+      idProfesional: idProfesional ? parseInt(idProfesional) : null,
+      profesional: 'No especificado',  // Se resolverá después
       especialidad: 'No especificada', // Se resolverá después
       observaciones: observaciones || '',
       createdAt: new Date().toISOString(),
