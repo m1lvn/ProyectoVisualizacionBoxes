@@ -76,8 +76,8 @@ class AuthenticationMiddleware:
     def clear_session(self, request):
         """Limpiar datos de autenticación de la sesión"""
         session_keys_to_clear = [
-            'jwt_token', 'user_email', 'user_groups', 
-            'user_hospital_id', 'user_pasillo_asignado'
+            'jwt_token', 'access_token', 'refresh_token', 'expires_in', 'user_email', 
+            'user_groups', 'user_hospital_id', 'user_pasillo_asignado'
         ]
         
         for key in session_keys_to_clear:

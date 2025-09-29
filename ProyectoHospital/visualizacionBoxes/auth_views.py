@@ -24,30 +24,45 @@ def login_view(request):
         
         # Llamar API de autenticación
         try:
+            print(f"DEBUG - Intentando login con email: {email}")
+            print(f"DEBUG - AUTH_BASE_URL: {AUTH_BASE_URL}")
+            
             response = requests.post(
                 f"{AUTH_BASE_URL}/auth/login",
                 json={
-                    'email': email,
+                    'username': email,  # La API espera 'username', no 'email'
                     'password': password
                 },
                 headers={'Content-Type': 'application/json'},
                 timeout=10
             )
             
+            print(f"DEBUG - Status Code: {response.status_code}")
+            print(f"DEBUG - Response Text: {response.text}")
+            
             if response.status_code == 200:
                 data = response.json()
-                # Guardar token y datos de usuario en sesión
-                request.session['jwt_token'] = data.get('token')
-                request.session['user_email'] = data.get('user', {}).get('email', email)
-                request.session['user_groups'] = data.get('user', {}).get('groups', [])
-                request.session['user_hospital_id'] = data.get('user', {}).get('hospital_id')
-                request.session['user_pasillo_asignado'] = data.get('user', {}).get('pasillo_asignado')
                 
-                messages.success(request, f'Bienvenido {email}')
-                return redirect('visualizacionBoxes:visualizacion_general')
+                # Verificar que la respuesta sea exitosa
+                if data.get('ok', False):
+                    # Guardar los tokens en la sesión
+                    request.session['jwt_token'] = data.get('idToken')
+                    request.session['access_token'] = data.get('accessToken')
+                    request.session['refresh_token'] = data.get('refreshToken')
+                    request.session['expires_in'] = data.get('expiresIn')
+                    request.session['user_email'] = email
+                    
+                    # TODO: Decodificar el JWT para obtener información del usuario
+                    # Por ahora guardamos el email
+                    
+                    messages.success(request, f'Bienvenido {email}')
+                    return redirect('visualizacionBoxes:visualizacion_general')
+                else:
+                    messages.error(request, 'Credenciales inválidas')
             else:
                 error_data = response.json() if response.headers.get('content-type') == 'application/json' else {}
-                error_message = error_data.get('message', 'Credenciales inválidas')
+                error_message = error_data.get('message', error_data.get('error', 'Credenciales inválidas'))
+                print(f"DEBUG - Error Data: {error_data}")
                 messages.error(request, f'Error de autenticación: {error_message}')
                 
         except requests.RequestException as e:
@@ -61,8 +76,8 @@ def logout_view(request):
     """Vista de logout - limpiar sesión"""
     # Limpiar todos los datos de sesión relacionados con autenticación
     session_keys_to_clear = [
-        'jwt_token', 'user_email', 'user_groups', 
-        'user_hospital_id', 'user_pasillo_asignado'
+        'jwt_token', 'access_token', 'refresh_token', 'expires_in', 'user_email', 
+        'user_groups', 'user_hospital_id', 'user_pasillo_asignado'
     ]
     
     for key in session_keys_to_clear:
