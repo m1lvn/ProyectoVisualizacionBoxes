@@ -261,8 +261,8 @@ resources:
           AccessToken: minutes
           IdToken: minutes
           RefreshToken: days
-        AccessTokenValidity: 4   # 4 minutes (< 5 minutos como requiere el criterio)
-        IdTokenValidity: 4      # 4 minutes (< 5 minutos como requiere el criterio)  
+        AccessTokenValidity: 5   # 5 minutes (mínimo permitido)
+        IdTokenValidity: 5      # 5 minutes (mínimo permitido)  
         RefreshTokenValidity: 30 # 30 days
         
     # Cognito User Pool Groups
