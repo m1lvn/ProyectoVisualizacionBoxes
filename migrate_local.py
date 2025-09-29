@@ -42,9 +42,11 @@ def migrate_pasillos(mysql_conn, dynamodb_table):
             'GSI1PK': f"PASILLO#{pasillo['idPasillo']}",
             'GSI1SK': 'METADATA',
             'tipo': 'pasillo',
-            'pasilloId': pasillo['idPasillo'],
-            'nombre': pasillo['pasillo'],
-            'createdAt': datetime.now().isoformat()
+            # Usar nombres de MySQL directamente
+            'idPasillo': pasillo['idPasillo'],
+            'pasillo': pasillo['pasillo'],  # nombre del pasillo
+            'createdAt': datetime.now().isoformat(),
+            'updatedAt': datetime.now().isoformat()
         }
         
         dynamodb_table.put_item(Item=item)
@@ -85,19 +87,19 @@ def migrate_boxes(mysql_conn, dynamodb_table):
             'GSI1PK': f"PASILLO#{box['idPasillo']}",
             'GSI1SK': f"BOX#{box['idBox']}",
             'tipo': 'box',
-            'boxId': box['idBox'],
+            # Usar nombres de MySQL directamente
+            'idBox': box['idBox'],
             'capacidad': box.get('capacidad', 1) or 1,
-            'pasilloId': box['idPasillo'],
-            'pasillo': box['pasillo'],
-            'tipobox': 'Standard',  # Valor por defecto ya que la columna no existe
+            'idPasillo': box['idPasillo'],
+            'pasillo': box['pasillo'],  # nombre del pasillo
             'disponible': True,
-            'numerocamas': box.get('capacidad', 1) or 1,
-            'createdAt': datetime.now().isoformat()
+            'createdAt': datetime.now().isoformat(),
+            'updatedAt': datetime.now().isoformat()
         }
         
         dynamodb_table.put_item(Item=item)
         count += 1
-        print(f"  ✅ Box {box['idBox']}: Pasillo {box['idPasillo']}")
+        print(f"  ✅ Box {box['idBox']}: Pasillo {box['idPasillo']} - {box['pasillo']}")
     
     cursor.close()
     print(f"🏥 {count} boxes migrados")
@@ -119,9 +121,11 @@ def migrate_especialidades(mysql_conn, dynamodb_table):
             'GSI1PK': f"ESPECIALIDAD#{especialidad['idEspecialidad']}",
             'GSI1SK': 'METADATA',
             'tipo': 'especialidad',
-            'especialidadId': especialidad['idEspecialidad'],
-            'nombre': especialidad['especialidad'],
-            'createdAt': datetime.now().isoformat()
+            # Usar nombres de MySQL directamente
+            'idEspecialidad': especialidad['idEspecialidad'],
+            'especialidad': especialidad['especialidad'],
+            'createdAt': datetime.now().isoformat(),
+            'updatedAt': datetime.now().isoformat()
         }
         
         dynamodb_table.put_item(Item=item)
@@ -153,11 +157,13 @@ def migrate_profesionales(mysql_conn, dynamodb_table):
             'GSI1PK': f"ESPECIALIDAD#{profesional['idEspecialidad']}",
             'GSI1SK': f"PROFESIONAL#{profesional['idProfesional']}",
             'tipo': 'profesional',
-            'profesionalId': profesional['idProfesional'],
-            'nombre': profesional['nombre'],
-            'especialidadId': profesional['idEspecialidad'],
+            # Usar nombres de MySQL directamente
+            'idProfesional': profesional['idProfesional'],
+            'nombre': profesional['nombre'],  # nombre del profesional
+            'idEspecialidad': profesional['idEspecialidad'],
             'especialidad': profesional['especialidad'],
-            'createdAt': datetime.now().isoformat()
+            'createdAt': datetime.now().isoformat(),
+            'updatedAt': datetime.now().isoformat()
         }
         
         dynamodb_table.put_item(Item=item)
@@ -166,6 +172,37 @@ def migrate_profesionales(mysql_conn, dynamodb_table):
     
     cursor.close()
     print(f"👨‍⚕️ {count} profesionales migrados")
+    return count
+
+def migrate_tipos_agenda(mysql_conn, dynamodb_table):
+    """Migrar tipos de agenda de MySQL a DynamoDB"""
+    print("📋 Migrando tipos de agenda...")
+    
+    cursor = mysql_conn.cursor(dictionary=True)
+    cursor.execute("SELECT idTipoAgenda, tipoAgenda FROM tipoagenda ORDER BY idTipoAgenda")
+    tipos = cursor.fetchall()
+    
+    count = 0
+    for tipo in tipos:
+        item = {
+            'PK': f"TIPOAGENDA#{tipo['idTipoAgenda']}",
+            'SK': 'METADATA',
+            'GSI1PK': f"TIPOAGENDA#{tipo['idTipoAgenda']}",
+            'GSI1SK': 'METADATA',
+            'tipo': 'tipoagenda',
+            # Usar nombres de MySQL directamente
+            'idTipoAgenda': tipo['idTipoAgenda'],
+            'tipoAgenda': tipo['tipoAgenda'],
+            'createdAt': datetime.now().isoformat(),
+            'updatedAt': datetime.now().isoformat()
+        }
+        
+        dynamodb_table.put_item(Item=item)
+        count += 1
+        print(f"  ✅ Tipo Agenda {tipo['idTipoAgenda']}: {tipo['tipoAgenda']}")
+    
+    cursor.close()
+    print(f"📋 {count} tipos de agenda migrados")
     return count
 
 def migrate_agendas(mysql_conn, dynamodb_table):
@@ -177,9 +214,12 @@ def migrate_agendas(mysql_conn, dynamodb_table):
         SELECT a.idAgenda, a.fecha, a.horaInicio, a.horaFin, 
                a.idBox, a.idProfesional, a.idTipoAgenda,
                p.nombre as profesional_nombre,
-               t.tipoAgenda
+               e.especialidad as especialidad_nombre,
+               t.tipoAgenda,
+               a.observaciones
         FROM agenda a
         LEFT JOIN profesional p ON a.idProfesional = p.idProfesional
+        LEFT JOIN especialidad e ON p.idEspecialidad = e.idEspecialidad
         LEFT JOIN tipoagenda t ON a.idTipoAgenda = t.idTipoAgenda
         ORDER BY a.fecha, a.horaInicio
     """)
@@ -190,26 +230,33 @@ def migrate_agendas(mysql_conn, dynamodb_table):
         agenda_id = str(uuid.uuid4())
         item = {
             'PK': f"AGENDA#{agenda_id}",
-            'SK': str(agenda['fecha']),
+            'SK': f"{agenda['fecha']}#{agenda['horaInicio']}",
             'GSI1PK': f"BOX#{agenda['idBox']}",
-            'GSI1SK': str(agenda['fecha']),
+            'GSI1SK': f"{agenda['fecha']}#{agenda['horaInicio']}",
             'tipo': 'agenda',
-            'agendaId': agenda_id,
-            'originalId': agenda['idAgenda'],
+            # IDs y datos principales usando nombres MySQL
+            'idAgenda': agenda_id,
+            'originalId': agenda['idAgenda'],  # ID original de MySQL para referencia
             'fecha': str(agenda['fecha']),
             'horaInicio': str(agenda['horaInicio']),
             'horaFin': str(agenda['horaFin']),
-            'boxId': agenda['idBox'],
-            'profesionalId': agenda.get('idProfesional'),
-            'profesional': agenda.get('profesional_nombre', ''),
-            'tipoAgendaId': agenda.get('idTipoAgenda'),
-            'tipoAgenda': agenda.get('tipoAgenda', ''),
-            'createdAt': datetime.now().isoformat()
+            'idBox': agenda['idBox'],
+            'idProfesional': agenda.get('idProfesional'),
+            'idTipoAgenda': agenda.get('idTipoAgenda'),
+            # Datos desnormalizados para consultas rápidas
+            'profesional': agenda.get('profesional_nombre', 'No especificado'),
+            'especialidad': agenda.get('especialidad_nombre', 'No especificada'),
+            'tipoAgenda': agenda.get('tipoAgenda', 'No especificado'),
+            'observaciones': agenda.get('observaciones', '') or '',
+            # Metadatos
+            'createdAt': datetime.now().isoformat(),
+            'updatedAt': datetime.now().isoformat()
         }
         
         dynamodb_table.put_item(Item=item)
         count += 1
-        print(f"  ✅ Agenda {agenda['fecha']} {agenda['horaInicio']}-{agenda['horaFin']} Box:{agenda['idBox']}")
+        profesional = agenda.get('profesional_nombre', 'Sin profesional')
+        print(f"  ✅ Agenda {agenda['fecha']} {agenda['horaInicio']}-{agenda['horaFin']} Box:{agenda['idBox']} - {profesional}")
     
     cursor.close()
     print(f"📅 {count} agendas migradas")
@@ -238,6 +285,7 @@ def run_migration():
         results['boxes'] = migrate_boxes(mysql_conn, table)  
         results['especialidades'] = migrate_especialidades(mysql_conn, table)
         results['profesionales'] = migrate_profesionales(mysql_conn, table)
+        results['tipos_agenda'] = migrate_tipos_agenda(mysql_conn, table)
         results['agendas'] = migrate_agendas(mysql_conn, table)
         
         # Cerrar conexión MySQL
