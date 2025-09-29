@@ -307,7 +307,7 @@ def run_migration():
             
         print(f"\n✅ Total de registros migrados: {total}")
         print("\n🔗 Puedes verificar en:")
-        print("https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api/boxes")
+        print("https://hrpik4srp3.execute-api.us-east-1.amazonaws.com/dev/api/boxes")
         
     except mysql.connector.Error as e:
         print(f"❌ Error MySQL: {e}")

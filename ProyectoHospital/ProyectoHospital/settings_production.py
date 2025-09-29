@@ -28,7 +28,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '*']  # Añadido para desarrollo
 
 # API SERVERLESS CONFIGURATION
-SERVERLESS_API_URL = 'https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api'
+SERVERLESS_API_URL = 'https://hrpik4srp3.execute-api.us-east-1.amazonaws.com/dev/api'
 
 
 # Application definition
