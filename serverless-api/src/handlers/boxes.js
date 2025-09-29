@@ -7,6 +7,22 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 
 const TABLE_NAME = process.env.DYNAMODB_TABLE || 'HospitalData';
 
+
+
+const cognito = new AWS.CognitoIdentityServiceProvider({
+  region: process.env.COGNITO_REGION
+});
+
+async function checkUserGroup(username) {
+  const params = {
+    UserPoolId: process.env.COGNITO_USER_POOL_ID,
+    Username: username
+  };
+  const groups = await cognito.adminListGroupsForUser(params).promise();
+  return groups.Groups.map(g => g.GroupName);
+}
+
+
 /**
  * Obtener boxes filtrados por pasillo con información completa
  */
