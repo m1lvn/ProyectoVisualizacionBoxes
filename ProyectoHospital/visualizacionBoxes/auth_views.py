@@ -45,15 +45,50 @@ def login_view(request):
                 
                 # Verificar que la respuesta sea exitosa
                 if data.get('ok', False):
+                    # Obtener tokens
+                    id_token = data.get('idToken')
+                    access_token = data.get('accessToken')
+                    refresh_token = data.get('refreshToken')
+                    expires_in = data.get('expiresIn')
+                    
                     # Guardar los tokens en la sesión
-                    request.session['jwt_token'] = data.get('idToken')
-                    request.session['access_token'] = data.get('accessToken')
-                    request.session['refresh_token'] = data.get('refreshToken')
-                    request.session['expires_in'] = data.get('expiresIn')
+                    request.session['jwt_token'] = id_token
+                    request.session['access_token'] = access_token
+                    request.session['refresh_token'] = refresh_token
+                    request.session['expires_in'] = expires_in
                     request.session['user_email'] = email
                     
-                    # TODO: Decodificar el JWT para obtener información del usuario
-                    # Por ahora guardamos el email
+                    # Decodificar JWT para obtener información del usuario
+                    try:
+                        import base64
+                        import json
+                        
+                        # Decodificar el payload del JWT (sin verificación de firma por simplicidad)
+                        payload = id_token.split('.')[1]
+                        # Agregar padding si es necesario
+                        payload += '=' * (4 - len(payload) % 4)
+                        decoded = base64.urlsafe_b64decode(payload)
+                        jwt_data = json.loads(decoded.decode('utf-8'))
+                        
+                        print(f"DEBUG - JWT Data: {jwt_data}")
+                        
+                        # Extraer grupos de Cognito
+                        cognito_groups = jwt_data.get('cognito:groups', [])
+                        if isinstance(cognito_groups, str):
+                            # Si viene como string, convertir a lista
+                            cognito_groups = [cognito_groups]
+                        
+                        # Guardar grupos en la sesión
+                        request.session['user_groups'] = cognito_groups
+                        request.session['user_hospital_id'] = jwt_data.get('custom:hospital_id', 'HOSPITAL_001')
+                        request.session['user_pasillo_asignado'] = jwt_data.get('custom:pasillo_asignado')
+                        
+                        print(f"DEBUG - User Groups: {cognito_groups}")
+                        print(f"DEBUG - Hospital ID: {jwt_data.get('custom:hospital_id')}")
+                        
+                    except Exception as e:
+                        print(f"ERROR decodificando JWT: {e}")
+                        request.session['user_groups'] = []
                     
                     messages.success(request, f'Bienvenido {email}')
                     return redirect('visualizacionBoxes:visualizacion_general')

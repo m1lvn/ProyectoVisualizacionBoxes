@@ -476,16 +476,26 @@ def reportes(request):
     """
     Vista de reportes usando API - Solo para Admins y Personal Administrativo
     """
+    print("=== DEBUG REPORTES ===")
+    print(f"JWT Token: {bool(request.session.get('jwt_token'))}")
+    print(f"User Groups: {request.session.get('user_groups', [])}")
+    print(f"User Email: {request.session.get('user_email')}")
+    
     # Verificar permisos JWT
     if not request.session.get('jwt_token'):
+        print("ERROR: No JWT token found")
         messages.error(request, 'Acceso no autorizado. Debe iniciar sesión.')
         return redirect('auth:login')
     
     user_groups = request.session.get('user_groups', [])
+    print(f"Checking permissions for groups: {user_groups}")
+    
     if 'Admin' not in user_groups and 'PersonalAdministrativo' not in user_groups:
+        print("ERROR: User does not have required permissions")
         messages.error(request, 'No tiene permisos para acceder a los reportes.')
         return redirect('visualizacionBoxes:visualizacion_general')
     
+    print("SUCCESS: User has access to reports")
     fecha_inicio = request.GET.get('fecha_inicio', datetime.now().strftime('%Y-%m-%d'))
     fecha_fin = request.GET.get('fecha_fin', datetime.now().strftime('%Y-%m-%d'))
     
