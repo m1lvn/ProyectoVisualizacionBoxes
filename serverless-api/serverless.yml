@@ -109,17 +109,6 @@ functions:
           authorizer:
             name: cognitoJwt
 
-  # Migrar datos desde MySQL (solo Admin)
-  migrateData:
-    handler: src/handlers/migrate.migrateFromMySQL
-    timeout: 30
-    events:
-      - httpApi:
-          path: /api/migrate
-          method: post
-          authorizer:
-            name: cognitoJwt
-
   # Listar clientes (solo Admin)
   listClients:
     handler: src/handlers/personalization.listClients
