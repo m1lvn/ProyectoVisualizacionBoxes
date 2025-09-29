@@ -16,7 +16,9 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '*']
 
 # API SERVERLESS CONFIGURATION
-SERVERLESS_API_URL = 'https://s9egobx2tl.execute-api.us-east-1.amazonaws.com/dev/api'
+# Serverless API Configuration
+SERVERLESS_API_URL = 'https://r8qjc8hqrl.execute-api.us-east-1.amazonaws.com/dev/api'
+SERVERLESS_AUTH_URL = 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com'
 
 # Application definition
 INSTALLED_APPS = [
