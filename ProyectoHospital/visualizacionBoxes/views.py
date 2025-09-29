@@ -14,7 +14,7 @@ import requests
 from django.conf import settings
 
 # API Configuration
-API_BASE_URL = getattr(settings, 'SERVERLESS_API_URL', 'https://NEW_URL_TO_REPLACE/dev/api')
+API_BASE_URL = getattr(settings, 'SERVERLESS_API_URL', 'https://55omss5p3c.execute-api.us-east-1.amazonaws.com/dev/api')
 
 # Paginación
 BOXES_POR_PAGINA = 40

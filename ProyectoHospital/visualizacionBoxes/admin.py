@@ -90,6 +90,6 @@ admin.site.index_title = "Administración del Sistema"
 # URLS API PARA GESTIÓN DE DATOS
 # ===============================
 
-# Boxes: https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api/boxes
-# Pasillos: https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api/pasillos
-# Agendas: https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api/agendas
+# Boxes: https://55omss5p3c.execute-api.us-east-1.amazonaws.com/dev/api/boxes
+# Pasillos: https://55omss5p3c.execute-api.us-east-1.amazonaws.com/dev/api/pasillos
+# Agendas: https://55omss5p3c.execute-api.us-east-1.amazonaws.com/dev/api/agendas
