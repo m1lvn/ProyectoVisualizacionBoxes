@@ -159,7 +159,7 @@ resources:
         GenerateSecret: false
         ExplicitAuthFlows:
           - ADMIN_NO_SRP_AUTH
-          - USER_SRP_AUTH
+          - ALLOW_USER_SRP_AUTH
           - ALLOW_REFRESH_TOKEN_AUTH
         PreventUserExistenceErrors: ENABLED
         TokenValidityUnits:
