@@ -186,6 +186,85 @@ module.exports.createAgenda = async (event) => {
       };
     }
 
+    // Verificar si el box existe, si no, crearlo
+    const boxParams = {
+      TableName: TABLE_NAME,
+      FilterExpression: '#tipo = :tipo AND #idBox = :idBox',
+      ExpressionAttributeNames: { 
+        '#tipo': 'tipo',
+        '#idBox': 'idBox'
+      },
+      ExpressionAttributeValues: { 
+        ':tipo': 'box',
+        ':idBox': parseInt(idBox)
+      }
+    };
+
+    const existingBoxes = await dynamodb.scan(boxParams).promise();
+    
+    // Si el box no existe, crearlo automáticamente
+    if (existingBoxes.Items.length === 0) {
+      const pasilloId = Math.ceil(parseInt(idBox) / 10); // Ej: Box 1-10 -> Pasillo 1
+      const pasilloNombre = `Pasillo ${String.fromCharCode(64 + pasilloId)}`; // A, B, C, etc.
+      
+      const newBox = {
+        PK: `BOX#${idBox}`,
+        SK: `BOX#${idBox}`,
+        GSI1PK: `PASILLO#${pasilloId}`,
+        GSI1SK: `BOX#${idBox}`,
+        tipo: 'box',
+        // Campos MySQL
+        idBox: parseInt(idBox),
+        idPasillo: pasilloId,
+        pasillo: pasilloNombre,
+        capacidad: 4, // Capacidad por defecto
+        disponible: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+
+      // Verificar si el pasillo existe, si no, crearlo también
+      const pasilloParams = {
+        TableName: TABLE_NAME,
+        FilterExpression: '#tipo = :tipo AND #idPasillo = :idPasillo',
+        ExpressionAttributeNames: { 
+          '#tipo': 'tipo',
+          '#idPasillo': 'idPasillo'
+        },
+        ExpressionAttributeValues: { 
+          ':tipo': 'pasillo',
+          ':idPasillo': pasilloId
+        }
+      };
+
+      const existingPasillos = await dynamodb.scan(pasilloParams).promise();
+      
+      if (existingPasillos.Items.length === 0) {
+        const newPasillo = {
+          PK: `PASILLO#${pasilloId}`,
+          SK: `PASILLO#${pasilloId}`,
+          tipo: 'pasillo',
+          // Campos MySQL
+          idPasillo: pasilloId,
+          pasillo: pasilloNombre,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        await dynamodb.put({
+          TableName: TABLE_NAME,
+          Item: newPasillo
+        }).promise();
+      }
+
+      await dynamodb.put({
+        TableName: TABLE_NAME,
+        Item: newBox
+      }).promise();
+
+      console.log(`Box ${idBox} creado automáticamente en ${pasilloNombre}`);
+    }
+
     // Crear nueva agenda con nombres MySQL
     const agendaId = uuidv4();
     const newAgenda = {
