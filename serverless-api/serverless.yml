@@ -68,47 +68,52 @@ functions:
   getBoxes:
     handler: src/handlers/boxes.getBoxes
     events:
-      - http:
+      - httpApi:
           path: /api/boxes
           method: get
-          cors: true
+          authorizer:
+            name: cognitoJwt
   
   # Obtener agendas
   getAgendas:
     handler: src/handlers/agendas.getAgendas
     events:
-      - http:
+      - httpApi:
           path: /api/agendas
           method: get
-          cors: true
+          authorizer:
+            name: cognitoJwt
           
   # Crear agenda
   createAgenda:
     handler: src/handlers/agendas.createAgenda
     events:
-      - http:
+      - httpApi:
           path: /api/agendas
           method: post
-          cors: true
+          authorizer:
+            name: cognitoJwt
 
   # Obtener pasillos
   getPasillos:
     handler: src/handlers/pasillos.getPasillos
     events:
-      - http:
+      - httpApi:
           path: /api/pasillos
           method: get
-          cors: true
+          authorizer:
+            name: cognitoJwt
 
-  # Migrar datos desde MySQL
+  # Migrar datos desde MySQL (solo Admin)
   migrateData:
     handler: src/handlers/migrate.migrateFromMySQL
     timeout: 300
     events:
-      - http:
+      - httpApi:
           path: /api/migrate
           method: post
-          cors: true
+          authorizer:
+            name: cognitoJwt
 
 resources:
   Resources:

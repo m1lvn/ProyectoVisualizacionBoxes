@@ -1,4 +1,11 @@
 const AWS = require('aws-sdk');
+const {
+  extractUserFromEvent,
+  filterBoxesByPermissions,
+  createResponse,
+  createUnauthorizedResponse,
+  createUnauthenticatedResponse
+} = require('../utils/auth');
 
 // Configurar DynamoDB
 const dynamodb = new AWS.DynamoDB.DocumentClient({
@@ -9,9 +16,21 @@ const TABLE_NAME = process.env.DYNAMODB_TABLE || 'HospitalData';
 
 /**
  * Obtener boxes filtrados por pasillo con información completa
+ * Implementa control de acceso basado en roles
  */
 module.exports.getBoxes = async (event) => {
   try {
+    // Extraer información del usuario autenticado
+    let user;
+    try {
+      user = extractUserFromEvent(event);
+    } catch (authError) {
+      console.error('Authentication error:', authError);
+      return createUnauthenticatedResponse();
+    }
+
+    console.log('User accessing boxes:', user);
+
     const { pasillo, disponible } = event.queryStringParameters || {};
     
     // Obtener boxes
@@ -65,7 +84,7 @@ module.exports.getBoxes = async (event) => {
     });
     
     // Mapear solo campos MySQL puros
-    const mappedItems = resultBoxes.Items.map(item => ({
+    let mappedItems = resultBoxes.Items.map(item => ({
       // Campos MySQL principales
       idBox: item.idBox,
       idPasillo: item.idPasillo,
@@ -76,35 +95,28 @@ module.exports.getBoxes = async (event) => {
       updatedAt: item.updatedAt
     }));
     
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-        'Content-Type': 'application/json'
+    // Filtrar boxes basado en permisos del usuario
+    mappedItems = filterBoxesByPermissions(mappedItems, user);
+    
+    return createResponse(200, {
+      success: true,
+      data: mappedItems,
+      count: mappedItems.length,
+      userPermissions: {
+        userId: user.userId,
+        groups: user.groups,
+        pasilloAsignado: user.pasilloAsignado
       },
-      body: JSON.stringify({
-        success: true,
-        data: mappedItems,
-        count: resultBoxes.Count,
-        timestamp: new Date().toISOString()
-      }),
-    };
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     console.error('Error en getBoxes:', error);
     
-    return {
-      statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message,
-        timestamp: new Date().toISOString()
-      }),
-    };
+    return createResponse(500, {
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 };
 

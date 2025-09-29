@@ -1,4 +1,10 @@
 const AWS = require('aws-sdk');
+const {
+  extractUserFromEvent,
+  filterPasillosByPermissions,
+  createResponse,
+  createUnauthenticatedResponse
+} = require('../utils/auth');
 
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   region: process.env.AWS_DEFAULT_REGION || 'us-east-1'
@@ -7,10 +13,20 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 const TABLE_NAME = process.env.DYNAMODB_TABLE || 'HospitalData';
 
 /**
- * Obtener todos los pasillos
+ * Obtener pasillos con control de acceso basado en roles
  */
 module.exports.getPasillos = async (event) => {
   try {
+    // Extraer información del usuario autenticado
+    let user;
+    try {
+      user = extractUserFromEvent(event);
+    } catch (authError) {
+      console.error('Authentication error:', authError);
+      return createUnauthenticatedResponse();
+    }
+
+    console.log('User accessing pasillos:', user);
     const params = {
       TableName: TABLE_NAME,
       FilterExpression: '#tipo = :tipo',
@@ -30,7 +46,7 @@ module.exports.getPasillos = async (event) => {
     );
 
     // Mapear solo campos MySQL puros
-    const mappedPasillos = sortedPasillos.map(item => ({
+    let mappedPasillos = sortedPasillos.map(item => ({
       // Campos MySQL principales
       idPasillo: item.idPasillo,
       pasillo: item.pasillo,
@@ -38,35 +54,28 @@ module.exports.getPasillos = async (event) => {
       updatedAt: item.updatedAt
     }));
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-        'Content-Type': 'application/json'
+    // Filtrar pasillos basado en permisos del usuario
+    mappedPasillos = filterPasillosByPermissions(mappedPasillos, user);
+
+    return createResponse(200, {
+      success: true,
+      data: mappedPasillos,
+      count: mappedPasillos.length,
+      userPermissions: {
+        userId: user.userId,
+        groups: user.groups,
+        pasilloAsignado: user.pasilloAsignado
       },
-      body: JSON.stringify({
-        success: true,
-        data: mappedPasillos,
-        count: result.Count,
-        timestamp: new Date().toISOString()
-      }),
-    };
+      timestamp: new Date().toISOString()
+    });
   } catch (error) {
     console.error('Error en getPasillos:', error);
     
-    return {
-      statusCode: 500,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        success: false,
-        error: error.message,
-        timestamp: new Date().toISOString()
-      }),
-    };
+    return createResponse(500, {
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
   }
 };
 
