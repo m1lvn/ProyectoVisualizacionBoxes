@@ -190,13 +190,19 @@ serverless deploy --stage dev
 
 # Esto creará:
 # ✅ API Gateway con endpoints
-# ✅ Cognito User Pool + grupos
+# ✅ Cognito User Pool + grupos (Admin, Personal, PersonalAdministrativo)
 # ✅ DynamoDB table
 # ✅ 13 Lambda functions
 # ✅ 4 SNS topics + handlers
 # ✅ CloudWatch logs
+# ✅ Usuarios de prueba automáticos
 
 # ⏱️ Tiempo estimado: 5-10 minutos
+
+# IMPORTANTE: Los usuarios de prueba se crean automáticamente:
+# • admin@hospital.com / Admin123! (Admin)
+# • medico1@hospital.com / Medico123! (Personal - Pasillo 1)
+# • admin.staff@hospital.com / Staff123! (PersonalAdministrativo)
 ```
 
 #### **4.2 Obtener URLs de Despliegue**
@@ -205,9 +211,30 @@ serverless deploy --stage dev
 # Obtener información del despliegue
 serverless info --stage dev
 
-# Copiar las URLs que aparecen:
-# - https://XXXXXXXXXX.execute-api.us-east-1.amazonaws.com
-# Esta será tu API_URL
+# Copiar las URLs que aparecen (ejemplo):
+# - https://44wvhl6j05.execute-api.us-east-1.amazonaws.com
+# Esta será tu API_URL (REEMPLAZA con tu URL real)
+```
+
+#### **4.3 Poblar Base de Datos con Datos de Prueba**
+
+```bash
+# Ejecutar comandos para crear pasillos y boxes de prueba
+# IMPORTANTE: Ejecutar desde directorio donde está configurado AWS CLI
+
+# Crear 4 pasillos
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "PASILLO#1"}, "SK": {"S": "PASILLO#1"}, "GSI1PK": {"S": "TIPO#pasillo"}, "GSI1SK": {"S": "PASILLO#1"}, "tipo": {"S": "pasillo"}, "idPasillo": {"N": "1"}, "pasillo": {"S": "Urgencias"}, "especialidad": {"S": "Medicina de Urgencia"}, "capacidadTotal": {"N": "6"}, "activo": {"BOOL": true}}'
+
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "PASILLO#2"}, "SK": {"S": "PASILLO#2"}, "GSI1PK": {"S": "TIPO#pasillo"}, "GSI1SK": {"S": "PASILLO#2"}, "tipo": {"S": "pasillo"}, "idPasillo": {"N": "2"}, "pasillo": {"S": "Cardiología"}, "especialidad": {"S": "Cardiología Intervencionista"}, "capacidadTotal": {"N": "5"}, "activo": {"BOOL": true}}'
+
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "PASILLO#3"}, "SK": {"S": "PASILLO#3"}, "GSI1PK": {"S": "TIPO#pasillo"}, "GSI1SK": {"S": "PASILLO#3"}, "tipo": {"S": "pasillo"}, "idPasillo": {"N": "3"}, "pasillo": {"S": "Pediatría"}, "especialidad": {"S": "Pediatría General"}, "capacidadTotal": {"N": "4"}, "activo": {"BOOL": true}}'
+
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "PASILLO#4"}, "SK": {"S": "PASILLO#4"}, "GSI1PK": {"S": "TIPO#pasillo"}, "GSI1SK": {"S": "PASILLO#4"}, "tipo": {"S": "pasillo"}, "idPasillo": {"N": "4"}, "pasillo": {"S": "Cirugía General"}, "especialidad": {"S": "Cirugía General"}, "capacidadTotal": {"N": "5"}, "activo": {"BOOL": true}}'
+
+# Crear 20 boxes de ejemplo (solo algunos mostrados, ver documentación completa)
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#1"}, "SK": {"S": "BOX#1"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#1#BOX#1"}, "tipo": {"S": "box"}, "idBox": {"N": "1"}, "idPasillo": {"N": "1"}, "pasillo": {"S": "Urgencias"}, "capacidad": {"N": "2"}, "disponible": {"BOOL": true}, "equipamiento": {"S": "Monitor, Desfibrilador"}}'
+
+# ... (continuar con el resto de boxes según documentación en la issue)
 ```
 
 ### **PASO 5: Configurar URLs en Django**
@@ -222,10 +249,12 @@ nano settings.py  # o usar tu editor preferido
 # Actualizar las siguientes líneas con tu URL del paso 4.2:
 SERVERLESS_API_URL = 'https://TU_API_ID.execute-api.us-east-1.amazonaws.com/api'
 SERVERLESS_AUTH_URL = 'https://TU_API_ID.execute-api.us-east-1.amazonaws.com'
+SERVERLESS_API_BASE_URL = 'https://TU_API_ID.execute-api.us-east-1.amazonaws.com'
 
-# Ejemplo:
-SERVERLESS_API_URL = 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com/api'
-SERVERLESS_AUTH_URL = 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com'
+# Ejemplo con URL real:
+SERVERLESS_API_URL = 'https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/api'
+SERVERLESS_AUTH_URL = 'https://44wvhl6j05.execute-api.us-east-1.amazonaws.com'
+SERVERLESS_API_BASE_URL = 'https://44wvhl6j05.execute-api.us-east-1.amazonaws.com'
 ```
 
 #### **5.2 Configurar Base de Datos Local**
@@ -234,41 +263,26 @@ SERVERLESS_AUTH_URL = 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com'
 # Crear base de datos SQLite local (solo para autenticación Django)
 python manage.py migrate
 
-# Crear superusuario
+# Crear superusuario (opcional - ya tienes usuarios Cognito)
 python manage.py createsuperuser
-# Email: admin@hospital.com
+# Email: tu-email@hospital.com
 # Password: (crear una contraseña segura)
 ```
 
-### **PASO 6: Crear Usuarios en Cognito**
+### **PASO 6: Verificar Usuarios de Prueba Cognito**
 
-#### **6.1 Crear Usuario Admin**
-
-```bash
-# Ir al directorio serverless
-cd serverless-api
-
-# Ejecutar comando de creación de usuario
-serverless invoke -f createUser --stage dev --data '{
-  "email": "admin@hospital.com",
-  "password": "TuPasswordSeguro123!",
-  "group": "Admin",
-  "hospitalId": "HOSPITAL_001",
-  "firstName": "Admin",
-  "lastName": "Hospital"
-}'
-```
-
-#### **6.2 Migrar Datos (Opcional)**
+Los usuarios de prueba se crean automáticamente durante el deploy. Puedes verificarlos:
 
 ```bash
-# Si tienes datos existentes, ejecutar migración
-serverless invoke -f migrateData --stage dev
+# Probar login con usuario Admin
+curl -X POST https://TU_API_ID.execute-api.us-east-1.amazonaws.com/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin@hospital.com", "password": "Admin123!"}'
 
-# Esto migrará:
-# ✅ Boxes existentes
-# ✅ Pasillos
-# ✅ Agendas de muestra
+# Usuarios disponibles:
+# • admin@hospital.com / Admin123! (Admin - Acceso completo)
+# • medico1@hospital.com / Medico123! (Personal - Solo Pasillo 1)  
+# • admin.staff@hospital.com / Staff123! (PersonalAdministrativo)
 ```
 
 ### **PASO 7: Iniciar el Sistema**
@@ -295,9 +309,21 @@ python manage.py runserver 0.0.0.0:8000
 
 ```bash
 # Abrir navegador en: http://localhost:8000
-# Hacer login con las credenciales creadas en el paso 6.1:
+# Hacer login con las credenciales automáticas:
+
+# Usuario Admin:
 # Email: admin@hospital.com  
-# Password: TuPasswordSeguro123!
+# Password: Admin123!
+
+# Usuario Personal (Médico):
+# Email: medico1@hospital.com
+# Password: Medico123!
+
+# Usuario Personal Administrativo:
+# Email: admin.staff@hospital.com
+# Password: Staff123!
+
+# Nota: Los usuarios se crean automáticamente en Cognito durante el deploy
 ```
 
 ---
@@ -308,10 +334,82 @@ python manage.py runserver 0.0.0.0:8000
 
 ```bash
 # Verificar que las APIs respondan correctamente
-curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-     https://TU_API_ID.execute-api.us-east-1.amazonaws.com/api/boxes
+curl https://TU_API_ID.execute-api.us-east-1.amazonaws.com/api/pasillos
 
 # Debe retornar: {"success": true, "data": [...]}
+
+# Ejemplo con URL real:
+curl https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/api/pasillos
+```
+
+### **Test 2: Verificar Login y JWT**
+
+```bash
+# Hacer login para obtener JWT token
+curl -X POST https://TU_API_ID.execute-api.us-east-1.amazonaws.com/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin@hospital.com", "password": "Admin123!"}'
+
+# Copiar el "access_token" del response y usarlo para llamadas autenticadas:
+curl -H "Authorization: Bearer TU_JWT_TOKEN" \
+     https://TU_API_ID.execute-api.us-east-1.amazonaws.com/api/boxes
+```
+
+### **Test 3: Script Completo para Poblar Base de Datos**
+
+Si no ejecutaste los comandos individuales del paso 4.3, aquí tienes un script completo:
+
+```bash
+# Crear archivo script
+cat > populate_database.sh << 'EOF'
+#!/bin/bash
+
+# Crear 4 pasillos
+echo "Creando pasillos..."
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "PASILLO#1"}, "SK": {"S": "PASILLO#1"}, "GSI1PK": {"S": "TIPO#pasillo"}, "GSI1SK": {"S": "PASILLO#1"}, "tipo": {"S": "pasillo"}, "idPasillo": {"N": "1"}, "pasillo": {"S": "Urgencias"}, "especialidad": {"S": "Medicina de Urgencia"}, "capacidadTotal": {"N": "6"}, "activo": {"BOOL": true}}'
+
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "PASILLO#2"}, "SK": {"S": "PASILLO#2"}, "GSI1PK": {"S": "TIPO#pasillo"}, "GSI1SK": {"S": "PASILLO#2"}, "tipo": {"S": "pasillo"}, "idPasillo": {"N": "2"}, "pasillo": {"S": "Cardiología"}, "especialidad": {"S": "Cardiología Intervencionista"}, "capacidadTotal": {"N": "5"}, "activo": {"BOOL": true}}'
+
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "PASILLO#3"}, "SK": {"S": "PASILLO#3"}, "GSI1PK": {"S": "TIPO#pasillo"}, "GSI1SK": {"S": "PASILLO#3"}, "tipo": {"S": "pasillo"}, "idPasillo": {"N": "3"}, "pasillo": {"S": "Pediatría"}, "especialidad": {"S": "Pediatría General"}, "capacidadTotal": {"N": "4"}, "activo": {"BOOL": true}}'
+
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "PASILLO#4"}, "SK": {"S": "PASILLO#4"}, "GSI1PK": {"S": "TIPO#pasillo"}, "GSI1SK": {"S": "PASILLO#4"}, "tipo": {"S": "pasillo"}, "idPasillo": {"N": "4"}, "pasillo": {"S": "Cirugía General"}, "especialidad": {"S": "Cirugía General"}, "capacidadTotal": {"N": "5"}, "activo": {"BOOL": true}}'
+
+echo "Creando 20 boxes..."
+# Boxes Urgencias (6)
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#1"}, "SK": {"S": "BOX#1"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#1#BOX#1"}, "tipo": {"S": "box"}, "idBox": {"N": "1"}, "idPasillo": {"N": "1"}, "pasillo": {"S": "Urgencias"}, "capacidad": {"N": "2"}, "disponible": {"BOOL": true}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#2"}, "SK": {"S": "BOX#2"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#1#BOX#2"}, "tipo": {"S": "box"}, "idBox": {"N": "2"}, "idPasillo": {"N": "1"}, "pasillo": {"S": "Urgencias"}, "capacidad": {"N": "1"}, "disponible": {"BOOL": false}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#3"}, "SK": {"S": "BOX#3"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#1#BOX#3"}, "tipo": {"S": "box"}, "idBox": {"N": "3"}, "idPasillo": {"N": "1"}, "pasillo": {"S": "Urgencias"}, "capacidad": {"N": "2"}, "disponible": {"BOOL": true}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#4"}, "SK": {"S": "BOX#4"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#1#BOX#4"}, "tipo": {"S": "box"}, "idBox": {"N": "4"}, "idPasillo": {"N": "1"}, "pasillo": {"S": "Urgencias"}, "capacidad": {"N": "1"}, "disponible": {"BOOL": false}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#5"}, "SK": {"S": "BOX#5"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#1#BOX#5"}, "tipo": {"S": "box"}, "idBox": {"N": "5"}, "idPasillo": {"N": "1"}, "pasillo": {"S": "Urgencias"}, "capacidad": {"N": "2"}, "disponible": {"BOOL": true}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#6"}, "SK": {"S": "BOX#6"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#1#BOX#6"}, "tipo": {"S": "box"}, "idBox": {"N": "6"}, "idPasillo": {"N": "1"}, "pasillo": {"S": "Urgencias"}, "capacidad": {"N": "3"}, "disponible": {"BOOL": true}}'
+
+# Boxes Cardiología (5)
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#7"}, "SK": {"S": "BOX#7"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#2#BOX#7"}, "tipo": {"S": "box"}, "idBox": {"N": "7"}, "idPasillo": {"N": "2"}, "pasillo": {"S": "Cardiología"}, "capacidad": {"N": "1"}, "disponible": {"BOOL": false}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#8"}, "SK": {"S": "BOX#8"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#2#BOX#8"}, "tipo": {"S": "box"}, "idBox": {"N": "8"}, "idPasillo": {"N": "2"}, "pasillo": {"S": "Cardiología"}, "capacidad": {"N": "1"}, "disponible": {"BOOL": true}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#9"}, "SK": {"S": "BOX#9"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#2#BOX#9"}, "tipo": {"S": "box"}, "idBox": {"N": "9"}, "idPasillo": {"N": "2"}, "pasillo": {"S": "Cardiología"}, "capacidad": {"N": "2"}, "disponible": {"BOOL": false}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#10"}, "SK": {"S": "BOX#10"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#2#BOX#10"}, "tipo": {"S": "box"}, "idBox": {"N": "10"}, "idPasillo": {"N": "2"}, "pasillo": {"S": "Cardiología"}, "capacidad": {"N": "1"}, "disponible": {"BOOL": true}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#11"}, "SK": {"S": "BOX#11"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#2#BOX#11"}, "tipo": {"S": "box"}, "idBox": {"N": "11"}, "idPasillo": {"N": "2"}, "pasillo": {"S": "Cardiología"}, "capacidad": {"N": "2"}, "disponible": {"BOOL": true}}'
+
+# Boxes Pediatría (4)  
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#12"}, "SK": {"S": "BOX#12"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#3#BOX#12"}, "tipo": {"S": "box"}, "idBox": {"N": "12"}, "idPasillo": {"N": "3"}, "pasillo": {"S": "Pediatría"}, "capacidad": {"N": "2"}, "disponible": {"BOOL": true}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#13"}, "SK": {"S": "BOX#13"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#3#BOX#13"}, "tipo": {"S": "box"}, "idBox": {"N": "13"}, "idPasillo": {"N": "3"}, "pasillo": {"S": "Pediatría"}, "capacidad": {"N": "1"}, "disponible": {"BOOL": false}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#14"}, "SK": {"S": "BOX#14"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#3#BOX#14"}, "tipo": {"S": "box"}, "idBox": {"N": "14"}, "idPasillo": {"N": "3"}, "pasillo": {"S": "Pediatría"}, "capacidad": {"N": "3"}, "disponible": {"BOOL": true}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#15"}, "SK": {"S": "BOX#15"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#3#BOX#15"}, "tipo": {"S": "box"}, "idBox": {"N": "15"}, "idPasillo": {"N": "3"}, "pasillo": {"S": "Pediatría"}, "capacidad": {"N": "2"}, "disponible": {"BOOL": true}}'
+
+# Boxes Cirugía (5)
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#16"}, "SK": {"S": "BOX#16"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#4#BOX#16"}, "tipo": {"S": "box"}, "idBox": {"N": "16"}, "idPasillo": {"N": "4"}, "pasillo": {"S": "Cirugía General"}, "capacidad": {"N": "1"}, "disponible": {"BOOL": false}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#17"}, "SK": {"S": "BOX#17"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#4#BOX#17"}, "tipo": {"S": "box"}, "idBox": {"N": "17"}, "idPasillo": {"N": "4"}, "pasillo": {"S": "Cirugía General"}, "capacidad": {"N": "1"}, "disponible": {"BOOL": true}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#18"}, "SK": {"S": "BOX#18"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#4#BOX#18"}, "tipo": {"S": "box"}, "idBox": {"N": "18"}, "idPasillo": {"N": "4"}, "pasillo": {"S": "Cirugía General"}, "capacidad": {"N": "2"}, "disponible": {"BOOL": false}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#19"}, "SK": {"S": "BOX#19"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#4#BOX#19"}, "tipo": {"S": "box"}, "idBox": {"N": "19"}, "idPasillo": {"N": "4"}, "pasillo": {"S": "Cirugía General"}, "capacidad": {"N": "1"}, "disponible": {"BOOL": true}}'
+aws dynamodb put-item --table-name HospitalData --item '{"PK": {"S": "BOX#20"}, "SK": {"S": "BOX#20"}, "GSI1PK": {"S": "TIPO#box"}, "GSI1SK": {"S": "PASILLO#4#BOX#20"}, "tipo": {"S": "box"}, "idBox": {"N": "20"}, "idPasillo": {"N": "4"}, "pasillo": {"S": "Cirugía General"}, "capacidad": {"N": "1"}, "disponible": {"BOOL": true}}'
+
+echo "✅ Base de datos poblada exitosamente!"
+echo "📊 Creados: 4 pasillos y 20 boxes"
+EOF
+
+# Ejecutar script
+chmod +x populate_database.sh
+./populate_database.sh
 ```
 
 ### **Test 2: Verificar Eventos SNS**

@@ -76,6 +76,38 @@ def post_api_data(endpoint, data):
         return False, None
 
 
+def get_pasillo_id_by_name(pasillo_name, pasillos_list):
+    """
+    Helper para obtener el ID del pasillo por su nombre
+    """
+    if not pasillo_name or not pasillos_list:
+        print(f"DEBUG - get_pasillo_id_by_name: pasillo_name='{pasillo_name}', pasillos_list count={len(pasillos_list) if pasillos_list else 0}")
+        return None
+    
+    print(f"DEBUG - Buscando pasillo '{pasillo_name}' en {len(pasillos_list)} pasillos")
+    
+    # Debug: Mostrar todos los pasillos disponibles
+    for i, pasillo in enumerate(pasillos_list):
+        print(f"DEBUG - Pasillo {i}: {pasillo}")
+    
+    # Buscar el pasillo por nombre
+    for pasillo in pasillos_list:
+        pasillo_nombre = pasillo.get('nombre', '').strip()
+        if pasillo_nombre.lower() == pasillo_name.strip().lower():
+            print(f"DEBUG - Match exacto encontrado: '{pasillo_nombre}' -> ID {pasillo.get('idPasillo')}")
+            return pasillo.get('idPasillo')
+    
+    # Si no se encuentra por nombre exacto, intentar búsqueda parcial
+    for pasillo in pasillos_list:
+        pasillo_nombre = pasillo.get('nombre', '').strip()
+        if pasillo_name.strip().lower() in pasillo_nombre.lower():
+            print(f"DEBUG - Match parcial encontrado: '{pasillo_nombre}' -> ID {pasillo.get('idPasillo')}")
+            return pasillo.get('idPasillo')
+    
+    print(f"DEBUG - No se encontró pasillo con nombre '{pasillo_name}'")
+    return None
+
+
 def visualizacion_general(request):
     """
     Vista principal usando API Serverless - Sin MySQL
@@ -91,6 +123,32 @@ def visualizacion_general(request):
     codigo_box = request.GET.get('box', None)
     page = request.GET.get('page', 1)
     
+    # NUEVO: Auto-asignar pasillo para usuarios con rol Personal
+    user_groups = request.session.get('user_groups', [])
+    user_pasillo_asignado = request.session.get('user_pasillo_asignado')
+    
+    # Obtener datos de la API primero para poder resolver el ID del pasillo
+    boxes = get_api_data('boxes', request=request)
+    pasillos = get_api_data('pasillos', request=request)
+    agendas = get_api_data('agendas', {'fecha': fecha_str}, request=request)
+    
+    # Debug adicional para APIs vacías
+    print(f"DEBUG - API Response details:")
+    print(f"  - Boxes: {type(boxes)}, count: {len(boxes) if boxes else 0}")
+    print(f"  - Pasillos: {type(pasillos)}, count: {len(pasillos) if pasillos else 0}")
+    print(f"  - Agendas: {type(agendas)}, count: {len(agendas) if agendas else 0}")
+    
+    if pasillos and len(pasillos) > 0:
+        print(f"DEBUG - Primer pasillo: {pasillos[0]}")
+    
+    # Si el usuario es Personal y no se especificó un pasillo, usar su pasillo asignado
+    if 'Personal' in user_groups and not pasillo_id and user_pasillo_asignado:
+        # Convertir nombre del pasillo a ID
+        pasillo_id = get_pasillo_id_by_name(user_pasillo_asignado, pasillos)
+        print(f"DEBUG - Auto-asignando pasillo para usuario Personal en vista general: {user_pasillo_asignado} -> {pasillo_id}")
+    
+    print(f"DEBUG - User groups: {user_groups}, user pasillo: {user_pasillo_asignado}, resolved ID: {pasillo_id}")
+    
     # ===============================
     # VALIDAR Y PROCESAR FECHA
     # ===============================
@@ -102,11 +160,8 @@ def visualizacion_general(request):
     hora_actual = datetime.now().time()
     
     # ===============================
-    # OBTENER DATOS DE LA API
+    # OBTENER DATOS DE LA API - YA OBTENIDOS ARRIBA
     # ===============================
-    boxes = get_api_data('boxes', request=request)
-    pasillos = get_api_data('pasillos', request=request)
-    agendas = get_api_data('agendas', {'fecha': fecha_str}, request=request)
     
     # Debug: Verificar formato de datos
     print(f"DEBUG - Final boxes type: {type(boxes)}, count: {len(boxes) if boxes else 0}")
@@ -231,12 +286,23 @@ def visualizacion_pasillo(request):
     jornada_seleccionada = request.GET.get('jornada', '')
     page = request.GET.get('page', 1)
     
-    print(f"DEBUG - Filtros pasillo: pasillo_id={pasillo_id}, medico={nombre_medico}, box={codigo_box}, jornada={jornada_seleccionada}")
+    # NUEVO: Auto-asignar pasillo para usuarios con rol Personal
+    user_groups = request.session.get('user_groups', [])
+    user_pasillo_asignado = request.session.get('user_pasillo_asignado')
     
-    # Obtener datos de la API
+    # Obtener datos de la API primero para poder resolver el ID del pasillo
     boxes = get_api_data('boxes', request=request)
     pasillos = get_api_data('pasillos', request=request)
     agendas = get_api_data('agendas', {'fecha': fecha_str}, request=request)
+    
+    # Si el usuario es Personal y no se especificó un pasillo, usar su pasillo asignado
+    if 'Personal' in user_groups and not pasillo_id and user_pasillo_asignado:
+        # Convertir nombre del pasillo a ID
+        pasillo_id = get_pasillo_id_by_name(user_pasillo_asignado, pasillos)
+        print(f"DEBUG - Auto-asignando pasillo para usuario Personal: {user_pasillo_asignado} -> {pasillo_id}")
+    
+    print(f"DEBUG - Filtros pasillo: pasillo_id={pasillo_id}, medico={nombre_medico}, box={codigo_box}, jornada={jornada_seleccionada}")
+    print(f"DEBUG - User groups: {user_groups}, user pasillo: {user_pasillo_asignado}")
     
     # Aplicar filtros
     boxes_filtrados = boxes
