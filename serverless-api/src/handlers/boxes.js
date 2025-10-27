@@ -13,7 +13,6 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 });
 
 const TABLE_NAME = process.env.DYNAMODB_TABLE || 'HospitalData';
-
 /**
  * Obtener boxes filtrados por pasillo con información completa
  * Implementa control de acceso basado en roles

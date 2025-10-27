@@ -1,0 +1,43 @@
+{
+  "description": "Simular throttling en DynamoDB HospitalData table - Chaos Engineering Test",
+  "tags": {
+    "Project": "hospital-boxes",
+    "Environment": "dev",
+    "ChaosTest": "dynamodb-throttling"
+  },
+  "targets": {
+    "HospitalDataTable": {
+      "resourceType": "aws:dynamodb:table",
+      "resourceArns": [
+        "arn:aws:dynamodb:us-east-1:891377117593:table/HospitalData"
+      ],
+      "selectionMode": "ALL"
+    }
+  },
+  "actions": {
+    "InjectThrottling": {
+      "actionId": "aws:dynamodb:inject-throughput-exceptions",
+      "description": "Inyectar excepciones de throttling en operaciones de lectura/escritura",
+      "parameters": {
+        "duration": "PT5M",
+        "percentage": "80",
+        "operations": "GetItem,Query,Scan,PutItem,UpdateItem"
+      },
+      "targets": {
+        "Tables": "HospitalDataTable"
+      }
+    }
+  },
+  "stopConditions": [
+    {
+      "source": "none"
+    }
+  ],
+  "roleArn": "arn:aws:iam::891377117593:role/LabRole",
+  "logConfiguration": {
+    "cloudWatchLogsConfiguration": {
+      "logGroupArn": "arn:aws:logs:us-east-1:891377117593:log-group:/aws/fis/experiments:*"
+    },
+    "logSchemaVersion": 1
+  }
+}

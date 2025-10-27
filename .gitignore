@@ -83,3 +83,6 @@ __pycache__/
 # MySQL dumps (si los usas para migración)
 *.sql
 !schema.sql
+
+# Devops_aws_demo folder
+devops_aws_demo/
