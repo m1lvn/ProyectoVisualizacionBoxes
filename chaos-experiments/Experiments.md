@@ -1,53 +1,49 @@
-# 🔥 Chaos Engineering Experiments
+# 🔥 Plan de Experimentos de Chaos Engineering
 
-Experimentos de Chaos Engineering para el Sistema de Visualización de Boxes Hospitalarios.
+> **Proyecto:** Sistema de Visualización de Boxes Hospitalarios  
+> **Objetivo:** Validar resiliencia mediante simulación de fallos  
+> **Herramientas:** AWS FIS + Bash Scripts + Gremlin Free Tier  
 
-## 📁 Estructura
+---
+
+## 📋 **RESUMEN EJECUTIVO**
+
+### **Herramientas Seleccionadas:**
+
+| Herramienta | Tipo | Costo | # Experimentos | Estado |
+|-------------|------|-------|----------------|---------|
+| **Bash Scripts** | Custom scripts | $0 | 3 | 🟢 Listo |
+| **AWS FIS** | Managed service | ~$0 (Free tier) | 2 | 🟡 Por configurar |
+| **Gremlin Free** | SaaS Platform | $0 (5 ataques/mes) | 2 | 🟡 Por registrar |
+
+**TOTAL: 7 experimentos planificados con costo $0-5**
+
+---
+
+## 📁 **ESTRUCTURA DEL PROYECTO**
 
 ```
 chaos-experiments/
-├── bash-scripts/          # Scripts Bash para experimentos
-│   ├── 01-dos-attack.sh
-│   ├── 02-lambda-latency.sh
-│   └── ... (más experimentos)
-├── aws-fis/               # Templates de AWS FIS
-│   ├── dynamodb-throttling.json
-│   └── lambda-errors.json
-└── results/               # Resultados de experimentos
-    └── experiment-logs/
+├── 📄 Experiments.md                    # Este documento - Plan maestro
+├── aws-fis/
+│   ├── dynamodb-throttling.json        # ✅ Template FIS experimento #4
+│   └── lambda-error-injection.json     # 🟡 Template FIS experimento #5
+├── bash-scripts/
+│   ├── 01-dos-attack.sh                # ✅ Experimento #1
+│   ├── 02-lambda-latency.sh            # ✅ Experimento #2
+│   └── 03-sns-failure.sh               # 🟡 Experimento #3
+├── gremlin/
+│   ├── setup-guide.md                  # Guía de configuración
+│   └── experiments-config.yaml         # Configuración de experimentos
+└── results/
+    ├── experiment-01-dos-report.md     # Resultados experimento #1
+    ├── experiment-02-latency-report.md # Resultados experimento #2
+    └── ...                             # Más reportes
 ```
 
-## 🚀 Inicio Rápido
+---
 
-### Prerrequisitos
-
-```bash
-# AWS CLI configurado
-aws --version
-
-# Permisos necesarios
-aws sts get-caller-identity
-
-# Token JWT válido
-# Obtener desde: https://API/auth/login
-```
-
-### Ejecutar Experimento de DoS
-
-```bash
-cd chaos-experiments/bash-scripts
-chmod +x 01-dos-attack.sh
-./01-dos-attack.sh
-```
-
-### Ejecutar Experimento de Latencia
-
-```bash
-chmod +x 02-lambda-latency.sh
-./02-lambda-latency.sh
-```
-
-## 🔧 Experimentos Disponibles
+## 🎯 **EXPERIMENTOS PLANIFICADOS**
 
 ### 1. DoS Attack Simulation (`01-dos-attack.sh`)
 

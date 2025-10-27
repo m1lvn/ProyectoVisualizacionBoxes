@@ -1,0 +1,52 @@
+{
+  "description": "Chaos Engineering Experiment #5: Lambda Error Injection - Inyectar errores aleatorios en funciones Lambda",
+  "tags": {
+    "Name": "lambda-error-injection",
+    "Experiment": "chaos-engineering",
+    "Project": "hospital-boxes"
+  },
+  "targets": {
+    "LambdaFunctions": {
+      "resourceType": "aws:lambda:function",
+      "resourceTags": {
+        "Stage": "dev"
+      },
+      "filters": [
+        {
+          "path": "FunctionName",
+          "values": [
+            "hospital-boxes-api-dev-getBoxes",
+            "hospital-boxes-api-dev-getAgendas",
+            "hospital-boxes-api-dev-createAgenda"
+          ]
+        }
+      ],
+      "selectionMode": "ALL"
+    }
+  },
+  "actions": {
+    "InjectErrors": {
+      "actionId": "aws:lambda:inject-api-internal-error",
+      "description": "Inyectar errores internos en 25% de las invocaciones Lambda",
+      "parameters": {
+        "duration": "PT10M",
+        "errorPercentage": "25"
+      },
+      "targets": {
+        "Functions": "LambdaFunctions"
+      }
+    }
+  },
+  "stopConditions": [
+    {
+      "source": "none"
+    }
+  ],
+  "roleArn": "arn:aws:iam::ACCOUNT_ID:role/FISRole",
+  "logConfiguration": {
+    "cloudWatchLogsConfiguration": {
+      "logGroupArn": "arn:aws:logs:us-east-1:ACCOUNT_ID:log-group:/aws/fis/experiments:*"
+    },
+    "logSchemaVersion": 2
+  }
+}
