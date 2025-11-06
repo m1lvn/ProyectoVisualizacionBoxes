@@ -9,19 +9,57 @@
 set -e
 
 # ═══════════════════════════════════════════════════════════════
-# CONFIGURACIÓN
+# CONFIGURACIÓN AUTO-DETECTADA
 # ═══════════════════════════════════════════════════════════════
 
-API_ENDPOINT="${API_ENDPOINT:-https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/dev/api}"
-TOKEN="${JWT_TOKEN:-}"
-AWS_REGION="${AWS_REGION:-us-east-1}"
+# Auto-detectar AWS Account ID y Region
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null)
+AWS_REGION=$(aws configure get region 2>/dev/null || echo "us-east-1")
 
-# Topics SNS del proyecto
+if [ -z "$AWS_ACCOUNT_ID" ]; then
+    echo "❌ Error: No se pudo obtener AWS Account ID"
+    echo "   Ejecuta: aws configure"
+    exit 1
+fi
+
+# Auto-detectar API Gateway URL
+API_GATEWAY_ID=$(aws apigateway get-rest-apis \
+    --query "items[?name=='hospital-boxes-api-dev'].id" \
+    --output text 2>/dev/null)
+
+if [ -n "$API_GATEWAY_ID" ]; then
+    API_ENDPOINT="https://${API_GATEWAY_ID}.execute-api.${AWS_REGION}.amazonaws.com/dev/api"
+elif [ -f "../.env" ]; then
+    source ../.env
+fi
+
+# Fallback
+if [ -z "$API_ENDPOINT" ]; then
+    API_ENDPOINT="${API_ENDPOINT:-https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/dev/api}"
+fi
+
+# Auto-construir ARNs de SNS topics
 TOPICS=(
-    "dev-hospital-user-events"
-    "dev-hospital-agenda-events"
-    "dev-hospital-notifications"
+    "arn:aws:sns:${AWS_REGION}:${AWS_ACCOUNT_ID}:dev-hospital-user-events"
+    "arn:aws:sns:${AWS_REGION}:${AWS_ACCOUNT_ID}:dev-hospital-agenda-events"
+    "arn:aws:sns:${AWS_REGION}:${AWS_ACCOUNT_ID}:dev-hospital-notifications"
 )
+
+# Obtener JWT Token automáticamente
+if [ -f "../get-jwt-from-secrets.ps1" ]; then
+    TOKEN=$(powershell -ExecutionPolicy Bypass -File "../get-jwt-from-secrets.ps1" 2>/dev/null)
+elif command -v aws &> /dev/null; then
+    TOKEN=$(aws secretsmanager get-secret-value \
+        --secret-id chaos-engineering/jwt-token \
+        --region $AWS_REGION \
+        --query 'SecretString' --output text 2>/dev/null | \
+        python3 -c "import sys, json; print(json.load(sys.stdin)['jwtToken'])" 2>/dev/null)
+fi
+
+# Fallback: leer desde .env
+if [ -z "$TOKEN" ] && [ -f "../.env" ]; then
+    TOKEN=$(grep "^JWT_TOKEN=" ../.env | cut -d'=' -f2)
+fi
 
 # Colores
 RED='\033[0;31m'
@@ -41,6 +79,10 @@ log_error() { echo -e "${RED}❌ $1${NC}"; }
 
 check_dependencies() {
     log_info "Verificando dependencias..."
+    
+    log_info "AWS Account ID: $AWS_ACCOUNT_ID"
+    log_info "AWS Region: $AWS_REGION"
+    log_info "API Endpoint: $API_ENDPOINT"
     
     if ! command -v aws &> /dev/null; then
         log_error "AWS CLI no está instalado (requerido para este experimento)"

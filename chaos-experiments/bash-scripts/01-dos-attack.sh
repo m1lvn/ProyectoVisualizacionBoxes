@@ -6,8 +6,16 @@ echo "════════════════════════�
 echo "🔥 CHAOS EXPERIMENT: DoS Attack Simulation"
 echo "═══════════════════════════════════════════════════"
 
+# Cargar variables de entorno
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/../.env"
+
+if [ -f "$ENV_FILE" ]; then
+    export $(cat "$ENV_FILE" | grep -v '^#' | grep -v '^$' | xargs)
+fi
+
 # Configuración
-API_ENDPOINT="https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/api"
+API_ENDPOINT="${API_ENDPOINT:-https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api}"
 ENDPOINT="/boxes"
 REQUESTS=1000
 CONCURRENT=50
@@ -19,7 +27,20 @@ echo "   - Concurrent: $CONCURRENT"
 echo ""
 
 # Obtener token de autenticación
-read -p "🔑 Ingrese su JWT token: " TOKEN
+if [ -z "$JWT_TOKEN" ]; then
+    echo "⚠️  JWT_TOKEN no encontrado en .env"
+    echo ""
+    echo "🔄 Obteniendo token automáticamente..."
+    cd "$SCRIPT_DIR/.."
+    source ./get-jwt.sh
+    cd "$SCRIPT_DIR"
+    
+    # Recargar variables
+    export $(cat "$ENV_FILE" | grep -v '^#' | grep -v '^$' | xargs)
+fi
+
+TOKEN="$JWT_TOKEN"
+echo "✅ Token cargado correctamente"
 
 echo ""
 echo "📊 Ejecutando baseline (10 requests secuenciales)..."

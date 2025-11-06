@@ -71,75 +71,38 @@
 
 ---
 
-## ❌ **ESTADO ACTUAL: LO QUE NO CUMPLE**
+## ⚠️ Estado actual: principales puntos pendientes
 
-### **1. ❌ Pruebas de Resiliencia NO Implementadas**
+Resumen breve de lo que aún falta por implementar o ejecutar en el proyecto.
 
-#### **Fallos NO Simulados:**
-- ❌ No hay pruebas de fallos de Lambda (timeouts, crashes)
-- ❌ No hay pruebas de throttling de DynamoDB
-- ❌ No hay pruebas de indisponibilidad de Cognito
-- ❌ No hay pruebas de pérdida de mensajes SNS
-- ❌ No hay pruebas de latencia de red
-- ❌ No hay pruebas de consumo de CPU/memoria
+### 1. Pruebas de resiliencia aún no ejecutadas
 
-#### **Evidencia de Falta de Resiliencia:**
-```javascript
-// boxes.js - Sin retry logic
-const [resultBoxes, resultPasillos] = await Promise.all([
-  dynamodb.scan(paramsBoxes).promise(),  // ❌ No retry si falla
-  dynamodb.scan(paramsPasillos).promise()  // ❌ No retry si falla
-]);
+- No se han ejecutado experimentos que simulen fallos en funciones o servicios (por ejemplo: latencia, errores o throttling).
+- No se han aplicado ejercicios que pongan a prueba la mensajería asíncrona o la autenticación bajo fallo.
 
-// agendas.js - Sin circuit breaker
-const result = await dynamodb.scan(params).promise();  // ❌ Sin protección
-```
+### 2. Herramientas y scripts disponibles, pendientes de ejecución
 
-### **2. ❌ Herramientas de Chaos NO Utilizadas**
+- Existen plantillas para AWS FIS, scripts Bash y guías para Gremlin en el repositorio, pero no se han corrido los experimentos.
 
-- ❌ **Gremlin**: No implementado
-- ❌ **Chaos Monkey**: No implementado
-- ❌ **AWS Fault Injection Simulator (FIS)**: No implementado
-- ❌ **Chaos Mesh**: No aplica (no usa Kubernetes)
-- ❌ **LitmusChaos**: No aplica (no usa Kubernetes)
-- ❌ **Scripts bash maliciosos**: No implementados
+### 3. Mejora de manejo de errores y observabilidad
 
-### **3. ❌ Manejo de Errores Básico**
+- El código del servicio puede beneficiarse de mecanismos adicionales (reintentos razonables, mediciones y alertas). Estos cambios aún no se han aplicado al entorno de producción.
 
-```javascript
-// Patrón actual (INADECUADO para producción)
-try {
-  const result = await dynamodb.scan(params).promise();
-  return { statusCode: 200, body: JSON.stringify(result) };
-} catch (error) {
-  console.error('Error:', error);  // ❌ Solo logging
-  return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
-}
-// ❌ Sin retry
-// ❌ Sin circuit breaker
-// ❌ Sin fallback
-// ❌ Sin métricas de fallo
-```
+### 4. Métricas y dashboards
 
-### **4. ❌ Sin Métricas de Resiliencia**
-
-- ❌ No hay alarmas de CloudWatch para fallos
-- ❌ No hay métricas de tasa de error
-- ❌ No hay SLO/SLA definidos
-- ❌ No hay dashboards de resiliencia
-- ❌ No hay registro de incidentes
+- No hay dashboards ni SLO documentados para las pruebas de resiliencia; se deben definir y configurar antes de ejecutar experimentos.
 
 ---
 
 ## 🛠️ **HERRAMIENTAS SELECCIONADAS PARA ESTE PROYECTO**
 
-### **📊 Herramientas Implementadas:**
+### **📊 Herramientas Preparadas (scripts y plantillas)**
 
 | Herramienta | Compatibilidad | Complejidad | Costo | Estado |
 |-------------|----------------|-------------|-------|---------|
-| **AWS FIS** | ✅✅✅ Perfecta | Baja | Bajo (Free tier disponible) | ✅ **IMPLEMENTADO** |
-| **Bash Scripts** | ✅✅✅ Perfecta | Muy Baja | **100% Gratis** | ✅ **IMPLEMENTADO** |
-| **Gremlin Free** | ✅✅ Buena | Media | **Gratis (Free tier)** | ✅ **IMPLEMENTADO** |
+| **AWS FIS** | Alta | Baja | Bajo (Free tier disponible) | Preparado (templates) - NO ejecutado |
+| **Bash Scripts** | Alta | Muy Baja | **100% Gratis** | Scripts incluidos - NO ejecutado |
+| **Gremlin Free** | Alta | Media | **Gratis (Free tier)** | Configuración guía incluida - NO ejecutado |
 
 ### **🆓 Información sobre Gremlin Free Tier:**
 
@@ -158,6 +121,26 @@ try {
 - ⚠️ Sin equipos colaborativos
 
 **Registro:** https://app.gremlin.com/signup
+
+### 🔑 Obtención del JWT (estado: implementación en progreso)
+
+Para ejecutar los scripts y pruebas se requiere un token JWT para autenticación. Se han preparado varias opciones; la implementación está en curso y ninguna está completamente automatizada en el entorno por defecto.
+
+Opciones disponibles (resumen):
+
+- Opción A — Automática: usar el endpoint del API Serverless para obtener el JWT programáticamente. (Require: `<SERVERLESS_API_URL>/auth/login`). Archivo: `get-jwt.ps1`, `get-jwt.sh`. Estado: preparado, NO finalizado.
+- Opción B — Manual: copiar el token desde el navegador tras hacer login y pegarlo con el helper. Archivo: `set-jwt-manual.ps1`. Estado: funcional y recomendado como método inmediato.
+- Opción C — Alternativa por sesión: usar el `sessionid` de Django para extraer el JWT desde el servidor (requiere exponer un endpoint interno o consultar la base de sesiones). Archivo: `set-session-id.ps1` y vistas de apoyo propuestas. Estado: en investigación / requiere trabajo adicional.
+
+Referencias en el repo:
+
+- `chaos-experiments/get-jwt.ps1` (PowerShell automatic)
+- `chaos-experiments/get-jwt.sh` (bash automatic)
+- `chaos-experiments/set-jwt-manual.ps1` (guía interactiva para pegar token)
+- `chaos-experiments/set-session-id.ps1` (guardar sessionid como alternativa)
+- `chaos-experiments/JWT-SETUP.md` y `chaos-experiments/JWT-VISUAL-GUIDE.md` (guías paso a paso)
+
+Nota: la sección de automatización del JWT está marcada como "no finalizada" hasta que se despliegue y valide el endpoint que permita extraer el token de forma segura.
 
 ### **❌ Herramientas No Aplicables:**
 
@@ -291,7 +274,7 @@ aws cloudwatch get-metric-statistics \
 ✅ **Scriptables**: Se pueden automatizar con cron/scheduled tasks
 ✅ **Windows compatible**: Adaptables a PowerShell para Windows  
 
-### **🔥 Scripts de Chaos Propuestos:**
+### **🔥 Scripts de Chaos Propuestos (en repo)**
 
 #### **1. Chaos Script: Eliminar DynamoDB Table**
 ```bash
@@ -324,7 +307,7 @@ fi
 #!/bin/bash
 # chaos-scripts/dos-attack-simulation.sh
 
-API_ENDPOINT="https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/api"
+API_ENDPOINT="<SERVERLESS_API_URL>"
 TOKEN="your-jwt-token"
 
 echo "🔥 CHAOS EXPERIMENT: Bombardeo de requests"
@@ -370,7 +353,7 @@ cd ../serverless-api
 serverless deploy function -f getBoxes
 
 echo "⏱️  Ejecutando pruebas de performance..."
-time curl "https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/api/boxes"
+time curl "<SERVERLESS_API_URL>/api/boxes"
 
 echo "🔄 Revirtiendo cambios..."
 git checkout src/handlers/boxes.js
@@ -443,7 +426,7 @@ echo "🎯 Objetivo: Probar resiliencia ante fallos de mensajería"
 
 # Eliminar suscripciones SNS
 aws sns list-subscriptions-by-topic \
-    --topic-arn "arn:aws:sns:us-east-1:891377117593:dev-hospital-user-events" \
+  --topic-arn "arn:aws:sns:us-east-1:<AWS_ACCOUNT_ID>:dev-hospital-user-events" \
     --query "Subscriptions[*].SubscriptionArn" \
     --output text | while read arn; do
         echo "💀 Eliminando suscripción: $arn"
@@ -793,7 +776,7 @@ echo "════════════════════════�
 echo "🔥 CHAOS EXPERIMENT 1: DoS Attack Simulation"
 echo "═══════════════════════════════════════════════════"
 
-API_ENDPOINT="https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/dev/api"
+API_ENDPOINT="<SERVERLESS_API_URL>"
 TOKEN="YOUR_JWT_TOKEN"
 
 # Baseline: 10 requests normales
@@ -869,7 +852,7 @@ aws dynamodb describe-table --table-name HospitalData \
 echo -e "\n📈 Baseline (10 requests):"
 for i in {1..10}; do
     RESPONSE=$(curl -s -w "\n%{http_code}" \
-        "https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/api/boxes" \
+  "<SERVERLESS_API_URL>/api/boxes" \
         -H "Authorization: Bearer $TOKEN")
     STATUS=$(echo "$RESPONSE" | tail -1)
     TIME=$(echo "$RESPONSE" | grep -o '"time":[0-9.]*' | cut -d: -f2)
@@ -890,7 +873,7 @@ sleep 30
 echo -e "\n🔥 Bombardeando con 50 requests..."
 for i in {1..50}; do
     curl -s -w "Request $i: %{http_code} | %{time_total}s\n" \
-        "https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/api/boxes" \
+  "<SERVERLESS_API_URL>/api/boxes" \
         -H "Authorization: Bearer $TOKEN" &
 done
 wait
@@ -973,7 +956,7 @@ aws sns list-topics --query "Topics[?contains(TopicArn, 'hospital')]"
 
 # 2. Eliminar suscripciones (simular fallo)
 echo -e "\n💀 Eliminando suscripciones SNS..."
-TOPIC_ARN="arn:aws:sns:us-east-1:891377117593:dev-hospital-user-events"
+TOPIC_ARN="arn:aws:sns:us-east-1:<AWS_ACCOUNT_ID>:dev-hospital-user-events"
 aws sns list-subscriptions-by-topic --topic-arn "$TOPIC_ARN" \
     --query "Subscriptions[*].SubscriptionArn" \
     --output text | while read sub_arn; do
@@ -1023,7 +1006,7 @@ echo "════════════════════════�
     "Tables": {
       "resourceType": "aws:dynamodb:table",
       "resourceArns": [
-        "arn:aws:dynamodb:us-east-1:891377117593:table/HospitalData"
+  "arn:aws:dynamodb:us-east-1:<AWS_ACCOUNT_ID>:table/HospitalData"
       ],
       "selectionMode": "ALL"
     }
@@ -1045,10 +1028,10 @@ echo "════════════════════════�
   "stopConditions": [
     {
       "source": "aws:cloudwatch:alarm",
-      "value": "arn:aws:cloudwatch:us-east-1:891377117593:alarm:HighErrorRate"
+  "value": "arn:aws:cloudwatch:us-east-1:<AWS_ACCOUNT_ID>:alarm:HighErrorRate"
     }
   ],
-  "roleArn": "arn:aws:iam::891377117593:role/LabRole"
+  "roleArn": "arn:aws:iam::<AWS_ACCOUNT_ID>:role/LabRole"
 }
 ```
 
@@ -1104,7 +1087,7 @@ watch -n 5 'aws cloudwatch get-metric-statistics \
       }
     }
   },
-  "roleArn": "arn:aws:iam::891377117593:role/LabRole"
+  "roleArn": "arn:aws:iam::<AWS_ACCOUNT_ID>:role/LabRole"
 }
 ```
 
@@ -1324,8 +1307,11 @@ try {
 ## 📋 **CHECKLIST DE IMPLEMENTACIÓN**
 
 ### **Fase de Preparación:**
-- [ ] Crear directorio `chaos-experiments/`
-- [ ] Crear archivo `resilience.js` con retry y circuit breaker
+- [x] Crear directorio `chaos-experiments/`
+- [x] Crear archivo `resilience.js` con retry y circuit breaker
+- [x] Crear scripts de experimentos (Bash + PowerShell)
+- [x] Crear plantillas AWS FIS
+- [x] Crear guías y documentación (JWT, Gremlin)
 - [ ] Actualizar handlers de Lambda con resiliencia
 - [ ] Configurar CloudWatch alarmas
 - [ ] Crear health check endpoint
@@ -1348,8 +1334,9 @@ try {
 - [ ] Priorizar mejoras
 
 ### **Fase de Mejoras:**
-- [ ] Implementar retry logic
-- [ ] Implementar circuit breaker
+- [x] Implementar retry logic (en `resilience.js`)
+- [x] Implementar circuit breaker (en `resilience.js`)
+- [ ] Integrar `resilience.js` en handlers de Lambda
 - [ ] Agregar cache layer (DAX o ElastiCache)
 - [ ] Configurar alarmas CloudWatch
 - [ ] Implementar health checks
@@ -1407,12 +1394,12 @@ chaos-experiments/
 │   ├── dynamodb-throttling.json        # ✅ Experimento FIS #1
 │   └── lambda-error-injection.json     # ✅ Experimento FIS #2
 ├── bash-scripts/
-│   ├── 01-dos-attack.sh                # ✅ Experimento Bash #1
+│   ├── 01-dos-attack.sh / .ps1         # ✅ Experimento Bash #1 (sh + PowerShell)
 │   ├── 02-lambda-latency.sh            # ✅ Experimento Bash #2
 │   └── 03-sns-failure.sh               # ✅ Experimento Bash #3
 ├── gremlin/
-│   ├── cpu-stress-config.yaml          # ✅ Experimento Gremlin #1
-│   └── memory-exhaustion-config.yaml   # ✅ Experimento Gremlin #2
+│   ├── experiments-config.yaml         # ✅ Configuración de experimentos Gremlin
+│   └── setup-guide.md                  # ✅ Guía de configuración Gremlin Free
 └── results/
     ├── experiment-01-report.md         # Resultados DoS
     ├── experiment-02-report.md         # Resultados Latency
@@ -1425,9 +1412,9 @@ chaos-experiments/
     └── final-report.md                 # Reporte consolidado
 
 serverless-api/src/utils/
-└── resilience.js                        # ✅ Retry + Circuit Breaker
+└── resilience.js                        # ✅ IMPLEMENTADO: Retry + Circuit Breaker
 
-README-CHAOS.md                          # Guía de ejecución
+README-CHAOS.md                          # Guía de ejecución (opcional)
 ```
 
 ---

@@ -6,18 +6,78 @@ echo "════════════════════════�
 echo "🔥 CHAOS EXPERIMENT: Lambda Latency Injection"
 echo "═══════════════════════════════════════════════════"
 
+# Auto-detectar AWS Account ID
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null)
+if [ -z "$AWS_ACCOUNT_ID" ]; then
+    echo "❌ Error: No se pudo obtener AWS Account ID"
+    echo "   Asegúrate de tener AWS CLI configurado: aws configure"
+    exit 1
+fi
+
+# Auto-detectar API Gateway URL desde serverless config
+cd ../../serverless-api 2>/dev/null
+if [ -f "serverless.yml" ]; then
+    # Intentar obtener la URL del API Gateway
+    API_ENDPOINT=$(aws apigateway get-rest-apis --query "items[?name=='hospital-boxes-api-dev'].id" --output text 2>/dev/null)
+    if [ -n "$API_ENDPOINT" ]; then
+        AWS_REGION=$(aws configure get region 2>/dev/null || echo "us-east-1")
+        API_ENDPOINT="https://${API_ENDPOINT}.execute-api.${AWS_REGION}.amazonaws.com/dev/api/boxes"
+    fi
+fi
+cd ../chaos-experiments/bash-scripts
+
+# Fallback: leer desde .env
+if [ -z "$API_ENDPOINT" ] && [ -f "../.env" ]; then
+    source ../.env
+    if [ -n "$API_ENDPOINT" ]; then
+        API_ENDPOINT="${API_ENDPOINT}/boxes"
+    fi
+fi
+
+# Fallback final: preguntar al usuario
+if [ -z "$API_ENDPOINT" ]; then
+    echo "⚠️  No se pudo auto-detectar el API endpoint"
+    read -p "Ingresa el API endpoint (ej: https://xxxxx.execute-api.us-east-1.amazonaws.com/dev/api/boxes): " API_ENDPOINT
+fi
+
 # Configuración
 LAMBDA_FUNCTION="getBoxes"
 LATENCY_MS=5000
-API_ENDPOINT="https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/api/boxes"
 
+echo ""
 echo "⚙️  Configuración:"
+echo "   - AWS Account: $AWS_ACCOUNT_ID"
 echo "   - Lambda: $LAMBDA_FUNCTION"
 echo "   - Latencia inyectada: ${LATENCY_MS}ms"
 echo "   - API Endpoint: $API_ENDPOINT"
 echo ""
 
-read -p "🔑 Ingrese su JWT token: " TOKEN
+# Obtener JWT Token automáticamente
+echo "🔐 Obteniendo JWT Token..."
+if [ -f "../get-jwt-from-secrets.ps1" ]; then
+    # En Windows con PowerShell
+    TOKEN=$(powershell -ExecutionPolicy Bypass -File "../get-jwt-from-secrets.ps1" 2>/dev/null)
+elif command -v aws &> /dev/null; then
+    # Directo con AWS CLI
+    TOKEN=$(aws secretsmanager get-secret-value \
+        --secret-id chaos-engineering/jwt-token \
+        --region us-east-1 \
+        --query 'SecretString' --output text 2>/dev/null | \
+        python3 -c "import sys, json; print(json.load(sys.stdin)['jwtToken'])" 2>/dev/null)
+fi
+
+# Fallback: leer desde .env
+if [ -z "$TOKEN" ] && [ -f "../.env" ]; then
+    TOKEN=$(grep "^JWT_TOKEN=" ../.env | cut -d'=' -f2)
+fi
+
+# Fallback final: preguntar al usuario
+if [ -z "$TOKEN" ]; then
+    echo "⚠️  No se pudo obtener JWT automáticamente"
+    read -p "🔑 Ingrese su JWT token: " TOKEN
+else
+    echo "✅ JWT Token obtenido automáticamente"
+fi
 
 # 1. Baseline sin latencia
 echo ""

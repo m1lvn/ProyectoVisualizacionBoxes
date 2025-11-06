@@ -1,8 +1,37 @@
 # 🔥 Chaos Engineering - Guía de Ejecución
 
-## 🚀 Inicio Rápido
+## � Diseñado para Linux/EC2
+
+Todos los scripts están optimizados para ejecutarse en **Linux** (Ubuntu/Amazon Linux).
+Para Windows PowerShell, los scripts `.ps1` están disponibles pero los `.sh` son la opción principal.
+
+## �🚀 Inicio Rápido (Completamente Automatizado)
 
 Este directorio contiene todos los experimentos de Chaos Engineering para validar la resiliencia del Sistema de Visualización de Boxes Hospitalarios.
+
+### ✅ Setup en 3 Pasos
+
+```bash
+# 1. Configurar JWT Token en AWS Secrets Manager (una sola vez)
+chmod +x setup-jwt-secrets-manager.sh
+./setup-jwt-secrets-manager.sh
+
+# 2. Verificar configuración (opcional)
+chmod +x verify-fis-setup.sh
+./verify-fis-setup.sh
+
+# 3. Ejecutar TODOS los experimentos automáticamente
+chmod +x run-all-chaos-experiments.sh
+./run-all-chaos-experiments.sh
+```
+
+**¡Eso es todo!** El sistema se encarga de:
+- ✅ Obtener JWT automáticamente desde AWS Secrets Manager
+- ✅ Auto-detectar AWS Account ID y región
+- ✅ Auto-detectar API Gateway URLs
+- ✅ Ejecutar todos los experimentos secuencialmente
+- ✅ Generar reportes automáticos
+- ✅ Recopilar métricas de CloudWatch
 
 ---
 
@@ -10,11 +39,11 @@ Este directorio contiene todos los experimentos de Chaos Engineering para valida
 
 | Herramienta | Experimentos | Costo | Estado |
 |-------------|--------------|-------|--------|
-| **Bash Scripts** | 3 | $0 | ✅ Listo |
-| **AWS FIS** | 2 | ~$0 (Free tier) | ✅ Listo |
-| **Gremlin Free** | 2 | $0 (5/mes) | 🟡 Requiere registro |
+| **Bash Scripts** | 3 | $0 | ✅ Automatizado |
+| **AWS FIS** | 2 | ~$0 (Free tier) | ✅ Automatizado |
+| **Suite Completa** | 5 | $0 | ✅ Automatizado |
 
-**Total: 7 experimentos - Costo: $0-5**
+**Total: 5 experimentos - Costo: $0 - Tiempo: ~25 minutos**
 
 ---
 
