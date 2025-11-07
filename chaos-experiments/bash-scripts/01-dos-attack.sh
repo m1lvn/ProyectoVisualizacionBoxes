@@ -16,7 +16,7 @@ fi
 
 # Configuración
 API_ENDPOINT="${API_ENDPOINT:-https://rc3ltywoub.execute-api.us-east-1.amazonaws.com}"
-ENDPOINT="/dev/api/boxes"
+ENDPOINT="/api/boxes"
 REQUESTS=1000
 CONCURRENT=50
 

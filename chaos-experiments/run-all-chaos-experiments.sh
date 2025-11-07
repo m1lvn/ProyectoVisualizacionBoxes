@@ -94,55 +94,176 @@ fi
 
 echo "    ✅ AWS configurado - Account: $AWS_ACCOUNT_ID"
 
-# Verificar JWT Token
-echo "[✓] Verificando JWT Token (Cognito User Pool)..."
+# Verificar stack desplegado
+echo "[✓] Verificando stack hospital-boxes-api-dev..."
+STACK_STATUS=$(aws cloudformation describe-stacks \
+    --stack-name hospital-boxes-api-dev \
+    --query 'Stacks[0].StackStatus' \
+    --output text 2>/dev/null)
 
-# Primero intentar desde .env
-if [ -f ".env" ]; then
-    FALLBACK_TOKEN=$(grep "^JWT_TOKEN=" .env | cut -d'=' -f2- | xargs)
-    if [ -n "$FALLBACK_TOKEN" ]; then
-        echo "    ✅ JWT encontrado en .env"
-        TOKEN="$FALLBACK_TOKEN"
-        echo "    ⚠️  Verifica que sea un token válido de Cognito User Pool"
-    fi
+if [ $? -ne 0 ] || [ -z "$STACK_STATUS" ]; then
+    echo "    ❌ Stack hospital-boxes-api-dev NO encontrado"
+    echo "    💡 Despliega la API primero:"
+    echo "       cd serverless-api && npx serverless deploy"
+    exit 1
 fi
 
-# Si no hay token en .env, obtener desde Cognito
-if [ -z "$TOKEN" ]; then
-    if [ -f "get-cognito-jwt.sh" ]; then
-        echo "    🔄 Obteniendo JWT desde Cognito User Pool..."
-        
-        TOKEN_OUTPUT=$(./get-cognito-jwt.sh --verbose --user admin 2>&1)
-        TOKEN_EXIT_CODE=$?
-        TOKEN=$(echo "$TOKEN_OUTPUT" | tail -n1)
-        
-        if [ $TOKEN_EXIT_CODE -ne 0 ] || [ -z "$TOKEN" ]; then
-            echo "    ❌ Error obteniendo JWT desde Cognito"
-            echo ""
-            echo "    [DEBUG] Detalles del error:"
-            echo "$TOKEN_OUTPUT" | tail -10 | sed 's/^/    /'
-            echo ""
-            echo "    💡 Posibles soluciones:"
-            echo "       1. Verifica que el stack hospital-boxes-api-dev esté desplegado"
-            echo "       2. Asegúrate de que los usuarios de prueba existan en Cognito"
-            echo "       3. Crea un usuario manualmente con el comando mostrado arriba"
-            
-            read -p "    ¿Continuar sin JWT? (algunos experimentos fallarán) (yes/no): " confirm
-            if [ "$confirm" != "yes" ]; then
-                exit 1
-            fi
-        else
-            echo "    ✅ JWT obtenido desde Cognito User Pool"
-        fi
-    else
-        echo "    ⚠️  Script get-cognito-jwt.sh no encontrado"
-        
-        read -p "    ¿Continuar sin JWT? (algunos experimentos fallarán) (yes/no): " confirm
-        if [ "$confirm" != "yes" ]; then
-            exit 1
-        fi
+if [[ "$STACK_STATUS" != "CREATE_COMPLETE" ]] && [[ "$STACK_STATUS" != "UPDATE_COMPLETE" ]]; then
+    echo "    ⚠️  Stack en estado: $STACK_STATUS"
+    read -p "    ¿Continuar de todos modos? (yes/no): " confirm
+    if [ "$confirm" != "yes" ]; then
+        exit 1
     fi
+else
+    echo "    ✅ Stack desplegado correctamente - Estado: $STACK_STATUS"
 fi
+
+# Verificar API Gateway
+echo "[✓] Verificando API Gateway..."
+HTTP_API_ID=$(aws cloudformation describe-stack-resources \
+    --stack-name hospital-boxes-api-dev \
+    --query 'StackResources[?ResourceType==`AWS::ApiGatewayV2::Api`].PhysicalResourceId' \
+    --output text 2>/dev/null)
+
+if [ -z "$HTTP_API_ID" ]; then
+    echo "    ❌ No se encontró HTTP API en el stack"
+    exit 1
+fi
+
+API_ENDPOINT=$(aws apigatewayv2 get-api \
+    --api-id "$HTTP_API_ID" \
+    --query 'ApiEndpoint' \
+    --output text 2>/dev/null)
+
+if [ -z "$API_ENDPOINT" ]; then
+    echo "    ❌ No se pudo obtener API Endpoint"
+    exit 1
+fi
+
+echo "    ✅ API Gateway ID: $HTTP_API_ID"
+echo "    ✅ API Endpoint: $API_ENDPOINT"
+
+# Verificar Cognito User Pool
+echo "[✓] Verificando Cognito User Pool..."
+USER_POOL_ID=$(aws cloudformation describe-stacks \
+    --stack-name hospital-boxes-api-dev \
+    --query 'Stacks[0].Outputs[?OutputKey==`UserPoolId`].OutputValue' \
+    --output text 2>/dev/null)
+
+if [ -z "$USER_POOL_ID" ]; then
+    echo "    ❌ No se encontró User Pool ID en outputs del stack"
+    exit 1
+fi
+
+echo "    ✅ User Pool ID: $USER_POOL_ID"
+
+# Verificar que existen usuarios de prueba
+USER_COUNT=$(aws cognito-idp list-users \
+    --user-pool-id "$USER_POOL_ID" \
+    --query 'length(Users)' \
+    --output text 2>/dev/null)
+
+if [ -z "$USER_COUNT" ] || [ "$USER_COUNT" -eq 0 ]; then
+    echo "    ⚠️  No se encontraron usuarios en Cognito User Pool"
+    echo "    💡 Crear usuario admin:"
+    echo "       aws cognito-idp admin-create-user \\"
+    echo "         --user-pool-id $USER_POOL_ID \\"
+    echo "         --username admin@hospital.com \\"
+    echo "         --user-attributes Name=email,Value=admin@hospital.com Name=email_verified,Value=true"
+    echo "       aws cognito-idp admin-set-user-password \\"
+    echo "         --user-pool-id $USER_POOL_ID \\"
+    echo "         --username admin@hospital.com \\"
+    echo "         --password 'Admin123!' --permanent"
+    
+    read -p "    ¿Continuar de todos modos? (yes/no): " confirm
+    if [ "$confirm" != "yes" ]; then
+        exit 1
+    fi
+else
+    echo "    ✅ Usuarios encontrados: $USER_COUNT"
+fi
+
+# Obtener JWT Token fresco
+echo "[✓] Obteniendo JWT Token desde Cognito User Pool..."
+
+if [ ! -f "get-cognito-jwt.sh" ]; then
+    echo "    ❌ Script get-cognito-jwt.sh no encontrado"
+    exit 1
+fi
+
+# Siempre obtener token fresco para evitar expiración
+echo "    🔄 Obteniendo token nuevo (evitar expiración)..."
+
+TOKEN_OUTPUT=$(./get-cognito-jwt.sh --user admin 2>&1)
+TOKEN_EXIT_CODE=$?
+
+if [ $TOKEN_EXIT_CODE -ne 0 ]; then
+    echo "    ❌ Error obteniendo JWT desde Cognito"
+    echo ""
+    echo "    [DEBUG] Últimas líneas del error:"
+    echo "$TOKEN_OUTPUT" | tail -15 | sed 's/^/    /'
+    echo ""
+    echo "    💡 Posibles causas:"
+    echo "       1. Usuario admin@hospital.com no existe"
+    echo "       2. Contraseña incorrecta (debe ser 'Admin123!')"
+    echo "       3. Usuario no confirmado"
+    
+    exit 1
+fi
+
+# Extraer el token (última línea del output)
+TOKEN=$(echo "$TOKEN_OUTPUT" | tail -n1)
+
+if [ -z "$TOKEN" ] || [[ "$TOKEN" == *"ERROR"* ]] || [[ "$TOKEN" == *"❌"* ]]; then
+    echo "    ❌ No se obtuvo token válido"
+    echo "    Output recibido: ${TOKEN:0:50}..."
+    exit 1
+fi
+
+echo "    ✅ JWT Token obtenido exitosamente"
+echo "    📝 Token guardado en .env"
+
+# Verificar que el token es válido haciendo una prueba
+echo "[✓] Verificando que el token funciona..."
+TEST_RESPONSE=$(curl -s -w "\n%{http_code}" \
+    -H "Authorization: Bearer $TOKEN" \
+    "${API_ENDPOINT}/api/boxes" 2>&1)
+
+HTTP_CODE=$(echo "$TEST_RESPONSE" | tail -n1)
+
+if [ "$HTTP_CODE" = "401" ]; then
+    echo "    ❌ Token rechazado por API (401 Unauthorized)"
+    echo "    Respuesta: $(echo "$TEST_RESPONSE" | head -n1)"
+    echo "    💡 El token puede estar expirado o ser inválido"
+    exit 1
+elif [ "$HTTP_CODE" = "404" ]; then
+    echo "    ⚠️  Endpoint retorna 404 (ruta no existe)"
+    echo "    💡 Verifica que /api/boxes esté configurado en serverless.yml"
+    
+    read -p "    ¿Continuar de todos modos? (yes/no): " confirm
+    if [ "$confirm" != "yes" ]; then
+        exit 1
+    fi
+elif [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "403" ]; then
+    echo "    ✅ Token válido (código: $HTTP_CODE)"
+else
+    echo "    ℹ️  Respuesta del API: $HTTP_CODE"
+fi
+
+# Exportar variables para los scripts
+export JWT_TOKEN="$TOKEN"
+export API_ENDPOINT="$API_ENDPOINT"
+
+echo ""
+echo "    📊 Resumen de configuración:"
+echo "    - AWS Account: $AWS_ACCOUNT_ID"
+echo "    - Stack: hospital-boxes-api-dev ($STACK_STATUS)"
+echo "    - API Gateway: $HTTP_API_ID"
+echo "    - API Endpoint: $API_ENDPOINT"
+echo "    - User Pool: $USER_POOL_ID"
+echo "    - Usuarios: $USER_COUNT"
+echo "    - JWT Token: $(echo ${TOKEN:0:20})...$(echo ${TOKEN: -10})"
+echo ""
 
 # ═══════════════════════════════════════════════════════════════
 # Verificar scripts bash de simulación
