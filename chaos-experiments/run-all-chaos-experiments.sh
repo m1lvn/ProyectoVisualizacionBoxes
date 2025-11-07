@@ -98,15 +98,40 @@ echo "    ✅ AWS configurado - Account: $AWS_ACCOUNT_ID"
 echo "[✓] Verificando JWT Token..."
 
 if [ -f "get-jwt-from-secrets.sh" ]; then
-    TOKEN=$(./get-jwt-from-secrets.sh 2>/dev/null || echo "")
+    # Intentar obtener token con modo verbose para debug
+    TOKEN_OUTPUT=$(./get-jwt-from-secrets.sh --verbose 2>&1)
+    TOKEN_EXIT_CODE=$?
+    TOKEN=$(echo "$TOKEN_OUTPUT" | tail -n1)
     
-    if [ -z "$TOKEN" ]; then
-        echo "    ⚠️  JWT Token no disponible"
-        echo "    Ejecuta: ./setup-jwt-secrets-manager.sh"
+    if [ $TOKEN_EXIT_CODE -ne 0 ] || [ -z "$TOKEN" ] || [[ "$TOKEN" == *"ERROR"* ]]; then
+        echo "    ⚠️  JWT Token no disponible desde Secrets Manager"
+        echo ""
+        echo "    [DEBUG] Detalles del error:"
+        echo "$TOKEN_OUTPUT" | grep -E "\[ERROR\]|\[*\]|Secret:|Region:" | sed 's/^/    /'
+        echo ""
         
-        read -p "    ¿Continuar sin JWT? (algunos experimentos fallarán) (yes/no): " confirm
-        if [ "$confirm" != "yes" ]; then
-            exit 1
+        # Intentar leer directamente desde .env como alternativa
+        if [ -f ".env" ]; then
+            FALLBACK_TOKEN=$(grep "^JWT_TOKEN=" .env | cut -d'=' -f2- | xargs)
+            if [ -n "$FALLBACK_TOKEN" ]; then
+                echo "    ✅ JWT encontrado en .env (usando fallback)"
+                TOKEN="$FALLBACK_TOKEN"
+            else
+                echo "    ⚠️  JWT no encontrado en .env tampoco"
+                echo "    Ejecuta: ./setup-jwt-secrets-manager.sh"
+                
+                read -p "    ¿Continuar sin JWT? (algunos experimentos fallarán) (yes/no): " confirm
+                if [ "$confirm" != "yes" ]; then
+                    exit 1
+                fi
+            fi
+        else
+            echo "    Ejecuta: ./setup-jwt-secrets-manager.sh"
+            
+            read -p "    ¿Continuar sin JWT? (algunos experimentos fallarán) (yes/no): " confirm
+            if [ "$confirm" != "yes" ]; then
+                exit 1
+            fi
         fi
     else
         echo "    ✅ JWT Token disponible"
