@@ -45,12 +45,19 @@ echo "✅ Token cargado correctamente"
 echo ""
 echo "📊 Ejecutando baseline (10 requests secuenciales)..."
 for i in {1..10}; do
-    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}|TIME:%{time_total}" \
+    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+        --max-time 10 \
         "$API_ENDPOINT$ENDPOINT" \
-        -H "Authorization: Bearer $TOKEN")
+        -H "Authorization: Bearer $TOKEN" 2>&1)
     
-    HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2 | cut -d'|' -f1)
-    TIME=$(echo "$RESPONSE" | grep "TIME" | cut -d':' -f2)
+    HTTP_CODE=$(echo "$RESPONSE" | grep "^HTTP_CODE:" | cut -d':' -f2 | tr -d ' ')
+    TIME=$(echo "$RESPONSE" | grep "^TIME:" | cut -d':' -f2 | tr -d ' ')
+    
+    # Si no capturó código, mostrar error
+    if [ -z "$HTTP_CODE" ]; then
+        HTTP_CODE="ERROR"
+        TIME="N/A"
+    fi
     
     echo "  Request $i: Status=$HTTP_CODE | Time=${TIME}s"
 done
@@ -81,7 +88,7 @@ if [ "$confirm" = "yes" ]; then
     for i in $(seq 1 $REQUESTS); do
         (
             # Timeout de 10 segundos por request
-            RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}|TIME:%{time_total}" \
+            RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
                 --max-time 10 \
                 --connect-timeout 5 \
                 "$API_ENDPOINT$ENDPOINT" \
@@ -91,8 +98,8 @@ if [ "$confirm" = "yes" ]; then
             EXIT_CODE=$?
             
             if [ $EXIT_CODE -eq 0 ]; then
-                HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2 | cut -d'|' -f1)
-                TIME=$(echo "$RESPONSE" | grep "TIME" | cut -d':' -f2)
+                HTTP_CODE=$(echo "$RESPONSE" | grep "^HTTP_CODE:" | cut -d':' -f2 | tr -d ' ')
+                TIME=$(echo "$RESPONSE" | grep "^TIME:" | cut -d':' -f2 | tr -d ' ')
                 
                 # Si no se capturó código HTTP, marcarlo como error
                 if [ -z "$HTTP_CODE" ]; then
@@ -138,13 +145,32 @@ if [ "$confirm" = "yes" ]; then
     echo "---"
     
     if [ -f "$RESULT_FILE" ]; then
-        TOTAL=$(grep -c "Request" "$RESULT_FILE" || echo "0")
-        SUCCESS=$(grep -c ": 200 " "$RESULT_FILE" || echo "0")
-        THROTTLED=$(grep -c ": 429 " "$RESULT_FILE" || echo "0")
-        ERRORS_5XX=$(grep -c ": 50[0-9] " "$RESULT_FILE" || echo "0")
-        TIMEOUTS=$(grep -c "TIMEOUT" "$RESULT_FILE" || echo "0")
-        CONN_REFUSED=$(grep -c "CONNECTION_REFUSED" "$RESULT_FILE" || echo "0")
-        OTHER_ERRORS=$(grep -cE "ERROR|CURL_ERROR" "$RESULT_FILE" || echo "0")
+        # Contar cada tipo de resultado (asegurar que sean números)
+        TOTAL=$(grep -c "Request" "$RESULT_FILE" 2>/dev/null || echo "0")
+        SUCCESS=$(grep -c ": 200 " "$RESULT_FILE" 2>/dev/null || echo "0")
+        THROTTLED=$(grep -c ": 429 " "$RESULT_FILE" 2>/dev/null || echo "0")
+        ERRORS_5XX=$(grep -c ": 50[0-9] " "$RESULT_FILE" 2>/dev/null || echo "0")
+        TIMEOUTS=$(grep -c "TIMEOUT" "$RESULT_FILE" 2>/dev/null || echo "0")
+        CONN_REFUSED=$(grep -c "CONNECTION_REFUSED" "$RESULT_FILE" 2>/dev/null || echo "0")
+        OTHER_ERRORS=$(grep -cE "ERROR|CURL_ERROR" "$RESULT_FILE" 2>/dev/null || echo "0")
+        
+        # Validar que todas las variables son números
+        TOTAL=${TOTAL//[^0-9]/}
+        SUCCESS=${SUCCESS//[^0-9]/}
+        THROTTLED=${THROTTLED//[^0-9]/}
+        ERRORS_5XX=${ERRORS_5XX//[^0-9]/}
+        TIMEOUTS=${TIMEOUTS//[^0-9]/}
+        CONN_REFUSED=${CONN_REFUSED//[^0-9]/}
+        OTHER_ERRORS=${OTHER_ERRORS//[^0-9]/}
+        
+        # Asignar 0 si están vacíos
+        TOTAL=${TOTAL:-0}
+        SUCCESS=${SUCCESS:-0}
+        THROTTLED=${THROTTLED:-0}
+        ERRORS_5XX=${ERRORS_5XX:-0}
+        TIMEOUTS=${TIMEOUTS:-0}
+        CONN_REFUSED=${CONN_REFUSED:-0}
+        OTHER_ERRORS=${OTHER_ERRORS:-0}
         
         echo "Total Requests: $TOTAL"
         
