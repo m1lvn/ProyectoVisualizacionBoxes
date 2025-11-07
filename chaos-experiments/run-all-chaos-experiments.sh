@@ -174,8 +174,6 @@ sleep 2
 # Definir experimentos
 # ═══════════════════════════════════════════════════════════════
 
-echo "[DEBUG] Definiendo experimentos..."
-
 # Crear array de experimentos
 declare -a EXPERIMENTS
 EXPERIMENT_COUNT=0
@@ -183,44 +181,32 @@ EXPERIMENT_COUNT=0
 # Experimento 1: DoS Attack
 EXPERIMENTS[$EXPERIMENT_COUNT]="1|DoS Attack Simulation|Bash|bash-scripts/01-dos-attack.ps1|5|true|false"
 ((EXPERIMENT_COUNT++))
-echo "[DEBUG] Experimento 1 definido, count=$EXPERIMENT_COUNT"
 
 # Experimento 2: Lambda Latency
 EXPERIMENTS[$EXPERIMENT_COUNT]="2|Lambda Latency Injection|Bash|bash-scripts/02-lambda-latency.sh|15|true|true"
 ((EXPERIMENT_COUNT++))
-echo "[DEBUG] Experimento 2 definido, count=$EXPERIMENT_COUNT"
 
 # Experimento 3: SNS Failure
 EXPERIMENTS[$EXPERIMENT_COUNT]="3|SNS Topic Failure|Bash|bash-scripts/03-sns-failure.sh|10|false|true"
 ((EXPERIMENT_COUNT++))
-echo "[DEBUG] Experimento 3 definido, count=$EXPERIMENT_COUNT"
 
 # Experimento 4: DynamoDB Throttling Simulation
 EXPERIMENTS[$EXPERIMENT_COUNT]="4|DynamoDB Throttling Simulation|Bash|bash-scripts/04-dynamodb-throttling-sim.sh|5|true|false"
 ((EXPERIMENT_COUNT++))
-echo "[DEBUG] Experimento 4 definido, count=$EXPERIMENT_COUNT"
 
 # Experimento 5: Lambda Error Injection Simulation
 EXPERIMENTS[$EXPERIMENT_COUNT]="5|Lambda Error Injection Simulation|Bash|bash-scripts/05-lambda-errors-sim.sh|5|false|false"
 ((EXPERIMENT_COUNT++))
-echo "[DEBUG] Experimento 5 definido, count=$EXPERIMENT_COUNT"
 
 # Todos los experimentos están disponibles (no hay filtrado)
 FILTERED_EXPERIMENTS=("${EXPERIMENTS[@]}")
 FILTERED_COUNT=${#FILTERED_EXPERIMENTS[@]}
 
-echo "[DEBUG] Total experimentos: ${#EXPERIMENTS[@]}"
-echo "[DEBUG] Filtered count: $FILTERED_COUNT"
-echo ""
-
 echo "📋 Experimentos a ejecutar: $FILTERED_COUNT"
 echo ""
 
-echo "[DEBUG] Listando experimentos..."
 for exp in "${FILTERED_EXPERIMENTS[@]}"; do
-    echo "[DEBUG] Processing: $exp"
     IFS='|' read -r id name category script duration critical requires_bash <<< "$exp"
-    echo "[DEBUG] Parsed - id=$id, name=$name"
     
     if [ "$critical" = "true" ]; then
         STATUS="🔴 Crítico"
@@ -231,26 +217,15 @@ for exp in "${FILTERED_EXPERIMENTS[@]}"; do
     echo "   [$id] $name - $category - $STATUS"
 done
 
-echo "[DEBUG] Lista completada"
-
 # Calcular tiempo estimado
-echo "[DEBUG] Calculando tiempo estimado..."
 TOTAL_DURATION=0
 for exp in "${FILTERED_EXPERIMENTS[@]}"; do
     IFS='|' read -r id name category script duration critical requires_bash <<< "$exp"
-    echo "[DEBUG] Adding duration: $duration"
     TOTAL_DURATION=$((TOTAL_DURATION + duration))
 done
 
-echo "[DEBUG] TOTAL_DURATION=$TOTAL_DURATION"
-echo "[DEBUG] FILTERED_COUNT=$FILTERED_COUNT"
-echo "[DEBUG] DELAY_BETWEEN_EXPERIMENTS=$DELAY_BETWEEN_EXPERIMENTS"
-
 TOTAL_DELAY=$(( (FILTERED_COUNT - 1) * DELAY_BETWEEN_EXPERIMENTS ))
-echo "[DEBUG] TOTAL_DELAY=$TOTAL_DELAY"
-
 TOTAL_TIME=$(( (TOTAL_DURATION * 60 + TOTAL_DELAY) / 60 ))
-echo "[DEBUG] TOTAL_TIME=$TOTAL_TIME"
 
 echo ""
 echo "Tiempo estimado: $TOTAL_TIME minutos"
