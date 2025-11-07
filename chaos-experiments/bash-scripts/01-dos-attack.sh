@@ -191,13 +191,20 @@ if [ "$confirm" = "yes" ]; then
         TOTAL=$(grep -c "Request" "$RESULT_FILE" 2>/dev/null || echo "0")
         echo "[DEBUG] TOTAL raw: '$TOTAL'"
         
-        SUCCESS=$(grep -c ": 200 " "$RESULT_FILE" 2>/dev/null || echo "0")
+        # Buscar códigos HTTP específicos (sin requerir espacio después)
+        SUCCESS=$(grep -cE "Request [0-9]+: 200 " "$RESULT_FILE" 2>/dev/null || echo "0")
         echo "[DEBUG] SUCCESS raw: '$SUCCESS'"
         echo "[DEBUG] Líneas con 200:"
-        grep ": 200 " "$RESULT_FILE" 2>/dev/null | head -n 3 || echo "Ninguna"
+        grep -E "Request [0-9]+: 200 " "$RESULT_FILE" 2>/dev/null | head -n 3 || echo "Ninguna"
         
-        THROTTLED=$(grep -c ": 429 " "$RESULT_FILE" 2>/dev/null || echo "0")
-        ERRORS_5XX=$(grep -c ": 50[0-9] " "$RESULT_FILE" 2>/dev/null || echo "0")
+        NOT_FOUND=$(grep -cE "Request [0-9]+: 404 " "$RESULT_FILE" 2>/dev/null || echo "0")
+        echo "[DEBUG] NOT_FOUND raw: '$NOT_FOUND'"
+        echo "[DEBUG] Líneas con 404:"
+        grep -E "Request [0-9]+: 404 " "$RESULT_FILE" 2>/dev/null | head -n 3 || echo "Ninguna"
+        
+        THROTTLED=$(grep -cE "Request [0-9]+: 429 " "$RESULT_FILE" 2>/dev/null || echo "0")
+        CLIENT_ERRORS=$(grep -cE "Request [0-9]+: 4[0-9]{2} " "$RESULT_FILE" 2>/dev/null || echo "0")
+        ERRORS_5XX=$(grep -cE "Request [0-9]+: 5[0-9]{2} " "$RESULT_FILE" 2>/dev/null || echo "0")
         TIMEOUTS=$(grep -c "TIMEOUT" "$RESULT_FILE" 2>/dev/null || echo "0")
         echo "[DEBUG] TIMEOUTS raw: '$TIMEOUTS'"
         echo "[DEBUG] Líneas con TIMEOUT:"
@@ -214,8 +221,12 @@ if [ "$confirm" = "yes" ]; then
         TOTAL=${TOTAL//[^0-9]/}
         SUCCESS=$(echo "$SUCCESS" | tr -d '\n' | tr -d '[:space:]')
         SUCCESS=${SUCCESS//[^0-9]/}
+        NOT_FOUND=$(echo "$NOT_FOUND" | tr -d '\n' | tr -d '[:space:]')
+        NOT_FOUND=${NOT_FOUND//[^0-9]/}
         THROTTLED=$(echo "$THROTTLED" | tr -d '\n' | tr -d '[:space:]')
         THROTTLED=${THROTTLED//[^0-9]/}
+        CLIENT_ERRORS=$(echo "$CLIENT_ERRORS" | tr -d '\n' | tr -d '[:space:]')
+        CLIENT_ERRORS=${CLIENT_ERRORS//[^0-9]/}
         ERRORS_5XX=$(echo "$ERRORS_5XX" | tr -d '\n' | tr -d '[:space:]')
         ERRORS_5XX=${ERRORS_5XX//[^0-9]/}
         TIMEOUTS=$(echo "$TIMEOUTS" | tr -d '\n' | tr -d '[:space:]')
@@ -228,7 +239,9 @@ if [ "$confirm" = "yes" ]; then
         # Asignar 0 si están vacíos
         TOTAL=${TOTAL:-0}
         SUCCESS=${SUCCESS:-0}
+        NOT_FOUND=${NOT_FOUND:-0}
         THROTTLED=${THROTTLED:-0}
+        CLIENT_ERRORS=${CLIENT_ERRORS:-0}
         ERRORS_5XX=${ERRORS_5XX:-0}
         TIMEOUTS=${TIMEOUTS:-0}
         CONN_REFUSED=${CONN_REFUSED:-0}
@@ -238,20 +251,29 @@ if [ "$confirm" = "yes" ]; then
         
         if [ "$TOTAL" -gt 0 ]; then
             echo "Successful (200): $SUCCESS ($(( SUCCESS * 100 / TOTAL ))%)"
+            echo "Not Found (404): $NOT_FOUND ($(( NOT_FOUND * 100 / TOTAL ))%)"
             echo "Throttled (429): $THROTTLED ($(( THROTTLED * 100 / TOTAL ))%)"
+            echo "Client Errors (4xx): $CLIENT_ERRORS ($(( CLIENT_ERRORS * 100 / TOTAL ))%)"
             echo "Server Errors (5xx): $ERRORS_5XX ($(( ERRORS_5XX * 100 / TOTAL ))%)"
             echo "Timeouts: $TIMEOUTS ($(( TIMEOUTS * 100 / TOTAL ))%)"
             echo "Connection Refused: $CONN_REFUSED ($(( CONN_REFUSED * 100 / TOTAL ))%)"
             echo "Other Errors: $OTHER_ERRORS ($(( OTHER_ERRORS * 100 / TOTAL ))%)"
             
             # Latencia promedio (solo requests exitosos)
-            AVG_TIME=$(grep ": 200 " "$RESULT_FILE" | cut -d'|' -f2 | cut -d's' -f1 | \
+            AVG_TIME=$(grep -E "Request [0-9]+: 200 " "$RESULT_FILE" | grep -oE "[0-9]+\.[0-9]+s" | tr -d 's' | \
                        awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; else print "N/A" }')
             echo "Latencia promedio (200 OK): ${AVG_TIME}s"
             
             echo ""
             echo "💡 Interpretación:"
-            if [ "$SUCCESS" -gt $(( TOTAL * 80 / 100 )) ]; then
+            if [ "$NOT_FOUND" -gt $(( TOTAL * 90 / 100 )) ]; then
+                echo "   ⚠️  Problema de ruta: 404 Not Found en la mayoría de requests"
+                echo "   🔍 Verifica que la ruta sea correcta: ${API_ENDPOINT}${ENDPOINT}"
+                echo "   💡 Posibles causas:"
+                echo "      - El endpoint /boxes no existe en tu API"
+                echo "      - Falta autenticación (JWT token inválido)"
+                echo "      - El stage 'dev' no está configurado"
+            elif [ "$SUCCESS" -gt $(( TOTAL * 80 / 100 )) ]; then
                 echo "   ✅ Sistema resistió bien la carga (>80% exitosos)"
             elif [ "$SUCCESS" -gt $(( TOTAL * 50 / 100 )) ]; then
                 echo "   ⚠️  Sistema tiene limitaciones (50-80% exitosos)"
