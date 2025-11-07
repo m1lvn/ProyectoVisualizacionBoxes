@@ -16,7 +16,7 @@ provider:
     NOTIFICATIONS_TOPIC_ARN: !Ref NotificationsTopic
     BOX_EVENTS_TOPIC_ARN: !Ref BoxEventsTopic
   # Usar rol existente de AWS Academy en lugar de crear uno nuevo
-  role: arn:aws:iam::891377117593:role/LabRole
+  role: arn:aws:iam::851725393529:role/LabRole
   logs:
     httpApi: true
   httpApi:

@@ -3,6 +3,7 @@ Django settings for ProyectoHospital project - Configuración para desarrollo lo
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -70,13 +71,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ProyectoHospital.wsgi.application'
 
-# Database - SQLite local para desarrollo
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# Database: usar variables de entorno si están presentes (RDS MySQL),
+# en caso contrario usar SQLite para desarrollo local.
+# Si despliegas en AWS y el user_data exporta DB_HOST/DB_NAME/etc., Django usará MySQL.
+if os.getenv('DB_HOST') or os.getenv('DB_NAME'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('DB_NAME', 'proyecto-hospital'),
+            'USER': os.getenv('DB_USER', 'admin'),
+            'PASSWORD': os.getenv('DB_PASSWORD', ''),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', '3306'),
+        }
     }
-}
+else:
+    # SQLite por defecto para desarrollo local
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

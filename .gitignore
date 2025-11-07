@@ -83,3 +83,11 @@ __pycache__/
 # MySQL dumps (si los usas para migración)
 *.sql
 !schema.sql
+
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.*
