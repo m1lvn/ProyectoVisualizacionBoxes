@@ -25,6 +25,38 @@ echo "   - API: $API_ENDPOINT$ENDPOINT"
 echo "   - Total requests: $REQUESTS"
 echo "   - Concurrent: $CONCURRENT"
 echo ""
+echo "[DEBUG] Variables de entorno:"
+echo "   - API_ENDPOINT from env: '${API_ENDPOINT}'"
+echo "   - Full URL: '${API_ENDPOINT}${ENDPOINT}'"
+echo ""
+
+# Validar que el endpoint no esté vacío
+if [ -z "$API_ENDPOINT" ]; then
+    echo "❌ ERROR: API_ENDPOINT está vacío"
+    echo "   Configura API_ENDPOINT en .env o edita el script"
+    exit 1
+fi
+
+# Test de conectividad
+echo "🔍 Testeando conectividad al endpoint..."
+TEST_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" --max-time 5 "${API_ENDPOINT}${ENDPOINT}" 2>&1)
+TEST_EXIT=$?
+if [ $TEST_EXIT -ne 0 ]; then
+    echo "⚠️  WARNING: No se pudo conectar al endpoint"
+    echo "   Exit code: $TEST_EXIT"
+    if [ $TEST_EXIT -eq 6 ]; then
+        echo "   Error 6: Could not resolve host"
+        echo "   Verifica que el URL sea correcto: ${API_ENDPOINT}${ENDPOINT}"
+    fi
+    echo ""
+    read -p "¿Continuar de todos modos? (yes/no): " continue_confirm
+    if [ "$continue_confirm" != "yes" ]; then
+        exit 1
+    fi
+else
+    echo "✅ Conectividad OK"
+fi
+echo ""
 
 # Obtener token de autenticación
 if [ -z "$JWT_TOKEN" ]; then
@@ -177,13 +209,20 @@ if [ "$confirm" = "yes" ]; then
         echo "[DEBUG] Líneas con ERROR:"
         grep -E "ERROR|CURL_ERROR" "$RESULT_FILE" 2>/dev/null | head -n 3 || echo "Ninguna"
         
-        # Validar que todas las variables son números
+        # Validar que todas las variables son números (remover newlines y no-dígitos)
+        TOTAL=$(echo "$TOTAL" | tr -d '\n' | tr -d '[:space:]')
         TOTAL=${TOTAL//[^0-9]/}
+        SUCCESS=$(echo "$SUCCESS" | tr -d '\n' | tr -d '[:space:]')
         SUCCESS=${SUCCESS//[^0-9]/}
+        THROTTLED=$(echo "$THROTTLED" | tr -d '\n' | tr -d '[:space:]')
         THROTTLED=${THROTTLED//[^0-9]/}
+        ERRORS_5XX=$(echo "$ERRORS_5XX" | tr -d '\n' | tr -d '[:space:]')
         ERRORS_5XX=${ERRORS_5XX//[^0-9]/}
+        TIMEOUTS=$(echo "$TIMEOUTS" | tr -d '\n' | tr -d '[:space:]')
         TIMEOUTS=${TIMEOUTS//[^0-9]/}
+        CONN_REFUSED=$(echo "$CONN_REFUSED" | tr -d '\n' | tr -d '[:space:]')
         CONN_REFUSED=${CONN_REFUSED//[^0-9]/}
+        OTHER_ERRORS=$(echo "$OTHER_ERRORS" | tr -d '\n' | tr -d '[:space:]')
         OTHER_ERRORS=${OTHER_ERRORS//[^0-9]/}
         
         # Asignar 0 si están vacíos
