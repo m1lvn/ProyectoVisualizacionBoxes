@@ -76,18 +76,47 @@ if [ "$confirm" = "yes" ]; then
     echo "---" >> "$RESULT_FILE"
     
     # Bombardear con requests
+    echo "💥 Enviando $REQUESTS requests con $CONCURRENT concurrentes..."
+    
     for i in $(seq 1 $REQUESTS); do
         (
+            # Timeout de 10 segundos por request
             RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}|TIME:%{time_total}" \
+                --max-time 10 \
+                --connect-timeout 5 \
                 "$API_ENDPOINT$ENDPOINT" \
                 -H "Authorization: Bearer $TOKEN" \
                 2>&1)
             
-            HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2 | cut -d'|' -f1)
-            TIME=$(echo "$RESPONSE" | grep "TIME" | cut -d':' -f2)
+            EXIT_CODE=$?
+            
+            if [ $EXIT_CODE -eq 0 ]; then
+                HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2 | cut -d'|' -f1)
+                TIME=$(echo "$RESPONSE" | grep "TIME" | cut -d':' -f2)
+                
+                # Si no se capturó código HTTP, marcarlo como error
+                if [ -z "$HTTP_CODE" ]; then
+                    HTTP_CODE="ERROR"
+                    TIME="0"
+                fi
+            else
+                # Curl falló (timeout, conexión rechazada, etc.)
+                if [ $EXIT_CODE -eq 28 ]; then
+                    HTTP_CODE="TIMEOUT"
+                elif [ $EXIT_CODE -eq 7 ]; then
+                    HTTP_CODE="CONNECTION_REFUSED"
+                else
+                    HTTP_CODE="CURL_ERROR_$EXIT_CODE"
+                fi
+                TIME="0"
+            fi
             
             echo "Request $i: $HTTP_CODE | ${TIME}s" >> "$RESULT_FILE"
-            echo "Request $i: Status=$HTTP_CODE | Time=${TIME}s"
+            
+            # Mostrar cada 50 requests
+            if [ $(($i % 50)) -eq 0 ]; then
+                echo "  Progress: $i/$REQUESTS requests enviados..."
+            fi
         ) &
         
         # Control de concurrencia
@@ -96,6 +125,7 @@ if [ "$confirm" = "yes" ]; then
         fi
     done
     
+    echo "  ⏳ Esperando que terminen todos los requests..."
     wait
     
     echo ""
@@ -109,21 +139,45 @@ if [ "$confirm" = "yes" ]; then
     
     if [ -f "$RESULT_FILE" ]; then
         TOTAL=$(grep -c "Request" "$RESULT_FILE" || echo "0")
-        SUCCESS=$(grep -c "200" "$RESULT_FILE" || echo "0")
-        THROTTLED=$(grep -c "429" "$RESULT_FILE" || echo "0")
-        ERRORS=$(grep -c "500\|502\|503\|504" "$RESULT_FILE" || echo "0")
+        SUCCESS=$(grep -c ": 200 " "$RESULT_FILE" || echo "0")
+        THROTTLED=$(grep -c ": 429 " "$RESULT_FILE" || echo "0")
+        ERRORS_5XX=$(grep -c ": 50[0-9] " "$RESULT_FILE" || echo "0")
+        TIMEOUTS=$(grep -c "TIMEOUT" "$RESULT_FILE" || echo "0")
+        CONN_REFUSED=$(grep -c "CONNECTION_REFUSED" "$RESULT_FILE" || echo "0")
+        OTHER_ERRORS=$(grep -cE "ERROR|CURL_ERROR" "$RESULT_FILE" || echo "0")
         
         echo "Total Requests: $TOTAL"
         
         if [ "$TOTAL" -gt 0 ]; then
             echo "Successful (200): $SUCCESS ($(( SUCCESS * 100 / TOTAL ))%)"
             echo "Throttled (429): $THROTTLED ($(( THROTTLED * 100 / TOTAL ))%)"
-            echo "Errors (5xx): $ERRORS ($(( ERRORS * 100 / TOTAL ))%)"
+            echo "Server Errors (5xx): $ERRORS_5XX ($(( ERRORS_5XX * 100 / TOTAL ))%)"
+            echo "Timeouts: $TIMEOUTS ($(( TIMEOUTS * 100 / TOTAL ))%)"
+            echo "Connection Refused: $CONN_REFUSED ($(( CONN_REFUSED * 100 / TOTAL ))%)"
+            echo "Other Errors: $OTHER_ERRORS ($(( OTHER_ERRORS * 100 / TOTAL ))%)"
             
-            # Latencia promedio
-            AVG_TIME=$(grep "Request" "$RESULT_FILE" | cut -d'|' -f2 | cut -d's' -f1 | \
-                       awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }')
-            echo "Latencia promedio: ${AVG_TIME}s"
+            # Latencia promedio (solo requests exitosos)
+            AVG_TIME=$(grep ": 200 " "$RESULT_FILE" | cut -d'|' -f2 | cut -d's' -f1 | \
+                       awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; else print "N/A" }')
+            echo "Latencia promedio (200 OK): ${AVG_TIME}s"
+            
+            echo ""
+            echo "💡 Interpretación:"
+            if [ "$SUCCESS" -gt $(( TOTAL * 80 / 100 )) ]; then
+                echo "   ✅ Sistema resistió bien la carga (>80% exitosos)"
+            elif [ "$SUCCESS" -gt $(( TOTAL * 50 / 100 )) ]; then
+                echo "   ⚠️  Sistema tiene limitaciones (50-80% exitosos)"
+            else
+                echo "   ❌ Sistema no soporta esta carga (<50% exitosos)"
+            fi
+            
+            if [ "$THROTTLED" -gt 0 ]; then
+                echo "   🚦 Rate limiting activo (bueno para protección)"
+            fi
+            
+            if [ "$TIMEOUTS" -gt $(( TOTAL * 20 / 100 )) ]; then
+                echo "   ⏱️  Muchos timeouts - revisar capacidad Lambda/DynamoDB"
+            fi
         else
             echo "⚠️  No se encontraron resultados en el archivo"
         fi
