@@ -271,9 +271,9 @@ resources:
           AccessToken: minutes
           IdToken: minutes
           RefreshToken: days
-        AccessTokenValidity: 5   # 5 minutes (mínimo permitido)
-        IdTokenValidity: 5      # 5 minutes (mínimo permitido)  
-        RefreshTokenValidity: 30 # 30 days
+        AccessTokenValidity: 60   # 60 minutes para chaos engineering tests
+        IdTokenValidity: 60       # 60 minutes para chaos engineering tests
+        RefreshTokenValidity: 30  # 30 days
         
     # Cognito User Pool Groups
     AdminGroup:

@@ -3,14 +3,31 @@
 # Chaos Engineering Experiment #3: SNS Topic Failure
 # 
 # Objetivo: Validar resiliencia ante fallos de mensajería asíncrona
-# Duración: ~5-10 minutos
-# Herramienta: Bash + AWS CLI
+# Duración: ~5 minutos
+# Método: Enviar eventos que deberían publicarse a SNS y validar handling
 
-set -e
+# Obtener directorio del script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/../.env"
 
-# ═══════════════════════════════════════════════════════════════
-# CONFIGURACIÓN AUTO-DETECTADA
-# ═══════════════════════════════════════════════════════════════
+# Cargar variables de entorno desde .env si no están exportadas
+if [ -z "$JWT_TOKEN" ] || [ -z "$API_ENDPOINT" ]; then
+    if [ -f "$ENV_FILE" ]; then
+        echo "📄 Cargando variables desde .env..."
+        export $(cat "$ENV_FILE" | grep -v '^#' | grep -v '^$' | xargs)
+    fi
+fi
+
+# Validar variables requeridas
+if [ -z "$JWT_TOKEN" ]; then
+    echo "❌ Error: JWT_TOKEN no disponible"
+    exit 1
+fi
+
+if [ -z "$API_ENDPOINT" ]; then
+    echo "❌ Error: API_ENDPOINT no disponible"
+    exit 1
+fi
 
 # Auto-detectar AWS Account ID y Region
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null)
@@ -18,24 +35,7 @@ AWS_REGION=$(aws configure get region 2>/dev/null || echo "us-east-1")
 
 if [ -z "$AWS_ACCOUNT_ID" ]; then
     echo "❌ Error: No se pudo obtener AWS Account ID"
-    echo "   Ejecuta: aws configure"
     exit 1
-fi
-
-# Auto-detectar API Gateway URL
-API_GATEWAY_ID=$(aws apigateway get-rest-apis \
-    --query "items[?name=='hospital-boxes-api-dev'].id" \
-    --output text 2>/dev/null)
-
-if [ -n "$API_GATEWAY_ID" ]; then
-    API_ENDPOINT="https://${API_GATEWAY_ID}.execute-api.${AWS_REGION}.amazonaws.com/dev/api"
-elif [ -f "../.env" ]; then
-    source ../.env
-fi
-
-# Fallback
-if [ -z "$API_ENDPOINT" ]; then
-    API_ENDPOINT="${API_ENDPOINT:-https://44wvhl6j05.execute-api.us-east-1.amazonaws.com/dev/api}"
 fi
 
 # Auto-construir ARNs de SNS topics
@@ -45,21 +45,7 @@ TOPICS=(
     "arn:aws:sns:${AWS_REGION}:${AWS_ACCOUNT_ID}:dev-hospital-notifications"
 )
 
-# Obtener JWT Token automáticamente
-if [ -f "../get-jwt-from-secrets.ps1" ]; then
-    TOKEN=$(powershell -ExecutionPolicy Bypass -File "../get-jwt-from-secrets.ps1" 2>/dev/null)
-elif command -v aws &> /dev/null; then
-    TOKEN=$(aws secretsmanager get-secret-value \
-        --secret-id chaos-engineering/jwt-token \
-        --region $AWS_REGION \
-        --query 'SecretString' --output text 2>/dev/null | \
-        python3 -c "import sys, json; print(json.load(sys.stdin)['jwtToken'])" 2>/dev/null)
-fi
-
-# Fallback: leer desde .env
-if [ -z "$TOKEN" ] && [ -f "../.env" ]; then
-    TOKEN=$(grep "^JWT_TOKEN=" ../.env | cut -d'=' -f2)
-fi
+TOKEN="$JWT_TOKEN"
 
 # Colores
 RED='\033[0;31m'
@@ -85,14 +71,7 @@ check_dependencies() {
     log_info "API Endpoint: $API_ENDPOINT"
     
     if ! command -v aws &> /dev/null; then
-        log_error "AWS CLI no está instalado (requerido para este experimento)"
-        exit 1
-    fi
-    
-    # Verificar credenciales AWS
-    if ! aws sts get-caller-identity &> /dev/null; then
-        log_error "AWS no está configurado correctamente"
-        log_info "Ejecuta: aws configure"
+        log_error "AWS CLI no está instalado"
         exit 1
     fi
     

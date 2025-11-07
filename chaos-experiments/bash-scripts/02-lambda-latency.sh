@@ -1,6 +1,6 @@
 #!/bin/bash
 # Chaos Experiment 2: Lambda Latency Injection
-# Objetivo: Simular latencia alta en Lambda functions
+# Objetivo: Simular latencia alta en Lambda functions mediante carga
 
 echo "═══════════════════════════════════════════════════"
 echo "🔥 CHAOS EXPERIMENT: Lambda Latency Injection"
@@ -10,144 +10,114 @@ echo "════════════════════════�
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="$SCRIPT_DIR/../.env"
 
-# Cargar variables de entorno si existen
-if [ -f "$ENV_FILE" ]; then
-    echo "📄 Cargando variables desde .env..."
-    export $(cat "$ENV_FILE" | grep -v '^#' | grep -v '^$' | xargs)
+# Cargar variables de entorno desde .env si no están exportadas
+if [ -z "$JWT_TOKEN" ] || [ -z "$API_ENDPOINT" ]; then
+    if [ -f "$ENV_FILE" ]; then
+        echo "📄 Cargando variables desde .env..."
+        export $(cat "$ENV_FILE" | grep -v '^#' | grep -v '^$' | xargs)
+    fi
 fi
 
-# Auto-detectar AWS Account ID
-AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null)
-if [ -z "$AWS_ACCOUNT_ID" ]; then
-    echo "❌ Error: No se pudo obtener AWS Account ID"
-    echo "   Asegúrate de tener AWS CLI configurado: aws configure"
+# Validar variables requeridas
+if [ -z "$JWT_TOKEN" ]; then
+    echo "❌ Error: JWT_TOKEN no disponible"
+    echo "   Ejecuta primero: ./run-all-chaos-experiments.sh"
+    echo "   O manualmente: ../get-cognito-jwt.sh"
     exit 1
 fi
 
-# Usar API_ENDPOINT desde .env si existe
-if [ -n "$API_ENDPOINT" ]; then
-    # Asegurar que tiene /boxes al final
-    if [[ ! "$API_ENDPOINT" == */boxes ]]; then
-        API_ENDPOINT="${API_ENDPOINT}/boxes"
-    fi
-    echo "✅ API Endpoint cargado desde .env"
-else
-    # Intentar auto-detectar desde API Gateway
-    echo "🔍 Auto-detectando API Gateway..."
-    API_ID=$(aws apigateway get-rest-apis --query "items[?name=='hospital-boxes-api-dev'].id" --output text 2>/dev/null)
-    if [ -n "$API_ID" ]; then
-        AWS_REGION=$(aws configure get region 2>/dev/null || echo "us-east-1")
-        API_ENDPOINT="https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/dev/api/boxes"
-        echo "✅ API Endpoint auto-detectado: $API_ENDPOINT"
-    else
-        # Fallback final: preguntar al usuario
-        echo "⚠️  No se pudo auto-detectar el API endpoint"
-        read -p "Ingresa el API endpoint (ej: https://xxxxx.execute-api.us-east-1.amazonaws.com/dev/api/boxes): " API_ENDPOINT
-    fi
+if [ -z "$API_ENDPOINT" ]; then
+    echo "❌ Error: API_ENDPOINT no disponible"
+    echo "   Ejecuta primero: ./run-all-chaos-experiments.sh"
+    exit 1
 fi
 
 # Configuración
-LAMBDA_FUNCTION="getBoxes"
-LATENCY_MS=5000
+ENDPOINT="/api/boxes"
+REQUESTS=500
+CONCURRENT=30
+LATENCY_MS=2000  # Simular latencia mediante carga concurrente
+
+TOKEN="$JWT_TOKEN"
 
 echo ""
 echo "⚙️  Configuración:"
-echo "   - AWS Account: $AWS_ACCOUNT_ID"
-echo "   - Lambda: $LAMBDA_FUNCTION"
-echo "   - Latencia inyectada: ${LATENCY_MS}ms"
-echo "   - API Endpoint: $API_ENDPOINT"
+echo "   - API: $API_ENDPOINT$ENDPOINT"
+echo "   - Total requests: $REQUESTS"
+echo "   - Concurrent: $CONCURRENT"
+echo "   - Objetivo: Medir degradación de latencia bajo carga"
 echo ""
 
-# Obtener JWT Token automáticamente
-echo "🔐 Obteniendo JWT Token..."
-
-# Intentar obtener desde JWT_TOKEN variable de entorno (cargada desde .env)
-if [ -n "$JWT_TOKEN" ]; then
-    TOKEN="$JWT_TOKEN"
-    echo "✅ JWT Token cargado desde .env"
-# Intentar obtener desde AWS Secrets Manager
-elif command -v aws &> /dev/null; then
-    TOKEN=$(aws secretsmanager get-secret-value \
-        --secret-id chaos-engineering/jwt-token \
-        --region us-east-1 \
-        --query 'SecretString' --output text 2>/dev/null | \
-        python3 -c "import sys, json; print(json.load(sys.stdin)['jwtToken'])" 2>/dev/null)
-    
-    if [ -n "$TOKEN" ]; then
-        echo "✅ JWT Token obtenido desde Secrets Manager"
-    fi
-fi
-
-# Fallback final: preguntar al usuario
-if [ -z "$TOKEN" ]; then
-    echo "⚠️  No se pudo obtener JWT automáticamente"
-    read -p "🔑 Ingrese su JWT token: " TOKEN
-fi
-
-# 1. Baseline sin latencia
+# 1. Baseline sin carga
 echo ""
-echo "📊 PASO 1: Baseline (sin latencia)"
+echo "📊 PASO 1: Baseline (latencia normal)"
 echo "---"
 
 # Crear directorio de resultados si no existe
 RESULTS_DIR="$SCRIPT_DIR/../results"
 mkdir -p "$RESULTS_DIR"
 
-BASELINE_FILE="$RESULTS_DIR/baseline-$(date +%Y%m%d-%H%M%S).log"
-echo "Baseline Results - $(date)" > "$BASELINE_FILE"
+RESULT_FILE="$RESULTS_DIR/lambda-latency-$(date +%Y%m%d-%H%M%S).log"
+echo "Lambda Latency Test - $(date)" > "$RESULT_FILE"
+echo "Baseline (10 requests secuenciales)" >> "$RESULT_FILE"
+echo "---" >> "$RESULT_FILE"
 
-for i in {1..20}; do
-    START=$(date +%s%N)
-    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" \
-        "$API_ENDPOINT" \
-        -H "Authorization: Bearer $TOKEN")
-    END=$(date +%s%N)
+for i in {1..10}; do
+    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+        --max-time 10 --connect-timeout 5 \
+        "$API_ENDPOINT$ENDPOINT" \
+        -H "Authorization: Bearer $TOKEN" 2>&1)
     
-    DURATION=$(( (END - START) / 1000000 ))
-    HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2)
+    HTTP_CODE=$(echo "$RESPONSE" | grep "^HTTP_CODE:" | cut -d':' -f2)
+    TIME=$(echo "$RESPONSE" | grep "^TIME:" | cut -d':' -f2)
     
-    echo "Request $i: ${DURATION}ms | Status=$HTTP_CODE" | tee -a "$BASELINE_FILE"
+    echo "  Request $i: Status=$HTTP_CODE | Time=${TIME}s"
+    echo "Baseline-$i: $HTTP_CODE | ${TIME}s" >> "$RESULT_FILE"
 done
 
-AVG_BASELINE=$(cat "$BASELINE_FILE" | grep "Request" | cut -d':' -f2 | cut -d'm' -f1 | \
+AVG_BASELINE=$(grep "^Baseline-" "$RESULT_FILE" | cut -d'|' -f2 | tr -d 's ' | \
                awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }')
 echo ""
-echo "✅ Latencia baseline promedio: ${AVG_BASELINE}ms"
+echo "✅ Latencia baseline promedio: ${AVG_BASELINE}s"
 
-# 2. Crear código con latencia
+# 2. Carga concurrente para inducir latencia
 echo ""
-echo "💉 PASO 2: Inyectando latencia en Lambda..."
+echo "💉 PASO 2: Carga concurrente (simular latencia)"
 echo "---"
+echo "💥 Enviando $REQUESTS requests con $CONCURRENT concurrentes..."
 
-# Backup del código original
-HANDLER_PATH="../../serverless-api/src/handlers/boxes.js"
-BACKUP_PATH="../../serverless-api/src/handlers/boxes.js.backup"
+echo "" >> "$RESULT_FILE"
+echo "Load Test ($REQUESTS requests, $CONCURRENT concurrent)" >> "$RESULT_FILE"
+echo "---" >> "$RESULT_FILE"
 
-if [ ! -f "$HANDLER_PATH" ]; then
-    echo "❌ Error: No se encuentra el archivo $HANDLER_PATH"
-    exit 1
-fi
+send_request() {
+    local id=$1
+    local output_file=$2
+    
+    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+        --max-time 10 --connect-timeout 5 \
+        "$API_ENDPOINT$ENDPOINT" \
+        -H "Authorization: Bearer $TOKEN" 2>&1)
+    
+    HTTP_CODE=$(echo "$RESPONSE" | grep "^HTTP_CODE:" | cut -d':' -f2)
+    TIME=$(echo "$RESPONSE" | grep "^TIME:" | cut -d':' -f2)
+    
+    echo "Request $id: $HTTP_CODE | ${TIME}s" >> "$output_file"
+}
 
-echo "💾 Creando backup..."
-cp "$HANDLER_PATH" "$BACKUP_PATH"
+# Enviar requests en paralelo
+for i in $(seq 1 $REQUESTS); do
+    send_request $i "$RESULT_FILE" &
+    
+    # Controlar concurrencia
+    if [ $((i % CONCURRENT)) -eq 0 ]; then
+        wait
+        echo "  Progress: $i/$REQUESTS requests enviados..."
+    fi
+done
 
-# Inyectar código de latencia
-echo "📝 Modificando código..."
-sed -i "1a\\
-// 🔥 CHAOS ENGINEERING: Latencia artificial de ${LATENCY_MS}ms\\
-const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));\\
-const originalHandler = module.exports.getBoxes;\\
-module.exports.getBoxes = async (event) => {\\
-  await sleep($LATENCY_MS);\\
-  return originalHandler(event);\\
-};" "$HANDLER_PATH"
-
-# Desplegar Lambda modificada
-echo ""
-echo "📦 Desplegando Lambda con latencia..."
-cd ../../serverless-api
-serverless deploy function -f $LAMBDA_FUNCTION --verbose
-cd ../chaos-experiments/bash-scripts
+wait
+echo "  ⏳ Todos los requests completados"
 
 echo ""
 echo "⏱️  Esperando 10 segundos para que el despliegue tome efecto..."
@@ -177,74 +147,76 @@ done
 AVG_CHAOS=$(cat $CHAOS_FILE | grep "Request" | cut -d':' -f2 | cut -d'm' -f1 | \
             awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }')
 
+# 3. Analizar resultados
 echo ""
-echo "⚠️  Latencia promedio con chaos: ${AVG_CHAOS}ms"
-echo "📊 Incremento de latencia: $(( AVG_CHAOS - AVG_BASELINE ))ms"
-
-# 4. Restaurar código original
-echo ""
-echo "✅ PASO 4: Restaurando código original..."
+echo "📊 PASO 3: Análisis de resultados"
 echo "---"
 
-mv "$BACKUP_PATH" "$HANDLER_PATH"
+# Contar respuestas
+TOTAL=$(grep -c "^Request" "$RESULT_FILE" 2>/dev/null || echo "0")
+SUCCESS=$(grep -c ": 200 |" "$RESULT_FILE" 2>/dev/null || echo "0")
+ERRORS=$(grep -cE ": (4[0-9]{2}|5[0-9]{2}) \|" "$RESULT_FILE" 2>/dev/null || echo "0")
+TIMEOUTS=$(grep -c "TIMEOUT" "$RESULT_FILE" 2>/dev/null || echo "0")
 
-echo "📦 Re-desplegando Lambda original..."
-cd ../../serverless-api
-serverless deploy function -f $LAMBDA_FUNCTION --verbose
-cd ../chaos-experiments/bash-scripts
+# Limpiar variables
+TOTAL=$(echo "$TOTAL" | tr -d '\n' | tr -d '[:space:]')
+SUCCESS=$(echo "$SUCCESS" | tr -d '\n' | tr -d '[:space:]')
+ERRORS=$(echo "$ERRORS" | tr -d '\n' | tr -d '[:space:]')
+TIMEOUTS=$(echo "$TIMEOUTS" | tr -d '\n' | tr -d '[:space:]')
+
+# Validar números
+TOTAL=${TOTAL//[^0-9]/}
+SUCCESS=${SUCCESS//[^0-9]/}
+ERRORS=${ERRORS//[^0-9]/}
+TIMEOUTS=${TIMEOUTS//[^0-9]/}
+
+TOTAL=${TOTAL:-0}
+SUCCESS=${SUCCESS:-0}
+ERRORS=${ERRORS:-0}
+TIMEOUTS=${TIMEOUTS:-0}
+
+# Calcular latencias
+AVG_LOAD=$(grep "^Request" "$RESULT_FILE" | grep ": 200 |" | cut -d'|' -f2 | tr -d 's ' | \
+           awk '{ sum += $1; n++ } END { if (n > 0) printf "%.3f", sum / n; else print "N/A" }')
+
+P95_LOAD=$(grep "^Request" "$RESULT_FILE" | grep ": 200 |" | cut -d'|' -f2 | tr -d 's ' | \
+           sort -n | awk '{times[NR]=$1} END {print times[int(NR*0.95)]}')
 
 echo ""
-echo "⏱️  Esperando 10 segundos..."
-sleep 10
-
-# 5. Validación post-restauración
+echo "✅ Experimento completado"
+echo "📊 Resultados guardados en: $RESULT_FILE"
 echo ""
-echo "🔍 PASO 5: Validación post-restauración"
+echo "📈 Análisis de Resultados:"
 echo "---"
 
-RECOVERY_FILE="../results/recovery-$(date +%Y%m%d-%H%M%S).log"
-echo "Recovery Results - $(date)" > $RECOVERY_FILE
-
-for i in {1..10}; do
-    START=$(date +%s%N)
-    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" \
-        "$API_ENDPOINT" \
-        -H "Authorization: Bearer $TOKEN")
-    END=$(date +%s%N)
+if [ "$TOTAL" -gt 0 ]; then
+    echo "Total Requests: $TOTAL"
+    echo "Successful (200): $SUCCESS ($(( SUCCESS * 100 / TOTAL ))%)"
+    echo "Errors (4xx/5xx): $ERRORS ($(( ERRORS * 100 / TOTAL ))%)"
+    echo "Timeouts: $TIMEOUTS ($(( TIMEOUTS * 100 / TOTAL ))%)"
+    echo ""
+    echo "Latencia baseline: ${AVG_BASELINE}s"
+    echo "Latencia bajo carga: ${AVG_LOAD}s"
+    echo "P95 bajo carga: ${P95_LOAD}s"
+    echo ""
     
-    DURATION=$(( (END - START) / 1000000 ))
-    HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2)
-    
-    echo "Request $i: ${DURATION}ms | Status=$HTTP_CODE" | tee -a $RECOVERY_FILE
-done
-
-AVG_RECOVERY=$(cat $RECOVERY_FILE | grep "Request" | cut -d':' -f2 | cut -d'm' -f1 | \
-               awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }')
-
-echo ""
-echo "═══════════════════════════════════════════════════"
-echo "📊 RESUMEN DE RESULTADOS"
-echo "═══════════════════════════════════════════════════"
-echo "Latencia baseline:     ${AVG_BASELINE}ms"
-echo "Latencia con chaos:    ${AVG_CHAOS}ms"
-echo "Latencia post-recovery: ${AVG_RECOVERY}ms"
-echo ""
-echo "Incremento durante chaos: $(( AVG_CHAOS - AVG_BASELINE ))ms"
-echo "Recuperación:             $(( AVG_RECOVERY - AVG_BASELINE ))ms"
-echo ""
-
-if [ "$AVG_RECOVERY" -lt $(( AVG_BASELINE + 100 )) ]; then
-    echo "✅ Sistema recuperado exitosamente"
-else
-    echo "⚠️  Advertencia: Sistema aún degradado"
+    # Calcular degradación
+    if [[ "$AVG_BASELINE" != "N/A" ]] && [[ "$AVG_LOAD" != "N/A" ]]; then
+        DEGRADATION=$(echo "$AVG_LOAD $AVG_BASELINE" | awk '{printf "%.1f", ($1 - $2) / $2 * 100}')
+        echo "Degradación de latencia: ${DEGRADATION}%"
+        echo ""
+        
+        if (( $(echo "$DEGRADATION > 50" | bc -l) )); then
+            echo "⚠️  Alta degradación de latencia bajo carga"
+        elif (( $(echo "$DEGRADATION > 20" | bc -l) )); then
+            echo "� Degradación moderada de latencia"
+        else
+            echo "✅ Sistema mantiene buen rendimiento bajo carga"
+        fi
+    fi
 fi
 
 echo ""
-echo "📁 Archivos de resultados:"
-echo "   - Baseline:  $BASELINE_FILE"
-echo "   - Chaos:     $CHAOS_FILE"
-echo "   - Recovery:  $RECOVERY_FILE"
-
 echo "═══════════════════════════════════════════════════"
 echo "✅ Experimento completado"
 echo "═══════════════════════════════════════════════════"

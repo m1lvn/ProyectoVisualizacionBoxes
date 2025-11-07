@@ -4,20 +4,42 @@
 # ════════════════════════════════════════════════════════════════
 # 
 # OBJETIVO: Simular throttling de DynamoDB mediante carga masiva
-# DURACIÓN: 5 minutos
+# DURACIÓN: 3 minutos
 # MÉTODO: Requests concurrentes para forzar límites de capacidad
-#
 
-set -e
+# Obtener directorio del script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/../.env"
+
+# Cargar variables de entorno desde .env si no están exportadas
+if [ -z "$JWT_TOKEN" ] || [ -z "$API_ENDPOINT" ]; then
+    if [ -f "$ENV_FILE" ]; then
+        echo "📄 Cargando variables desde .env..."
+        export $(cat "$ENV_FILE" | grep -v '^#' | grep -v '^$' | xargs)
+    fi
+fi
+
+# Validar variables requeridas
+if [ -z "$JWT_TOKEN" ]; then
+    echo "❌ Error: JWT_TOKEN no disponible"
+    exit 1
+fi
+
+if [ -z "$API_ENDPOINT" ]; then
+    echo "❌ Error: API_ENDPOINT no disponible"
+    exit 1
+fi
 
 # ═══════════════════════════════════════════════════════════════
 # Configuración
 # ═══════════════════════════════════════════════════════════════
 
 EXPERIMENT_NAME="DynamoDB Throttling Simulation"
-DURATION_MINUTES=5
-CONCURRENT_REQUESTS=50
-REQUEST_INTERVAL=0.1  # segundos entre oleadas
+ENDPOINT="/api/boxes"
+REQUESTS=800
+CONCURRENT=50
+
+TOKEN="$JWT_TOKEN"
 
 # Colores
 RED='\033[0;31m'
@@ -56,49 +78,20 @@ echo "   EXPERIMENTO 4: $EXPERIMENT_NAME"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 echo "📊 Configuración:"
-echo "   Duración: $DURATION_MINUTES minutos"
-echo "   Requests concurrentes: $CONCURRENT_REQUESTS"
-echo "   Método: Carga masiva para forzar throttling"
+echo "   - API: $API_ENDPOINT$ENDPOINT"
+echo "   - Total requests: $REQUESTS"
+echo "   - Concurrent: $CONCURRENT"
+echo "   - Método: Carga masiva para forzar throttling"
 echo ""
 
 # ═══════════════════════════════════════════════════════════════
-# Obtener JWT y API URL
+# Crear directorio de resultados
 # ═══════════════════════════════════════════════════════════════
 
-log_info "Obteniendo configuración..."
-
-# JWT Token
-if [ -f "get-jwt-from-secrets.sh" ]; then
-    JWT_TOKEN=$(./get-jwt-from-secrets.sh 2>/dev/null || echo "")
-fi
-
-if [ -z "$JWT_TOKEN" ] && [ -f ".env" ]; then
-    JWT_TOKEN=$(grep JWT_TOKEN .env | cut -d'=' -f2)
-fi
-
-if [ -z "$JWT_TOKEN" ]; then
-    log_error "JWT Token no encontrado"
-    echo "Ejecuta: ./setup-jwt-secrets-manager.sh"
-    exit 1
-fi
-
-# API Endpoint
-AWS_REGION=$(aws configure get region || echo "us-east-1")
-AWS_ACCOUNT=$(aws sts get-caller-identity --query Account --output text 2>/dev/null || echo "")
-
-# Auto-detectar API Gateway
-API_GATEWAY_ID=$(aws apigateway get-rest-apis \
-    --query 'items[?name==`dev-serverless-api`].id' \
-    --output text 2>/dev/null | head -n1)
-
-if [ -z "$API_GATEWAY_ID" ]; then
-    API_GATEWAY_ID=$(aws apigateway get-rest-apis \
-        --query 'items[0].id' \
-        --output text 2>/dev/null | head -n1)
-fi
-
-if [ -n "$API_GATEWAY_ID" ]; then
-    API_ENDPOINT="https://${API_GATEWAY_ID}.execute-api.${AWS_REGION}.amazonaws.com/dev/api"
+RESULTS_DIR="$SCRIPT_DIR/../results"
+mkdir -p "$RESULTS_DIR"
+RESULT_FILE="$RESULTS_DIR/dynamodb-throttling-$(date +%Y%m%d-%H%M%S).log"
+    API_ENDPOINT="https://${API_GATEWAY_ID}.execute-api.${AWS_REGION}.amazonaws.com/api"
 else
     log_warning "No se pudo auto-detectar API Gateway, usando .env"
     API_ENDPOINT=$(grep API_ENDPOINT .env 2>/dev/null | cut -d'=' -f2 || echo "")
