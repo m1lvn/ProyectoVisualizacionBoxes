@@ -146,6 +146,59 @@ if [ "$SKIP_FIS" = false ]; then
             SKIP_FIS=true
         fi
     fi
+    
+    # Verificar si existen templates FIS (si no, intentar crearlos)
+    if [ "$SKIP_FIS" = false ]; then
+        echo "[✓] Verificando FIS Experiment Templates..."
+        
+        # Contar templates existentes
+        TEMPLATE_COUNT=$(aws fis list-experiment-templates --query 'experimentTemplates | length(@)' --output text 2>/dev/null || echo "0")
+        
+        if [ "$TEMPLATE_COUNT" = "0" ] || [ -z "$TEMPLATE_COUNT" ]; then
+            echo "    ⚠️  No se encontraron templates FIS"
+            echo "    📝 Creando templates automáticamente..."
+            
+            # Crear template de DynamoDB Throttling
+            if [ -f "aws-fis/dynamodb-throttling.json" ]; then
+                echo "       → Creando template: dynamodb-throttling..."
+                TEMPLATE_ID=$(aws fis create-experiment-template \
+                    --cli-input-json file://aws-fis/dynamodb-throttling.json \
+                    --region us-east-1 \
+                    --query 'experimentTemplate.id' \
+                    --output text 2>/dev/null)
+                
+                if [ -n "$TEMPLATE_ID" ]; then
+                    echo "       ✅ Template creado: $TEMPLATE_ID"
+                else
+                    echo "       ❌ Error creando template dynamodb-throttling"
+                fi
+            fi
+            
+            # Crear template de Lambda Error Injection
+            if [ -f "aws-fis/lambda-error-injection.json" ]; then
+                echo "       → Creando template: lambda-error-injection..."
+                TEMPLATE_ID=$(aws fis create-experiment-template \
+                    --cli-input-json file://aws-fis/lambda-error-injection.json \
+                    --region us-east-1 \
+                    --query 'experimentTemplate.id' \
+                    --output text 2>/dev/null)
+                
+                if [ -n "$TEMPLATE_ID" ]; then
+                    echo "       ✅ Template creado: $TEMPLATE_ID"
+                else
+                    echo "       ❌ Error creando template lambda-error-injection"
+                fi
+            fi
+            
+            # Re-verificar
+            TEMPLATE_COUNT=$(aws fis list-experiment-templates --query 'experimentTemplates | length(@)' --output text 2>/dev/null || echo "0")
+            if [ "$TEMPLATE_COUNT" != "0" ]; then
+                echo "    ✅ Templates FIS creados: $TEMPLATE_COUNT"
+            fi
+        else
+            echo "    ✅ Templates FIS disponibles: $TEMPLATE_COUNT"
+        fi
+    fi
 fi
 
 echo ""
