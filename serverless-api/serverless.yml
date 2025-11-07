@@ -16,7 +16,15 @@ provider:
     NOTIFICATIONS_TOPIC_ARN: !Ref NotificationsTopic
     BOX_EVENTS_TOPIC_ARN: !Ref BoxEventsTopic
   # Usar rol existente de AWS Academy en lugar de crear uno nuevo
+<<<<<<< HEAD
   role: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/${env:AWS_IAM_ROLE, 'LabRole'}
+=======
+<<<<<<< Updated upstream
+  role: arn:aws:iam::891377117593:role/LabRole
+=======
+  role: ${env:AWS_ROLE_ARN}
+>>>>>>> Stashed changes
+>>>>>>> origin/Joaco
   logs:
     httpApi: true
   httpApi:
