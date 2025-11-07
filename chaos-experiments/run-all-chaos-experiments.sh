@@ -151,8 +151,21 @@ if [ "$SKIP_FIS" = false ]; then
     if [ "$SKIP_FIS" = false ]; then
         echo "[✓] Verificando FIS Experiment Templates..."
         
-        # Contar templates existentes
-        TEMPLATE_COUNT=$(aws fis list-experiment-templates --query 'experimentTemplates | length(@)' --output text 2>/dev/null || echo "0")
+        echo "    [DEBUG] Testeando conectividad con AWS FIS API..."
+        if ! timeout 10s aws fis list-experiment-templates --region us-east-1 > /dev/null 2>&1; then
+            echo "    ⚠️  No se puede conectar a AWS FIS API (timeout o error)"
+            echo "    [DEBUG] Esto puede indicar:"
+            echo "            - Sin permisos para fis:ListExperimentTemplates"
+            echo "            - Problemas de red"
+            echo "            - AWS CLI mal configurado"
+            SKIP_FIS=true
+        else
+            echo "    [DEBUG] Conectividad OK ✓"
+        fi
+        
+        # Contar templates existentes solo si la conexión funciona
+        if [ "$SKIP_FIS" = false ]; then
+            TEMPLATE_COUNT=$(aws fis list-experiment-templates --query 'experimentTemplates | length(@)' --output text 2>/dev/null || echo "0")
         
         if [ "$TEMPLATE_COUNT" = "0" ] || [ -z "$TEMPLATE_COUNT" ]; then
             echo "    ⚠️  No se encontraron templates FIS"
@@ -161,31 +174,74 @@ if [ "$SKIP_FIS" = false ]; then
             # Crear template de DynamoDB Throttling
             if [ -f "aws-fis/dynamodb-throttling.json" ]; then
                 echo "       → Creando template: dynamodb-throttling..."
+                echo "       [DEBUG] Archivo encontrado: aws-fis/dynamodb-throttling.json"
+                echo "       [DEBUG] Tamaño: $(wc -c < aws-fis/dynamodb-throttling.json) bytes"
+                echo "       [DEBUG] Validando JSON..."
                 
-                # Capturar tanto stdout como stderr
+                # Validar JSON primero
+                if ! python3 -m json.tool aws-fis/dynamodb-throttling.json > /dev/null 2>&1; then
+                    echo "       ❌ JSON malformado en dynamodb-throttling.json"
+                    SKIP_FIS=true
+                    continue
+                fi
+                echo "       [DEBUG] JSON válido ✓"
+                
+                echo "       [DEBUG] Enviando request a AWS FIS (timeout: 30s)..."
+                
+                # Capturar tanto stdout como stderr con timestamp
+                START_TIME=$(date +%s)
                 CREATE_OUTPUT=$(timeout 30s aws fis create-experiment-template \
                     --cli-input-json file://aws-fis/dynamodb-throttling.json \
                     --region us-east-1 2>&1)
                 CREATE_EXIT_CODE=$?
+                END_TIME=$(date +%s)
+                ELAPSED=$((END_TIME - START_TIME))
+                
+                echo "       [DEBUG] Request completado en ${ELAPSED}s con exit code: $CREATE_EXIT_CODE"
+                echo "       [DEBUG] Request completado en ${ELAPSED}s con exit code: $CREATE_EXIT_CODE"
                 
                 if [ $CREATE_EXIT_CODE -eq 0 ]; then
+                    echo "       [DEBUG] Respuesta exitosa, extrayendo ID..."
                     TEMPLATE_ID=$(echo "$CREATE_OUTPUT" | grep -o '"id": "[^"]*"' | cut -d'"' -f4 | head -n1)
                     if [ -n "$TEMPLATE_ID" ]; then
                         echo "       ✅ Template creado: $TEMPLATE_ID"
                     else
-                        echo "       ✅ Template creado exitosamente"
+                        echo "       ✅ Template creado exitosamente (ID no capturado)"
+                        echo "       [DEBUG] Output: ${CREATE_OUTPUT:0:200}..."
                     fi
                 elif [ $CREATE_EXIT_CODE -eq 124 ]; then
-                    echo "       ⏱️  Timeout - La operación tardó más de 30s"
-                    echo "       💡 Puedes crear el template manualmente desde AWS Console"
+                    echo "       ⏱️  Timeout después de 30s"
+                    echo "       [DEBUG] El comando AWS CLI no respondió a tiempo"
+                    echo "       💡 Esto puede indicar:"
+                    echo "          - Problemas de red con AWS API"
+                    echo "          - Request colgado esperando permisos"
+                    echo "          - Bug en AWS CLI"
                     SKIP_FIS=true
                 else
-                    echo "       ❌ Error creando template:"
-                    echo "$CREATE_OUTPUT" | grep -i "error\|denied\|exception" | head -n3
+                    echo "       ❌ Error con exit code: $CREATE_EXIT_CODE"
+                    echo "       [DEBUG] Output completo:"
+                    echo "$CREATE_OUTPUT" | head -n 10
                     
-                    # Si es error de permisos, saltar FIS
-                    if echo "$CREATE_OUTPUT" | grep -qi "AccessDenied\|not authorized"; then
-                        echo "       ⚠️  Sin permisos FIS - Saltando experimentos FIS"
+                    # Detectar tipo de error
+                    if echo "$CREATE_OUTPUT" | grep -qi "AccessDenied\|not authorized\|UnauthorizedException"; then
+                        echo ""
+                        echo "       ⚠️  ERROR DE PERMISOS detectado"
+                        echo "       Tu usuario/role no tiene permiso: fis:CreateExperimentTemplate"
+                        echo "       Saltando experimentos FIS..."
+                        SKIP_FIS=true
+                    elif echo "$CREATE_OUTPUT" | grep -qi "ValidationException\|InvalidParameterException"; then
+                        echo ""
+                        echo "       ⚠️  ERROR DE VALIDACIÓN en el template"
+                        echo "       Revisa el archivo: aws-fis/dynamodb-throttling.json"
+                        SKIP_FIS=true
+                    elif echo "$CREATE_OUTPUT" | grep -qi "ResourceNotFoundException"; then
+                        echo ""
+                        echo "       ⚠️  RECURSOS NO ENCONTRADOS"
+                        echo "       DynamoDB table o Lambda functions no existen"
+                        SKIP_FIS=true
+                    else
+                        echo ""
+                        echo "       ⚠️  ERROR DESCONOCIDO - Saltando FIS"
                         SKIP_FIS=true
                     fi
                 fi
