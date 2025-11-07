@@ -44,12 +44,19 @@ echo ""
 echo "[2/5] Obteniendo JWT Token..."
 echo "   Tienes 3 opciones:"
 echo ""
-echo "   A) Obtener automáticamente desde Cognito (si API accesible)"
-echo "   B) Ingresar manualmente (copiar desde navegador)"
+echo "   A) Obtener automáticamente desde Cognito (requiere configuración)"
+echo "   B) Ingresar manualmente (⭐ RECOMENDADO - copiar desde navegador)"
 echo "   C) Leer desde .env existente"
 echo ""
+echo "   💡 TIP para opción B:"
+echo "      1. Abre tu app en navegador (ya autenticado)"
+echo "      2. DevTools (F12) → Network → Headers"
+echo "      3. Busca 'Authorization: Bearer <token>'"
+echo "      4. Copia solo el token (sin 'Bearer')"
+echo ""
 
-read -p "Selecciona opción (A/B/C): " option
+read -p "Selecciona opción (A/B/C) [B por defecto]: " option
+option=${option:-B}
 
 JWT_TOKEN=""
 
@@ -58,15 +65,34 @@ case "${option^^}" in
         echo ""
         echo "   Intentando obtener desde Cognito..."
         
-        if [ -f "get-jwt.sh" ]; then
-            JWT_TOKEN=$(./get-jwt.sh 2>/dev/null || echo "")
-        fi
-        
-        if [ -z "$JWT_TOKEN" ]; then
-            echo "   ⚠️  No se pudo obtener automáticamente"
-            echo "   Usa opción B (manual)"
+        # Verificar que Python3 esté disponible
+        if ! command -v python3 &> /dev/null; then
+            echo "   ⚠️  Python3 no encontrado. Instálalo primero."
+            echo "   Usa opción B (manual)."
             exit 1
         fi
+        
+        # Verificar que existan las credenciales
+        if [ -z "$COGNITO_USERNAME" ] || [ -z "$COGNITO_PASSWORD" ]; then
+            echo ""
+            echo "   📋 Ingresa tus credenciales de Cognito:"
+            read -p "      Username (email): " COGNITO_USERNAME
+            read -sp "      Password: " COGNITO_PASSWORD
+            echo ""
+        fi
+        
+        # Llamar al script Python que hace el login
+        JWT_TOKEN=$(python3 "$(dirname "$0")/get-jwt-cognito.py" "$COGNITO_USERNAME" "$COGNITO_PASSWORD")
+        
+        if [ $? -ne 0 ] || [ -z "$JWT_TOKEN" ]; then
+            echo ""
+            echo "   ⚠️  No se pudo obtener automáticamente"
+            echo "   Usa opción B (manual) o verifica tus credenciales."
+            exit 1
+        fi
+        
+        echo ""
+        echo "   ✅ JWT obtenido desde Cognito"
         ;;
     
     B)

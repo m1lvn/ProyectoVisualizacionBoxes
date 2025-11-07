@@ -99,6 +99,21 @@ else
     fi
 fi
 
+# Instalar dependencias Python
+echo ""
+echo "   Instalando dependencias Python (requests, boto3)..."
+pip3 install --quiet --user -r "$SCRIPT_DIR/requirements.txt" 2>/dev/null || {
+    echo "   ⚠️  Instalación con --user falló, intentando con sudo..."
+    sudo pip3 install --quiet -r "$SCRIPT_DIR/requirements.txt"
+}
+
+if python3 -c "import requests, boto3" 2>/dev/null; then
+    echo "   ✅ Dependencias Python instaladas"
+else
+    echo "   ⚠️  Algunas dependencias Python pueden faltar"
+    echo "   Instala manualmente: pip3 install requests boto3"
+fi
+
 # ═══════════════════════════════════════════════════════════════
 # 4. Instalar curl
 # ═══════════════════════════════════════════════════════════════

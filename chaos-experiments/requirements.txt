@@ -1,0 +1,8 @@
+# Dependencias Python para Scripts de Chaos Engineering
+# Instalar con: pip3 install -r requirements.txt
+
+# HTTP requests
+requests>=2.31.0
+
+# AWS SDK
+boto3>=1.28.0

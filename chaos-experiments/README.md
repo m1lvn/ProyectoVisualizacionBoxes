@@ -12,13 +12,18 @@ Este directorio contiene todos los experimentos de Chaos Engineering para valida
 ### ✅ Setup en 3 Pasos
 
 ```bash
-# 1. Configurar JWT Token en AWS Secrets Manager (una sola vez)
-chmod +x setup-jwt-secrets-manager.sh
-./setup-jwt-secrets-manager.sh
+# 1. Instalar dependencias (una sola vez)
+chmod +x install-dependencies.sh
+./install-dependencies.sh
 
-# 2. Verificar configuración (opcional)
-chmod +x verify-fis-setup.sh
-./verify-fis-setup.sh
+# 2. Configurar credenciales (una sola vez)
+# Opción A: Variables de entorno (RECOMENDADO - Totalmente automático)
+cp .env.example .env
+nano .env  # Edita y agrega tus credenciales de Cognito
+export $(cat .env | grep -v '^#' | xargs)
+
+# Opción B: O usa el setup interactivo
+./setup-jwt-secrets-manager.sh  # Selecciona opción A con tus credenciales
 
 # 3. Ejecutar TODOS los experimentos automáticamente
 chmod +x run-all-chaos-experiments.sh
@@ -26,7 +31,8 @@ chmod +x run-all-chaos-experiments.sh
 ```
 
 **¡Eso es todo!** El sistema se encarga de:
-- ✅ Obtener JWT automáticamente desde AWS Secrets Manager
+- ✅ Obtener JWT automáticamente usando tus credenciales de Cognito
+- ✅ Guardar JWT en AWS Secrets Manager (reutilizable)
 - ✅ Auto-detectar AWS Account ID y región
 - ✅ Auto-detectar API Gateway URLs
 - ✅ Ejecutar todos los experimentos secuencialmente
