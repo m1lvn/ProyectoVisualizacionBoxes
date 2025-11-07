@@ -139,6 +139,15 @@ if [ "$confirm" = "yes" ]; then
     echo "✅ Ataque completado"
     echo "📊 Resultados guardados en: $RESULT_FILE"
     
+    # [DEBUG] Mostrar una muestra del archivo
+    echo ""
+    echo "[DEBUG] Primeras 10 líneas del archivo de resultados:"
+    head -n 15 "$RESULT_FILE" | tail -n 10
+    echo ""
+    echo "[DEBUG] Últimas 5 líneas del archivo:"
+    tail -n 5 "$RESULT_FILE"
+    echo ""
+    
     # Análisis de resultados
     echo ""
     echo "📈 Análisis de Resultados:"
@@ -146,13 +155,27 @@ if [ "$confirm" = "yes" ]; then
     
     if [ -f "$RESULT_FILE" ]; then
         # Contar cada tipo de resultado (asegurar que sean números)
+        echo "[DEBUG] Contando resultados..."
         TOTAL=$(grep -c "Request" "$RESULT_FILE" 2>/dev/null || echo "0")
+        echo "[DEBUG] TOTAL raw: '$TOTAL'"
+        
         SUCCESS=$(grep -c ": 200 " "$RESULT_FILE" 2>/dev/null || echo "0")
+        echo "[DEBUG] SUCCESS raw: '$SUCCESS'"
+        echo "[DEBUG] Líneas con 200:"
+        grep ": 200 " "$RESULT_FILE" 2>/dev/null | head -n 3 || echo "Ninguna"
+        
         THROTTLED=$(grep -c ": 429 " "$RESULT_FILE" 2>/dev/null || echo "0")
         ERRORS_5XX=$(grep -c ": 50[0-9] " "$RESULT_FILE" 2>/dev/null || echo "0")
         TIMEOUTS=$(grep -c "TIMEOUT" "$RESULT_FILE" 2>/dev/null || echo "0")
+        echo "[DEBUG] TIMEOUTS raw: '$TIMEOUTS'"
+        echo "[DEBUG] Líneas con TIMEOUT:"
+        grep "TIMEOUT" "$RESULT_FILE" 2>/dev/null | head -n 3 || echo "Ninguna"
+        
         CONN_REFUSED=$(grep -c "CONNECTION_REFUSED" "$RESULT_FILE" 2>/dev/null || echo "0")
         OTHER_ERRORS=$(grep -cE "ERROR|CURL_ERROR" "$RESULT_FILE" 2>/dev/null || echo "0")
+        echo "[DEBUG] OTHER_ERRORS raw: '$OTHER_ERRORS'"
+        echo "[DEBUG] Líneas con ERROR:"
+        grep -E "ERROR|CURL_ERROR" "$RESULT_FILE" 2>/dev/null | head -n 3 || echo "Ninguna"
         
         # Validar que todas las variables son números
         TOTAL=${TOTAL//[^0-9]/}
