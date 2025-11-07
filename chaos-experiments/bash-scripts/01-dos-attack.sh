@@ -63,13 +63,17 @@ if [ "$confirm" = "yes" ]; then
     echo "💥 Iniciando ataque DoS..."
     echo "⏱️  Timestamp: $(date)"
     
+    # Crear directorio de resultados si no existe
+    RESULTS_DIR="$SCRIPT_DIR/../results"
+    mkdir -p "$RESULTS_DIR"
+    
     # Crear archivo de resultados
-    RESULT_FILE="../results/dos-attack-$(date +%Y%m%d-%H%M%S).log"
-    echo "DoS Attack Results - $(date)" > $RESULT_FILE
-    echo "API: $API_ENDPOINT$ENDPOINT" >> $RESULT_FILE
-    echo "Total Requests: $REQUESTS" >> $RESULT_FILE
-    echo "Concurrent: $CONCURRENT" >> $RESULT_FILE
-    echo "---" >> $RESULT_FILE
+    RESULT_FILE="$RESULTS_DIR/dos-attack-$(date +%Y%m%d-%H%M%S).log"
+    echo "DoS Attack Results - $(date)" > "$RESULT_FILE"
+    echo "API: $API_ENDPOINT$ENDPOINT" >> "$RESULT_FILE"
+    echo "Total Requests: $REQUESTS" >> "$RESULT_FILE"
+    echo "Concurrent: $CONCURRENT" >> "$RESULT_FILE"
+    echo "---" >> "$RESULT_FILE"
     
     # Bombardear con requests
     for i in $(seq 1 $REQUESTS); do
@@ -82,7 +86,7 @@ if [ "$confirm" = "yes" ]; then
             HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2 | cut -d'|' -f1)
             TIME=$(echo "$RESPONSE" | grep "TIME" | cut -d':' -f2)
             
-            echo "Request $i: $HTTP_CODE | ${TIME}s" >> $RESULT_FILE
+            echo "Request $i: $HTTP_CODE | ${TIME}s" >> "$RESULT_FILE"
             echo "Request $i: Status=$HTTP_CODE | Time=${TIME}s"
         ) &
         
@@ -103,20 +107,29 @@ if [ "$confirm" = "yes" ]; then
     echo "📈 Análisis de Resultados:"
     echo "---"
     
-    TOTAL=$(grep -c "Request" $RESULT_FILE)
-    SUCCESS=$(grep -c "200" $RESULT_FILE)
-    THROTTLED=$(grep -c "429" $RESULT_FILE)
-    ERRORS=$(grep -c "500\|502\|503\|504" $RESULT_FILE)
-    
-    echo "Total Requests: $TOTAL"
-    echo "Successful (200): $SUCCESS ($(( SUCCESS * 100 / TOTAL ))%)"
-    echo "Throttled (429): $THROTTLED ($(( THROTTLED * 100 / TOTAL ))%)"
-    echo "Errors (5xx): $ERRORS ($(( ERRORS * 100 / TOTAL ))%)"
-    
-    # Latencia promedio
-    AVG_TIME=$(grep "Request" $RESULT_FILE | cut -d'|' -f2 | cut -d's' -f1 | \
-               awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }')
-    echo "Latencia promedio: ${AVG_TIME}s"
+    if [ -f "$RESULT_FILE" ]; then
+        TOTAL=$(grep -c "Request" "$RESULT_FILE" || echo "0")
+        SUCCESS=$(grep -c "200" "$RESULT_FILE" || echo "0")
+        THROTTLED=$(grep -c "429" "$RESULT_FILE" || echo "0")
+        ERRORS=$(grep -c "500\|502\|503\|504" "$RESULT_FILE" || echo "0")
+        
+        echo "Total Requests: $TOTAL"
+        
+        if [ "$TOTAL" -gt 0 ]; then
+            echo "Successful (200): $SUCCESS ($(( SUCCESS * 100 / TOTAL ))%)"
+            echo "Throttled (429): $THROTTLED ($(( THROTTLED * 100 / TOTAL ))%)"
+            echo "Errors (5xx): $ERRORS ($(( ERRORS * 100 / TOTAL ))%)"
+            
+            # Latencia promedio
+            AVG_TIME=$(grep "Request" "$RESULT_FILE" | cut -d'|' -f2 | cut -d's' -f1 | \
+                       awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }')
+            echo "Latencia promedio: ${AVG_TIME}s"
+        else
+            echo "⚠️  No se encontraron resultados en el archivo"
+        fi
+    else
+        echo "❌ Archivo de resultados no encontrado: $RESULT_FILE"
+    fi
     
     echo ""
     echo "📊 Revisar métricas en CloudWatch:"

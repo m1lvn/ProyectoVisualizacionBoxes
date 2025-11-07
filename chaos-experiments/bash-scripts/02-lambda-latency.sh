@@ -6,6 +6,16 @@ echo "════════════════════════�
 echo "🔥 CHAOS EXPERIMENT: Lambda Latency Injection"
 echo "═══════════════════════════════════════════════════"
 
+# Obtener directorio del script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ENV_FILE="$SCRIPT_DIR/../.env"
+
+# Cargar variables de entorno si existen
+if [ -f "$ENV_FILE" ]; then
+    echo "📄 Cargando variables desde .env..."
+    export $(cat "$ENV_FILE" | grep -v '^#' | grep -v '^$' | xargs)
+fi
+
 # Auto-detectar AWS Account ID
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null)
 if [ -z "$AWS_ACCOUNT_ID" ]; then
@@ -14,30 +24,26 @@ if [ -z "$AWS_ACCOUNT_ID" ]; then
     exit 1
 fi
 
-# Auto-detectar API Gateway URL desde serverless config
-cd ../../serverless-api 2>/dev/null
-if [ -f "serverless.yml" ]; then
-    # Intentar obtener la URL del API Gateway
-    API_ENDPOINT=$(aws apigateway get-rest-apis --query "items[?name=='hospital-boxes-api-dev'].id" --output text 2>/dev/null)
-    if [ -n "$API_ENDPOINT" ]; then
-        AWS_REGION=$(aws configure get region 2>/dev/null || echo "us-east-1")
-        API_ENDPOINT="https://${API_ENDPOINT}.execute-api.${AWS_REGION}.amazonaws.com/dev/api/boxes"
-    fi
-fi
-cd ../chaos-experiments/bash-scripts
-
-# Fallback: leer desde .env
-if [ -z "$API_ENDPOINT" ] && [ -f "../.env" ]; then
-    source ../.env
-    if [ -n "$API_ENDPOINT" ]; then
+# Usar API_ENDPOINT desde .env si existe
+if [ -n "$API_ENDPOINT" ]; then
+    # Asegurar que tiene /boxes al final
+    if [[ ! "$API_ENDPOINT" == */boxes ]]; then
         API_ENDPOINT="${API_ENDPOINT}/boxes"
     fi
-fi
-
-# Fallback final: preguntar al usuario
-if [ -z "$API_ENDPOINT" ]; then
-    echo "⚠️  No se pudo auto-detectar el API endpoint"
-    read -p "Ingresa el API endpoint (ej: https://xxxxx.execute-api.us-east-1.amazonaws.com/dev/api/boxes): " API_ENDPOINT
+    echo "✅ API Endpoint cargado desde .env"
+else
+    # Intentar auto-detectar desde API Gateway
+    echo "🔍 Auto-detectando API Gateway..."
+    API_ID=$(aws apigateway get-rest-apis --query "items[?name=='hospital-boxes-api-dev'].id" --output text 2>/dev/null)
+    if [ -n "$API_ID" ]; then
+        AWS_REGION=$(aws configure get region 2>/dev/null || echo "us-east-1")
+        API_ENDPOINT="https://${API_ID}.execute-api.${AWS_REGION}.amazonaws.com/dev/api/boxes"
+        echo "✅ API Endpoint auto-detectado: $API_ENDPOINT"
+    else
+        # Fallback final: preguntar al usuario
+        echo "⚠️  No se pudo auto-detectar el API endpoint"
+        read -p "Ingresa el API endpoint (ej: https://xxxxx.execute-api.us-east-1.amazonaws.com/dev/api/boxes): " API_ENDPOINT
+    fi
 fi
 
 # Configuración
@@ -54,29 +60,28 @@ echo ""
 
 # Obtener JWT Token automáticamente
 echo "🔐 Obteniendo JWT Token..."
-if [ -f "../get-jwt-from-secrets.ps1" ]; then
-    # En Windows con PowerShell
-    TOKEN=$(powershell -ExecutionPolicy Bypass -File "../get-jwt-from-secrets.ps1" 2>/dev/null)
+
+# Intentar obtener desde JWT_TOKEN variable de entorno (cargada desde .env)
+if [ -n "$JWT_TOKEN" ]; then
+    TOKEN="$JWT_TOKEN"
+    echo "✅ JWT Token cargado desde .env"
+# Intentar obtener desde AWS Secrets Manager
 elif command -v aws &> /dev/null; then
-    # Directo con AWS CLI
     TOKEN=$(aws secretsmanager get-secret-value \
         --secret-id chaos-engineering/jwt-token \
         --region us-east-1 \
         --query 'SecretString' --output text 2>/dev/null | \
         python3 -c "import sys, json; print(json.load(sys.stdin)['jwtToken'])" 2>/dev/null)
-fi
-
-# Fallback: leer desde .env
-if [ -z "$TOKEN" ] && [ -f "../.env" ]; then
-    TOKEN=$(grep "^JWT_TOKEN=" ../.env | cut -d'=' -f2)
+    
+    if [ -n "$TOKEN" ]; then
+        echo "✅ JWT Token obtenido desde Secrets Manager"
+    fi
 fi
 
 # Fallback final: preguntar al usuario
 if [ -z "$TOKEN" ]; then
     echo "⚠️  No se pudo obtener JWT automáticamente"
     read -p "🔑 Ingrese su JWT token: " TOKEN
-else
-    echo "✅ JWT Token obtenido automáticamente"
 fi
 
 # 1. Baseline sin latencia
@@ -84,8 +89,12 @@ echo ""
 echo "📊 PASO 1: Baseline (sin latencia)"
 echo "---"
 
-BASELINE_FILE="../results/baseline-$(date +%Y%m%d-%H%M%S).log"
-echo "Baseline Results - $(date)" > $BASELINE_FILE
+# Crear directorio de resultados si no existe
+RESULTS_DIR="$SCRIPT_DIR/../results"
+mkdir -p "$RESULTS_DIR"
+
+BASELINE_FILE="$RESULTS_DIR/baseline-$(date +%Y%m%d-%H%M%S).log"
+echo "Baseline Results - $(date)" > "$BASELINE_FILE"
 
 for i in {1..20}; do
     START=$(date +%s%N)
@@ -97,10 +106,10 @@ for i in {1..20}; do
     DURATION=$(( (END - START) / 1000000 ))
     HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2)
     
-    echo "Request $i: ${DURATION}ms | Status=$HTTP_CODE" | tee -a $BASELINE_FILE
+    echo "Request $i: ${DURATION}ms | Status=$HTTP_CODE" | tee -a "$BASELINE_FILE"
 done
 
-AVG_BASELINE=$(cat $BASELINE_FILE | grep "Request" | cut -d':' -f2 | cut -d'm' -f1 | \
+AVG_BASELINE=$(cat "$BASELINE_FILE" | grep "Request" | cut -d':' -f2 | cut -d'm' -f1 | \
                awk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }')
 echo ""
 echo "✅ Latencia baseline promedio: ${AVG_BASELINE}ms"

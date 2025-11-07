@@ -179,7 +179,7 @@ declare -a EXPERIMENTS
 EXPERIMENT_COUNT=0
 
 # Experimento 1: DoS Attack
-EXPERIMENTS[$EXPERIMENT_COUNT]="1|DoS Attack Simulation|Bash|bash-scripts/01-dos-attack.ps1|5|true|false"
+EXPERIMENTS[$EXPERIMENT_COUNT]="1|DoS Attack Simulation|Bash|bash-scripts/01-dos-attack.sh|5|true|false"
 ((EXPERIMENT_COUNT++))
 
 # Experimento 2: Lambda Latency
