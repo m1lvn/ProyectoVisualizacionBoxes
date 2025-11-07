@@ -11,7 +11,9 @@ import os
 from datetime import datetime
 
 # Configuración
-AUTH_BASE_URL = os.getenv('SERVERLESS_AUTH_URL', 'https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com')
+# Por defecto usa la URL de settings.py de Django
+# Puedes override con variable de entorno SERVERLESS_AUTH_URL
+AUTH_BASE_URL = os.getenv('SERVERLESS_AUTH_URL', 'https://44wvhl6j05.execute-api.us-east-1.amazonaws.com')
 COGNITO_USERNAME = os.getenv('COGNITO_USERNAME', '')
 COGNITO_PASSWORD = os.getenv('COGNITO_PASSWORD', '')
 

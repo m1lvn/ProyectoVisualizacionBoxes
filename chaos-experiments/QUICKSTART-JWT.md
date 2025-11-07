@@ -23,10 +23,35 @@ nano .env  # Agrega tus credenciales de Cognito
 # En .env (NO subir a git)
 COGNITO_USERNAME=tu_email@example.com
 COGNITO_PASSWORD=tu_password_real
-SERVERLESS_AUTH_URL=https://utcn9m1wwg.execute-api.us-east-1.amazonaws.com
+
+# 🔍 OBTENER ESTA URL:
+# Opción 1 (RÁPIDO): Busca en ProyectoHospital/ProyectoHospital/settings.py línea 21
+# Opción 2 (AUTOMÁTICO): Ejecuta ./get-api-url.sh
+SERVERLESS_AUTH_URL=https://44wvhl6j05.execute-api.us-east-1.amazonaws.com
 ```
 
 **Estas son las MISMAS credenciales que usas en tu aplicación Django.**
+
+### 🔍 ¿Cómo obtener SERVERLESS_AUTH_URL?
+
+**Método 1: Desde tu código Django (MÁS RÁPIDO)**
+```bash
+# Ver la URL configurada en Django
+cat ../ProyectoHospital/ProyectoHospital/settings.py | grep SERVERLESS_AUTH_URL
+# Output: SERVERLESS_AUTH_URL = 'https://44wvhl6j05.execute-api.us-east-1.amazonaws.com'
+```
+
+**Método 2: Script automático**
+```bash
+chmod +x get-api-url.sh
+./get-api-url.sh
+```
+
+**Método 3: Desde AWS Console**
+1. Ve a [API Gateway Console](https://console.aws.amazon.com/apigateway)
+2. Selecciona tu API
+3. Click en **Stages** → **dev**
+4. Copia la **Invoke URL**
 
 ---
 
