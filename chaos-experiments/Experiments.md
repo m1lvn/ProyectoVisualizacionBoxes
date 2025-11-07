@@ -2,7 +2,7 @@
 
 > **Proyecto:** Sistema de Visualización de Boxes Hospitalarios  
 > **Objetivo:** Validar resiliencia mediante simulación de fallos  
-> **Herramientas:** AWS FIS + Bash Scripts + Gremlin Free Tier  
+> **Herramientas:** Bash Scripts (5 experimentos) + Gremlin Free Tier (2 experimentos)  
 
 ---
 
@@ -12,11 +12,14 @@
 
 | Herramienta | Tipo | Costo | # Experimentos | Estado |
 |-------------|------|-------|----------------|---------|
-| **Bash Scripts** | Custom scripts | $0 | 3 | 🟢 Listo |
-| **AWS FIS** | Managed service | ~$0 (Free tier) | 2 | 🟡 Por configurar |
+| **Bash Scripts** | Custom scripts | $0 | 5 | 🟢 Listo |
 | **Gremlin Free** | SaaS Platform | $0 (5 ataques/mes) | 2 | 🟡 Por registrar |
 
-**TOTAL: 7 experimentos planificados con costo $0-5**
+**TOTAL: 7 experimentos planificados con costo $0**
+
+> ℹ️ **Nota sobre AWS FIS:** Los templates FIS están disponibles en `aws-fis/` como referencia,
+> pero los experimentos #4 y #5 se ejecutan como simulaciones Bash debido a limitaciones
+> de permisos en AWS Academy Learner Lab.
 
 ---
 
@@ -25,13 +28,15 @@
 ```
 chaos-experiments/
 ├── 📄 Experiments.md                    # Este documento - Plan maestro
-├── aws-fis/
-│   ├── dynamodb-throttling.json        # ✅ Template FIS experimento #4
-│   └── lambda-error-injection.json     # 🟡 Template FIS experimento #5
 ├── bash-scripts/
-│   ├── 01-dos-attack.sh                # ✅ Experimento #1
+│   ├── 01-dos-attack.ps1                # ✅ Experimento #1
 │   ├── 02-lambda-latency.sh            # ✅ Experimento #2
-│   └── 03-sns-failure.sh               # 🟡 Experimento #3
+│   ├── 03-sns-failure.sh               # 🟡 Experimento #3
+│   ├── 04-dynamodb-throttling-sim.sh   # ✅ Experimento #4 (simulación)
+│   └── 05-lambda-errors-sim.sh         # ✅ Experimento #5 (simulación)
+├── aws-fis/                            # (Referencia - requiere permisos FIS)
+│   ├── dynamodb-throttling.json        # Template para cuentas AWS completas
+│   └── lambda-error-injection.json     # Template para cuentas AWS completas
 ├── gremlin/
 │   ├── setup-guide.md                  # Guía de configuración
 │   └── experiments-config.yaml         # Configuración de experimentos
@@ -45,7 +50,7 @@ chaos-experiments/
 
 ## 🎯 **EXPERIMENTOS PLANIFICADOS**
 
-### 1. DoS Attack Simulation (`01-dos-attack.sh`)
+### 1. DoS Attack Simulation (`01-dos-attack.ps1`)
 
 **Objetivo**: Probar rate limiting y throttling de API Gateway
 
@@ -77,35 +82,131 @@ chaos-experiments/
 
 **Duración**: ~5-7 minutos
 
-## 📊 AWS FIS (Fault Injection Simulator)
+### 3. SNS Topic Failure (`03-sns-failure.sh`)
 
-### Configurar Template
+**Objetivo**: Simular fallo en notificaciones SNS
+
+**Configuración**:
+- Deshabilitar tema SNS temporalmente
+- Observar degradación del servicio
+
+**Métricas**:
+- Detección de fallo
+- Fallback a modo degradado
+- Tiempo de recuperación
+
+**Duración**: ~5 minutos
+
+### 4. DynamoDB Throttling Simulation (`04-dynamodb-throttling-sim.sh`)
+
+**Objetivo**: Forzar throttling en DynamoDB mediante carga masiva
+
+**Método**: Simulación Bash con requests concurrentes
+- 50 requests paralelos cada 0.1s durante 5 minutos
+- Forzar errores de throttling (429)
+- Validar circuit breaker y retry logic
+
+**Métricas**:
+- Throttle error rate
+- Circuit breaker activations
+- Recovery time
+- Fallback success rate
+
+**Duración**: ~5 minutos
+
+### 5. Lambda Error Injection Simulation (`05-lambda-errors-sim.sh`)
+
+**Objetivo**: Simular errores Lambda mediante requests inválidos
+
+**Método**: Simulación Bash con error injection (30% rate)
+- Requests con JSON malformado
+- IDs de recursos inexistentes
+- Métodos HTTP incorrectos
+- Datos inválidos
+
+**Métricas**:
+- Error rate por tipo (4xx vs 5xx)
+- Resilience pattern effectiveness
+- Graceful degradation
+- Recovery time
+
+**Duración**: ~5 minutos
+
+---
+
+## 📊 Bash Simulations (Experimentos #4-5)
+
+Las simulaciones Bash reemplazan AWS FIS para entornos con permisos limitados:
+
+### Ejecutar Simulación de DynamoDB Throttling
 
 ```bash
-# Crear template desde JSON
-aws fis create-experiment-template \
-  --cli-input-json file://aws-fis/dynamodb-throttling.json \
-  --region us-east-1
-
-# Obtener template ID del output
+cd bash-scripts
+chmod +x 04-dynamodb-throttling-sim.sh
+./04-dynamodb-throttling-sim.sh
 ```
 
-### Ejecutar Experimento
+**Genera:**
+- `results/experiment-04-dynamodb/requests.csv`
+- `results/experiment-04-dynamodb/status.log`
+- `results/experiment-04-dynamodb/report.md`
+
+### Ejecutar Simulación de Lambda Errors
 
 ```bash
-# Iniciar experimento
+chmod +x 05-lambda-errors-sim.sh
+./05-lambda-errors-sim.sh
+```
+
+**Genera:**
+- `results/experiment-05-lambda/requests.csv`
+- `results/experiment-05-lambda/status.log`
+- `results/experiment-05-lambda/report.md`
+
+---
+
+## 🔧 AWS FIS Templates (Referencia)
+
+> ⚠️ **Estos templates requieren permisos `fis:CreateExperimentTemplate` que no están
+> disponibles en AWS Academy Learner Lab.** Se incluyen como referencia para uso
+> futuro en cuentas AWS con permisos completos.
+
+Si tienes una cuenta AWS con permisos FIS, puedes:
+
+### 1. Actualizar ARNs en templates
+
+```bash
+cd aws-fis
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+sed -i "s/ACCOUNT_ID/$ACCOUNT_ID/g" dynamodb-throttling.json
+sed -i "s/ACCOUNT_ID/$ACCOUNT_ID/g" lambda-error-injection.json
+```
+
+### 2. Crear templates
+
+```bash
+aws fis create-experiment-template \
+  --cli-input-json file://dynamodb-throttling.json \
+  --region us-east-1
+```
+
+### 3. Ejecutar experimento
+
+```bash
 aws fis start-experiment \
   --experiment-template-id TEMPLATE_ID \
   --tags Key=Test,Value=ChaosEngineering
+```
 
-# Monitorear progreso
+### 4. Monitorear
+
+```bash
 aws fis get-experiment --id EXPERIMENT_ID
 ```
 
-### Detener Experimento
+### 5. Detener si necesario
 
 ```bash
-# Detener manualmente si es necesario
 aws fis stop-experiment --id EXPERIMENT_ID
 ```
 

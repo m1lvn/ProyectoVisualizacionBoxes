@@ -15,8 +15,8 @@
 
 set -e
 
-# Parsear argumentos
-SKIP_FIS=false
+# Parsing arguments
+SKIP_FIS=false  # Deprecated - Now all experiments are Bash
 DRY_RUN=false
 DELAY_BETWEEN_EXPERIMENTS=60
 
@@ -115,189 +115,31 @@ else
     echo "    ⚠️  Script get-jwt-from-secrets.sh no encontrado"
 fi
 
-# Verificar FIS
-if [ "$SKIP_FIS" = false ]; then
-    echo "[✓] Verificando AWS FIS..."
-    
-    FIS_CONFIG="results/fis-verification-config.json"
-    
-    if [ -f "$FIS_CONFIG" ]; then
-        FIS_READY=$(python3 -c "import json; print(json.load(open('$FIS_CONFIG'))['fisReady'])" 2>/dev/null || echo "false")
-        
-        if [ "$FIS_READY" = "True" ] || [ "$FIS_READY" = "true" ]; then
-            echo "    ✅ AWS FIS disponible"
-        else
-            echo "    ⚠️  AWS FIS no completamente configurado"
-            SKIP_FIS=true
-        fi
-    else
-        echo "    ⏳ Ejecutando verificación FIS..."
-        if [ -f "verify-fis-setup.sh" ]; then
-            ./verify-fis-setup.sh
-            
-            if [ -f "$FIS_CONFIG" ]; then
-                FIS_READY=$(python3 -c "import json; print(json.load(open('$FIS_CONFIG'))['fisReady'])" 2>/dev/null || echo "false")
-                if [ "$FIS_READY" != "True" ] && [ "$FIS_READY" != "true" ]; then
-                    SKIP_FIS=true
-                fi
-            fi
-        else
-            echo "    ⚠️  Script verify-fis-setup.sh no encontrado"
-            SKIP_FIS=true
-        fi
-    fi
-    
-    # Verificar si existen templates FIS (si no, intentar crearlos)
-    if [ "$SKIP_FIS" = false ]; then
-        echo "[✓] Verificando FIS Experiment Templates..."
-        
-        echo "    [DEBUG] Testeando conectividad con AWS FIS API..."
-        if ! timeout 10s aws fis list-experiment-templates --region us-east-1 > /dev/null 2>&1; then
-            echo "    ⚠️  No se puede conectar a AWS FIS API (timeout o error)"
-            echo "    [DEBUG] Esto puede indicar:"
-            echo "            - Sin permisos para fis:ListExperimentTemplates"
-            echo "            - Problemas de red"
-            echo "            - AWS CLI mal configurado"
-            SKIP_FIS=true
-        else
-            echo "    [DEBUG] Conectividad OK ✓"
-        fi
-        
-        # Contar templates existentes solo si la conexión funciona
-        if [ "$SKIP_FIS" = false ]; then
-            TEMPLATE_COUNT=$(aws fis list-experiment-templates --query 'experimentTemplates | length(@)' --output text 2>/dev/null || echo "0")
-        
-        if [ "$TEMPLATE_COUNT" = "0" ] || [ -z "$TEMPLATE_COUNT" ]; then
-            echo "    ⚠️  No se encontraron templates FIS"
-            echo "    📝 Creando templates automáticamente..."
-            
-            # Crear template de DynamoDB Throttling
-            if [ -f "aws-fis/dynamodb-throttling.json" ]; then
-                echo "       → Creando template: dynamodb-throttling..."
-                echo "       [DEBUG] Archivo encontrado: aws-fis/dynamodb-throttling.json"
-                echo "       [DEBUG] Tamaño: $(wc -c < aws-fis/dynamodb-throttling.json) bytes"
-                echo "       [DEBUG] Validando JSON..."
-                
-                # Validar JSON primero
-                if ! python3 -m json.tool aws-fis/dynamodb-throttling.json > /dev/null 2>&1; then
-                    echo "       ❌ JSON malformado en dynamodb-throttling.json"
-                    SKIP_FIS=true
-                    continue
-                fi
-                echo "       [DEBUG] JSON válido ✓"
-                
-                echo "       [DEBUG] Enviando request a AWS FIS (timeout: 30s)..."
-                
-                # Capturar tanto stdout como stderr con timestamp
-                START_TIME=$(date +%s)
-                CREATE_OUTPUT=$(timeout 30s aws fis create-experiment-template \
-                    --cli-input-json file://aws-fis/dynamodb-throttling.json \
-                    --region us-east-1 2>&1)
-                CREATE_EXIT_CODE=$?
-                END_TIME=$(date +%s)
-                ELAPSED=$((END_TIME - START_TIME))
-                
-                echo "       [DEBUG] Request completado en ${ELAPSED}s con exit code: $CREATE_EXIT_CODE"
-                echo "       [DEBUG] Request completado en ${ELAPSED}s con exit code: $CREATE_EXIT_CODE"
-                
-                if [ $CREATE_EXIT_CODE -eq 0 ]; then
-                    echo "       [DEBUG] Respuesta exitosa, extrayendo ID..."
-                    TEMPLATE_ID=$(echo "$CREATE_OUTPUT" | grep -o '"id": "[^"]*"' | cut -d'"' -f4 | head -n1)
-                    if [ -n "$TEMPLATE_ID" ]; then
-                        echo "       ✅ Template creado: $TEMPLATE_ID"
-                    else
-                        echo "       ✅ Template creado exitosamente (ID no capturado)"
-                        echo "       [DEBUG] Output: ${CREATE_OUTPUT:0:200}..."
-                    fi
-                elif [ $CREATE_EXIT_CODE -eq 124 ]; then
-                    echo "       ⏱️  Timeout después de 30s"
-                    echo "       [DEBUG] El comando AWS CLI no respondió a tiempo"
-                    echo "       💡 Esto puede indicar:"
-                    echo "          - Problemas de red con AWS API"
-                    echo "          - Request colgado esperando permisos"
-                    echo "          - Bug en AWS CLI"
-                    SKIP_FIS=true
-                else
-                    echo "       ❌ Error con exit code: $CREATE_EXIT_CODE"
-                    echo "       [DEBUG] Output completo:"
-                    echo "$CREATE_OUTPUT" | head -n 10
-                    
-                    # Detectar tipo de error
-                    if echo "$CREATE_OUTPUT" | grep -qi "AccessDenied\|not authorized\|UnauthorizedException"; then
-                        echo ""
-                        echo "       ⚠️  ERROR DE PERMISOS detectado"
-                        echo "       Tu usuario/role no tiene permiso: fis:CreateExperimentTemplate"
-                        echo "       Saltando experimentos FIS..."
-                        SKIP_FIS=true
-                    elif echo "$CREATE_OUTPUT" | grep -qi "ValidationException\|InvalidParameterException"; then
-                        echo ""
-                        echo "       ⚠️  ERROR DE VALIDACIÓN en el template"
-                        echo "       Revisa el archivo: aws-fis/dynamodb-throttling.json"
-                        SKIP_FIS=true
-                    elif echo "$CREATE_OUTPUT" | grep -qi "ResourceNotFoundException"; then
-                        echo ""
-                        echo "       ⚠️  RECURSOS NO ENCONTRADOS"
-                        echo "       DynamoDB table o Lambda functions no existen"
-                        SKIP_FIS=true
-                    else
-                        echo ""
-                        echo "       ⚠️  ERROR DESCONOCIDO - Saltando FIS"
-                        SKIP_FIS=true
-                    fi
-                fi
-            fi
-            
-            # Crear template de Lambda Error Injection (solo si el anterior funcionó)
-            if [ "$SKIP_FIS" = false ] && [ -f "aws-fis/lambda-error-injection.json" ]; then
-                echo "       → Creando template: lambda-error-injection..."
-                
-                CREATE_OUTPUT=$(timeout 30s aws fis create-experiment-template \
-                    --cli-input-json file://aws-fis/lambda-error-injection.json \
-                    --region us-east-1 2>&1)
-                CREATE_EXIT_CODE=$?
-                
-                if [ $CREATE_EXIT_CODE -eq 0 ]; then
-                    TEMPLATE_ID=$(echo "$CREATE_OUTPUT" | grep -o '"id": "[^"]*"' | cut -d'"' -f4 | head -n1)
-                    if [ -n "$TEMPLATE_ID" ]; then
-                        echo "       ✅ Template creado: $TEMPLATE_ID"
-                    else
-                        echo "       ✅ Template creado exitosamente"
-                    fi
-                elif [ $CREATE_EXIT_CODE -eq 124 ]; then
-                    echo "       ⏱️  Timeout - Saltando experimentos FIS"
-                    SKIP_FIS=true
-                else
-                    echo "       ❌ Error creando template"
-                    echo "$CREATE_OUTPUT" | grep -i "error\|denied\|exception" | head -n3
-                    SKIP_FIS=true
-                fi
-            fi
-            
-            # Re-verificar solo si no hubo errores
-            if [ "$SKIP_FIS" = false ]; then
-                TEMPLATE_COUNT=$(aws fis list-experiment-templates --query 'experimentTemplates | length(@)' --output text 2>/dev/null || echo "0")
-                if [ "$TEMPLATE_COUNT" != "0" ]; then
-                    echo "    ✅ Templates FIS creados: $TEMPLATE_COUNT"
-                else
-                    echo "    ⚠️  No se pudieron crear templates - Saltando experimentos FIS"
-                    SKIP_FIS=true
-                fi
-            fi
-        else
-            echo "    ✅ Templates FIS disponibles: $TEMPLATE_COUNT"
-        fi
-    fi
+# ═══════════════════════════════════════════════════════════════
+# Verificar scripts bash de simulación
+# ═══════════════════════════════════════════════════════════════
+echo "[✓] Verificando Bash simulation scripts..."
+
+if [ -f "bash-scripts/04-dynamodb-throttling-sim.sh" ]; then
+    echo "    ✅ DynamoDB throttling simulation disponible"
+else
+    echo "    ❌ bash-scripts/04-dynamodb-throttling-sim.sh NO ENCONTRADO"
+    echo "    Este script simula throttling de DynamoDB"
+    exit 1
+fi
+
+if [ -f "bash-scripts/05-lambda-errors-sim.sh" ]; then
+    echo "    ✅ Lambda error injection simulation disponible"
+else
+    echo "    ❌ bash-scripts/05-lambda-errors-sim.sh NO ENCONTRADO"
+    echo "    Este script simula inyección de errores en Lambda"
+    exit 1
 fi
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
-if [ "$SKIP_FIS" = true ]; then
-    echo "   ✅ PRE-REQUISITOS VERIFICADOS (FIS deshabilitado)"
-    echo "   📝 Se ejecutarán solo experimentos Bash (3/5)"
-else
-    echo "   ✅ PRE-REQUISITOS VERIFICADOS"
-    echo "   📝 Se ejecutarán todos los experimentos (5/5)"
-fi
+echo "   ✅ PRE-REQUISITOS VERIFICADOS"
+echo "   📝 Se ejecutarán 5 experimentos Bash"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 echo "════════════════════════════════════════════════════════════════"
@@ -314,45 +156,34 @@ declare -a EXPERIMENTS
 EXPERIMENT_COUNT=0
 
 # Experimento 1: DoS Attack
-EXPERIMENTS[$EXPERIMENT_COUNT]="1|DoS Attack Simulation|Bash|bash-scripts/01-dos-attack.ps1|5|true|false|false"
+EXPERIMENTS[$EXPERIMENT_COUNT]="1|DoS Attack Simulation|Bash|bash-scripts/01-dos-attack.ps1|5|true|false"
 ((EXPERIMENT_COUNT++))
 
 # Experimento 2: Lambda Latency
-EXPERIMENTS[$EXPERIMENT_COUNT]="2|Lambda Latency Injection|Bash|bash-scripts/02-lambda-latency.sh|15|true|true|false"
+EXPERIMENTS[$EXPERIMENT_COUNT]="2|Lambda Latency Injection|Bash|bash-scripts/02-lambda-latency.sh|15|true|true"
 ((EXPERIMENT_COUNT++))
 
 # Experimento 3: SNS Failure
-EXPERIMENTS[$EXPERIMENT_COUNT]="3|SNS Topic Failure|Bash|bash-scripts/03-sns-failure.sh|10|false|true|false"
+EXPERIMENTS[$EXPERIMENT_COUNT]="3|SNS Topic Failure|Bash|bash-scripts/03-sns-failure.sh|10|false|true"
 ((EXPERIMENT_COUNT++))
 
-# Experimento 4: DynamoDB Throttling (FIS)
-EXPERIMENTS[$EXPERIMENT_COUNT]="4|DynamoDB Throttling (FIS)|AWS FIS|run-fis-experiment.sh dynamodb-throttling|5|true|false|true"
+# Experimento 4: DynamoDB Throttling Simulation
+EXPERIMENTS[$EXPERIMENT_COUNT]="4|DynamoDB Throttling Simulation|Bash|bash-scripts/04-dynamodb-throttling-sim.sh|5|true|false"
 ((EXPERIMENT_COUNT++))
 
-# Experimento 5: Lambda Error Injection (FIS)
-EXPERIMENTS[$EXPERIMENT_COUNT]="5|Lambda Error Injection (FIS)|AWS FIS|run-fis-experiment.sh lambda-error-injection|5|false|false|true"
+# Experimento 5: Lambda Error Injection Simulation
+EXPERIMENTS[$EXPERIMENT_COUNT]="5|Lambda Error Injection Simulation|Bash|bash-scripts/05-lambda-errors-sim.sh|5|false|false"
 ((EXPERIMENT_COUNT++))
 
-# Filtrar experimentos
-FILTERED_EXPERIMENTS=()
-
-for exp in "${EXPERIMENTS[@]}"; do
-    IFS='|' read -r id name category script duration critical requires_bash requires_fis <<< "$exp"
-    
-    if [ "$requires_fis" = "true" ] && [ "$SKIP_FIS" = "true" ]; then
-        continue
-    fi
-    
-    FILTERED_EXPERIMENTS+=("$exp")
-done
-
+# Todos los experimentos están disponibles (no hay filtrado)
+FILTERED_EXPERIMENTS=("${EXPERIMENTS[@]}")
 FILTERED_COUNT=${#FILTERED_EXPERIMENTS[@]}
 
 echo "📋 Experimentos a ejecutar: $FILTERED_COUNT"
 echo ""
 
 for exp in "${FILTERED_EXPERIMENTS[@]}"; do
-    IFS='|' read -r id name category script duration critical requires_bash requires_fis <<< "$exp"
+    IFS='|' read -r id name category script duration critical requires_bash <<< "$exp"
     
     if [ "$critical" = "true" ]; then
         STATUS="🔴 Crítico"
@@ -366,7 +197,7 @@ done
 # Calcular tiempo estimado
 TOTAL_DURATION=0
 for exp in "${FILTERED_EXPERIMENTS[@]}"; do
-    IFS='|' read -r id name category script duration critical requires_bash requires_fis <<< "$exp"
+    IFS='|' read -r id name category script duration critical requires_bash <<< "$exp"
     TOTAL_DURATION=$((TOTAL_DURATION + duration))
 done
 
@@ -396,7 +227,7 @@ RESULT_COUNT=0
 EXPERIMENT_NUMBER=1
 
 for exp in "${FILTERED_EXPERIMENTS[@]}"; do
-    IFS='|' read -r id name category script duration critical requires_bash requires_fis <<< "$exp"
+    IFS='|' read -r id name category script duration critical requires_bash <<< "$exp"
     
     echo ""
     echo "════════════════════════════════════════════════════════════════"
