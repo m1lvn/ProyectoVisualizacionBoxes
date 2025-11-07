@@ -167,10 +167,8 @@ echo "   ✅ PRE-REQUISITOS VERIFICADOS"
 echo "   📝 Se ejecutarán 5 experimentos Bash"
 echo "════════════════════════════════════════════════════════════════"
 echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo ""
 
-sleep 3
+sleep 2
 
 # ═══════════════════════════════════════════════════════════════
 # Definir experimentos
