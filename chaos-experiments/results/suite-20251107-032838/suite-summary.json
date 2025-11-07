@@ -1,0 +1,54 @@
+{
+  "timestamp": "2025-11-07T03:38:25Z",
+  "duration": 9,
+  "totalExperiments": 5,
+  "successCount": 3,
+  "failCount": 2,
+  "experiments": [
+    {
+      "id": 1,
+      "name": "DoS Attack Simulation",
+      "category": "Bash",
+      "success": true,
+      "duration": 83,
+      "error": ""
+    }
+,
+    {
+      "id": 2,
+      "name": "Lambda Latency Injection",
+      "category": "Bash",
+      "success": true,
+      "duration": 40,
+      "error": ""
+    }
+,
+    {
+      "id": 3,
+      "name": "SNS Topic Failure",
+      "category": "Bash",
+      "success": true,
+      "duration": 208,
+      "error": ""
+    }
+,
+    {
+      "id": 4,
+      "name": "DynamoDB Throttling Simulation",
+      "category": "Bash",
+      "success": false,
+      "duration": 0,
+      "error": "Script returned exit code: 0"
+    }
+,
+    {
+      "id": 5,
+      "name": "Lambda Error Injection Simulation",
+      "category": "Bash",
+      "success": false,
+      "duration": 0,
+      "error": "Script returned exit code: 0"
+    }
+
+  ]
+}

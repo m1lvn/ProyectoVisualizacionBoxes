@@ -137,294 +137,207 @@ echo "   Requests exitosos: $BASELINE_SUCCESS/10"
 echo "   Requests fallidos: $BASELINE_ERRORS/10"
 
 # ═══════════════════════════════════════════════════════════════
-# Fase 2: Inyección de Errores (5 minutos)
+# Fase 2: Inyección de Errores
 # ═══════════════════════════════════════════════════════════════
 
 echo ""
-log_info "Fase 2: Inyectando errores (${DURATION_MINUTES} min)..."
+log_info "Fase 2: Inyectando errores..."
 echo "   $ERROR_INJECTION_RATE% de requests serán inválidos"
+echo "   Total requests a enviar: $REQUESTS"
 echo ""
 
-CHAOS_START=$(date +%s)
-CHAOS_END=$((CHAOS_START + DURATION_MINUTES * 60))
+read -p "🚨 ¿Iniciar test de error injection? (yes/no): " confirm
 
-TOTAL_REQUESTS=0
-VALID_REQUESTS=0
-INVALID_REQUESTS=0
-SUCCESS_200=0
-ERROR_400=0
-ERROR_500=0
-ERROR_503=0
-OTHER_ERRORS=0
-
-mkdir -p results/05-lambda-errors
-
-while [ $(date +%s) -lt $CHAOS_END ]; do
-    CURRENT_TIME=$(date +%s)
-    ELAPSED=$((CURRENT_TIME - CHAOS_START))
-    REMAINING=$((CHAOS_END - CURRENT_TIME))
+if [ "$confirm" = "yes" ]; then
+    echo ""
+    log_info "💥 Iniciando test de inyección de errores..."
+    echo "⏱️  Timestamp: $(date)"
     
-    # Progress bar
-    PROGRESS=$((ELAPSED * 100 / (DURATION_MINUTES * 60)))
-    echo -ne "\r   Progreso: [$PROGRESS%] | Elapsed: ${ELAPSED}s | Remaining: ${REMAINING}s | Total: $TOTAL_REQUESTS | Errors: $((ERROR_400 + ERROR_500 + ERROR_503))   "
+    VALID_COUNT=0
+    INVALID_COUNT=0
     
-    # Decidir si enviar request válido o inválido
-    RANDOM_NUM=$((RANDOM % 100))
-    
-    if [ $RANDOM_NUM -lt $ERROR_INJECTION_RATE ]; then
-        # Request INVÁLIDO - Forzar error
-        ((INVALID_REQUESTS++))
+    for i in $(seq 1 $REQUESTS); do
+        # Decidir si enviar request válido o inválido (basado en ERROR_INJECTION_RATE%)
+        RANDOM_NUM=$((RANDOM % 100))
         
-        # Tipo de request inválido aleatorio
-        ERROR_TYPE=$((RANDOM % 5))
+        if [ $RANDOM_NUM -lt $ERROR_INJECTION_RATE ]; then
+            # Request INVÁLIDO
+            ((INVALID_COUNT++))
+            
+            # Tipo de error aleatorio
+            ERROR_TYPE=$((RANDOM % 5))
+            
+            case $ERROR_TYPE in
+                0)
+                    # POST sin datos requeridos
+                    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+                        --max-time 5 --connect-timeout 3 \
+                        -X POST "$API_ENDPOINT$ENDPOINT" \
+                        -H "Authorization: Bearer $TOKEN" \
+                        -H "Content-Type: application/json" \
+                        -d '{}' 2>&1)
+                    ;;
+                1)
+                    # JSON malformado
+                    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+                        --max-time 5 --connect-timeout 3 \
+                        -X POST "$API_ENDPOINT$ENDPOINT" \
+                        -H "Authorization: Bearer $TOKEN" \
+                        -H "Content-Type: application/json" \
+                        -d '{invalid json' 2>&1)
+                    ;;
+                2)
+                    # ID inexistente
+                    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+                        --max-time 5 --connect-timeout 3 \
+                        -X GET "$API_ENDPOINT/boxes/99999999" \
+                        -H "Authorization: Bearer $TOKEN" 2>&1)
+                    ;;
+                3)
+                    # Método HTTP no permitido
+                    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+                        --max-time 5 --connect-timeout 3 \
+                        -X DELETE "$API_ENDPOINT/boxes" \
+                        -H "Authorization: Bearer $TOKEN" 2>&1)
+                    ;;
+                4)
+                    # Datos inválidos
+                    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+                        --max-time 5 --connect-timeout 3 \
+                        -X POST "$API_ENDPOINT$ENDPOINT" \
+                        -H "Authorization: Bearer $TOKEN" \
+                        -H "Content-Type: application/json" \
+                        -d '{"fecha":"invalid-date","boxId":-1}' 2>&1)
+                    ;;
+            esac
+        else
+            # Request VÁLIDO
+            ((VALID_COUNT++))
+            
+            RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+                --max-time 5 --connect-timeout 3 \
+                -X GET "$API_ENDPOINT/boxes" \
+                -H "Authorization: Bearer $TOKEN" 2>&1)
+        fi
         
-        case $ERROR_TYPE in
-            0)
-                # POST sin datos requeridos
-                RESPONSE=$(curl -s -w "\n%{http_code}" \
-                    -X POST "$API_ENDPOINT/agendas" \
-                    -H "Authorization: Bearer $JWT_TOKEN" \
-                    -H "Content-Type: application/json" \
-                    -d '{}' \
-                    --max-time 5 2>&1)
-                ;;
-            1)
-                # JSON malformado
-                RESPONSE=$(curl -s -w "\n%{http_code}" \
-                    -X POST "$API_ENDPOINT/agendas" \
-                    -H "Authorization: Bearer $JWT_TOKEN" \
-                    -H "Content-Type: application/json" \
-                    -d '{invalid json}' \
-                    --max-time 5 2>&1)
-                ;;
-            2)
-                # ID inexistente
-                RESPONSE=$(curl -s -w "\n%{http_code}" \
-                    -X GET "$API_ENDPOINT/boxes/99999999" \
-                    -H "Authorization: Bearer $JWT_TOKEN" \
-                    --max-time 5 2>&1)
-                ;;
-            3)
-                # Método HTTP incorrecto
-                RESPONSE=$(curl -s -w "\n%{http_code}" \
-                    -X DELETE "$API_ENDPOINT/boxes" \
-                    -H "Authorization: Bearer $JWT_TOKEN" \
-                    --max-time 5 2>&1)
-                ;;
-            4)
-                # Datos inválidos
-                RESPONSE=$(curl -s -w "\n%{http_code}" \
-                    -X POST "$API_ENDPOINT/agendas" \
-                    -H "Authorization: Bearer $JWT_TOKEN" \
-                    -H "Content-Type: application/json" \
-                    -d '{"fecha":"invalid-date","boxId":-1}' \
-                    --max-time 5 2>&1)
-                ;;
-        esac
+        EXIT_CODE=$?
+        
+        if [ $EXIT_CODE -eq 0 ]; then
+            HTTP_CODE=$(echo "$RESPONSE" | grep "^HTTP_CODE:" | cut -d':' -f2 | tr -d ' ')
+            TIME=$(echo "$RESPONSE" | grep "^TIME:" | cut -d':' -f2 | tr -d ' ')
+            
+            if [ -z "$HTTP_CODE" ]; then
+                HTTP_CODE="ERROR"
+                TIME="0"
+            fi
+        else
+            if [ $EXIT_CODE -eq 28 ]; then
+                HTTP_CODE="TIMEOUT"
+            else
+                HTTP_CODE="CURL_ERROR_$EXIT_CODE"
+            fi
+            TIME="0"
+        fi
+        
+        echo "Request $i: $HTTP_CODE | ${TIME}s" >> "$RESULT_FILE"
+        
+        if [ $(($i % 50)) -eq 0 ]; then
+            echo "  Progress: $i/$REQUESTS requests (Válidos: $VALID_COUNT, Inválidos: $INVALID_COUNT)"
+        fi
+    done
+    
+    echo ""
+    log_success "✅ Test completado"
+    echo "   Requests válidos enviados: $VALID_COUNT"
+    echo "   Requests inválidos enviados: $INVALID_COUNT"
+    echo "📊 Resultados guardados en: $RESULT_FILE"
+    
+    # ═══════════════════════════════════════════════════════════════
+    # Análisis de Resultados
+    # ═══════════════════════════════════════════════════════════════
+    
+    echo ""
+    echo "📈 Análisis de Resultados:"
+    echo "---"
+    
+    if [ -f "$RESULT_FILE" ]; then
+        # Contar resultados
+        TOTAL=$(grep -c "Request" "$RESULT_FILE" 2>/dev/null || echo "0")
+        SUCCESS=$(grep -cE "Request [0-9]+: 200 " "$RESULT_FILE" 2>/dev/null || echo "0")
+        ERROR_400=$(grep -cE "Request [0-9]+: (400|404) " "$RESULT_FILE" 2>/dev/null || echo "0")
+        ERROR_500=$(grep -cE "Request [0-9]+: (500|502|503) " "$RESULT_FILE" 2>/dev/null || echo "0")
+        TIMEOUTS=$(grep -c "TIMEOUT" "$RESULT_FILE" 2>/dev/null || echo "0")
+        OTHER_ERRORS=$(grep -cE "ERROR|CURL_ERROR" "$RESULT_FILE" 2>/dev/null || echo "0")
+        
+        # Limpiar variables
+        TOTAL=$(echo "$TOTAL" | tr -d '\n' | tr -d '[:space:]')
+        TOTAL=${TOTAL//[^0-9]/}
+        SUCCESS=$(echo "$SUCCESS" | tr -d '\n' | tr -d '[:space:]')
+        SUCCESS=${SUCCESS//[^0-9]/}
+        ERROR_400=$(echo "$ERROR_400" | tr -d '\n' | tr -d '[:space:]')
+        ERROR_400=${ERROR_400//[^0-9]/}
+        ERROR_500=$(echo "$ERROR_500" | tr -d '\n' | tr -d '[:space:]')
+        ERROR_500=${ERROR_500//[^0-9]/}
+        TIMEOUTS=$(echo "$TIMEOUTS" | tr -d '\n' | tr -d '[:space:]')
+        TIMEOUTS=${TIMEOUTS//[^0-9]/}
+        OTHER_ERRORS=$(echo "$OTHER_ERRORS" | tr -d '\n' | tr -d '[:space:]')
+        OTHER_ERRORS=${OTHER_ERRORS//[^0-9]/}
+        
+        # Asignar 0 si vacíos
+        TOTAL=${TOTAL:-0}
+        SUCCESS=${SUCCESS:-0}
+        ERROR_400=${ERROR_400:-0}
+        ERROR_500=${ERROR_500:-0}
+        TIMEOUTS=${TIMEOUTS:-0}
+        OTHER_ERRORS=${OTHER_ERRORS:-0}
+        
+        echo "Total Requests: $TOTAL"
+        
+        if [ "$TOTAL" -gt 0 ]; then
+            echo "Successful (200): $SUCCESS ($(( SUCCESS * 100 / TOTAL ))%)"
+            echo "Client Errors (400/404): $ERROR_400 ($(( ERROR_400 * 100 / TOTAL ))%)"
+            echo "Server Errors (500/502/503): $ERROR_500 ($(( ERROR_500 * 100 / TOTAL ))%)"
+            echo "Timeouts: $TIMEOUTS ($(( TIMEOUTS * 100 / TOTAL ))%)"
+            echo "Other Errors: $OTHER_ERRORS ($(( OTHER_ERRORS * 100 / TOTAL ))%)"
+            
+            echo ""
+            echo "💡 Interpretación:"
+            
+            # Esperamos ~30% de requests con error (por diseño)
+            EXPECTED_ERRORS=$(( TOTAL * ERROR_INJECTION_RATE / 100 ))
+            ACTUAL_ERRORS=$(( ERROR_400 + ERROR_500 ))
+            
+            echo "   Errores esperados (~${ERROR_INJECTION_RATE}%): $EXPECTED_ERRORS"
+            echo "   Errores detectados: $ACTUAL_ERRORS"
+            
+            if [ "$ERROR_400" -gt 0 ]; then
+                log_success "✅ Validación de input funcionando (detecta requests inválidos)"
+            fi
+            
+            if [ "$ERROR_500" -gt 0 ]; then
+                log_warning "⚠️  Errores 500 detectados - verificar manejo de errores en Lambda"
+            else
+                log_success "✅ No se detectaron errores 500 - Lambda manejó bien los errores"
+            fi
+            
+            if [ "$SUCCESS" -gt $(( TOTAL * 60 / 100 )) ]; then
+                log_success "✅ Sistema mantiene >60% de requests exitosos con errores inyectados"
+            else
+                log_warning "⚠️  Tasa de éxito baja (<60%) - revisar resiliencia"
+            fi
+        else
+            echo "⚠️  No se encontraron resultados en el archivo"
+        fi
     else
-        # Request VÁLIDO
-        ((VALID_REQUESTS++))
-        
-        RESPONSE=$(curl -s -w "\n%{http_code}" \
-            -X GET "$API_ENDPOINT/boxes" \
-            -H "Authorization: Bearer $JWT_TOKEN" \
-            -H "Content-Type: application/json" \
-            --max-time 5 2>&1)
+        echo "❌ Archivo de resultados no encontrado: $RESULT_FILE"
     fi
     
-    HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-    BODY=$(echo "$RESPONSE" | head -n -1)
-    
-    # Clasificar respuesta
-    case "$HTTP_CODE" in
-        200)
-            ((SUCCESS_200++))
-            echo "success" >> results/05-lambda-errors/status.log
-            ;;
-        400|404)
-            ((ERROR_400++))
-            echo "error_400" >> results/05-lambda-errors/status.log
-            ;;
-        500|502)
-            ((ERROR_500++))
-            echo "error_500" >> results/05-lambda-errors/status.log
-            ;;
-        503)
-            ((ERROR_503++))
-            echo "error_503" >> results/05-lambda-errors/status.log
-            ;;
-        *)
-            ((OTHER_ERRORS++))
-            echo "error_other" >> results/05-lambda-errors/status.log
-            ;;
-    esac
-    
-    # Log detallado
-    echo "$(date +%s),$HTTP_CODE,$([ $RANDOM_NUM -lt $ERROR_INJECTION_RATE ] && echo 'invalid' || echo 'valid')" >> results/05-lambda-errors/requests.csv
-    
-    ((TOTAL_REQUESTS++))
-    
-    sleep 1
-done
-
-echo ""  # Nueva línea después del progress bar
-log_success "Inyección de errores completada"
-
-# ═══════════════════════════════════════════════════════════════
-# Fase 3: Recuperación (30 segundos)
-# ═══════════════════════════════════════════════════════════════
-
-echo ""
-log_info "Fase 3: Verificando recuperación del sistema (30s)..."
-
-sleep 10
-
-RECOVERY_SUCCESS=0
-RECOVERY_ERRORS=0
-
-for i in {1..10}; do
-    RESPONSE=$(curl -s -w "\n%{http_code}" \
-        -X GET "$API_ENDPOINT/boxes" \
-        -H "Authorization: Bearer $JWT_TOKEN" \
-        -H "Content-Type: application/json" \
-        --max-time 10 2>&1)
-    
-    HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
-    
-    if [ "$HTTP_CODE" = "200" ]; then
-        ((RECOVERY_SUCCESS++))
-    else
-        ((RECOVERY_ERRORS++))
-    fi
-    
-    sleep 2
-done
-
-log_success "Verificación de recuperación completada"
-echo "   Requests exitosos: $RECOVERY_SUCCESS/10"
-echo "   Requests fallidos: $RECOVERY_ERRORS/10"
-
-# ═══════════════════════════════════════════════════════════════
-# Análisis de Resultados
-# ═══════════════════════════════════════════════════════════════
-
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "   📊 RESULTADOS DEL EXPERIMENTO"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
-
-# Calcular métricas
-SUCCESS_RATE=$(echo "scale=2; $SUCCESS_200 * 100 / $TOTAL_REQUESTS" | bc 2>/dev/null || echo "0")
-ERROR_400_RATE=$(echo "scale=2; $ERROR_400 * 100 / $TOTAL_REQUESTS" | bc 2>/dev/null || echo "0")
-ERROR_500_RATE=$(echo "scale=2; $ERROR_500 * 100 / $TOTAL_REQUESTS" | bc 2>/dev/null || echo "0")
-ERROR_503_RATE=$(echo "scale=2; $ERROR_503 * 100 / $TOTAL_REQUESTS" | bc 2>/dev/null || echo "0")
-
-echo "📈 Estadísticas de Requests:"
-echo "   Total enviados: $TOTAL_REQUESTS"
-echo "   └─ Válidos: $VALID_REQUESTS"
-echo "   └─ Inválidos (inyectados): $INVALID_REQUESTS"
-echo ""
-echo "   Respuestas recibidas:"
-echo "   └─ 200 OK: $SUCCESS_200 ($SUCCESS_RATE%)"
-echo "   └─ 400/404 (Client Errors): $ERROR_400 ($ERROR_400_RATE%)"
-echo "   └─ 500/502 (Lambda Errors): $ERROR_500 ($ERROR_500_RATE%)"
-echo "   └─ 503 (Service Unavailable): $ERROR_503 ($ERROR_503_RATE%)"
-echo "   └─ Otros: $OTHER_ERRORS"
-echo ""
-
-echo "🔄 Comparación:"
-echo "   Baseline success: $((BASELINE_SUCCESS * 10))%"
-echo "   Chaos success: $SUCCESS_RATE%"
-echo "   Recovery success: $((RECOVERY_SUCCESS * 10))%"
-echo ""
-
-# Evaluar resultado
-if (( $(echo "$ERROR_500 > 0" | bc -l) )); then
-    log_warning "⚠️  Lambda errors detectados ($ERROR_500) - Sistema manejó errores"
+    echo ""
+    echo "════════════════════════════════════════════════════════════════"
+    echo "   ✅ EXPERIMENTO COMPLETADO"
+    echo "════════════════════════════════════════════════════════════════"
+    echo ""
 else
-    log_info "ℹ️  No se detectaron errores 500 - Validación funcionó correctamente"
+    echo "❌ Test cancelado por el usuario"
+    exit 0
 fi
-
-if [ $RECOVERY_SUCCESS -ge 8 ]; then
-    log_success "✅ Sistema se recuperó exitosamente"
-else
-    log_warning "⚠️  Sistema con problemas de recuperación"
-fi
-
-# ═══════════════════════════════════════════════════════════════
-# Guardar Reporte
-# ═══════════════════════════════════════════════════════════════
-
-REPORT_FILE="results/05-lambda-errors/REPORT.md"
-
-cat > "$REPORT_FILE" << EOF
-# Experimento 5: Lambda Error Injection Simulation
-
-## 📋 Información del Experimento
-
-- **Fecha:** $(date '+%Y-%m-%d %H:%M:%S')
-- **Duración:** $DURATION_MINUTES minutos
-- **Método:** Inyección de requests inválidos
-- **Tasa de error:** $ERROR_INJECTION_RATE%
-
-## 📊 Resultados
-
-### Métricas de Requests
-- Total requests: $TOTAL_REQUESTS
-  - Válidos: $VALID_REQUESTS
-  - Inválidos (inyectados): $INVALID_REQUESTS
-
-### Distribución de Respuestas
-| Status | Count | Percentage |
-|--------|-------|------------|
-| 200 OK | $SUCCESS_200 | $SUCCESS_RATE% |
-| 400/404 | $ERROR_400 | $ERROR_400_RATE% |
-| 500/502 | $ERROR_500 | $ERROR_500_RATE% |
-| 503 | $ERROR_503 | $ERROR_503_RATE% |
-| Otros | $OTHER_ERRORS | - |
-
-### Comparación de Fases
-| Fase | Success Rate |
-|------|--------------|
-| Baseline | $((BASELINE_SUCCESS * 10))% |
-| Chaos | $SUCCESS_RATE% |
-| Recovery | $((RECOVERY_SUCCESS * 10))% |
-
-## 🎯 Hallazgos
-
-1. **Manejo de Errores:** Sistema respondió con códigos HTTP apropiados
-2. **Lambda Errors:** $ERROR_500 errores 500 detectados
-3. **Validación:** $ERROR_400 requests rechazados por validación
-4. **Recuperación:** $([ $RECOVERY_SUCCESS -ge 8 ] && echo "✅ Exitosa" || echo "⚠️ Parcial")
-
-## 💡 Observaciones
-
-$(if [ $ERROR_500 -gt 0 ]; then
-    echo "- ⚠️ Lambda generó errores 500 - Revisar logs de CloudWatch"
-    echo "- 💡 Implementar mejor manejo de excepciones"
-fi)
-
-$(if [ $ERROR_400 -gt $((INVALID_REQUESTS * 80 / 100)) ]; then
-    echo "- ✅ Validación de inputs funciona correctamente"
-fi)
-
-$(if [ $RECOVERY_SUCCESS -lt 8 ]; then
-    echo "- ⚠️ Recuperación lenta - Posible circuit breaker activado"
-fi)
-
-## 📁 Archivos Generados
-
-- \`requests.csv\` - Log de todos los requests
-- \`status.log\` - Status de cada request
-- \`REPORT.md\` - Este reporte
-
-EOF
-
-log_success "Reporte guardado en: $REPORT_FILE"
-
-echo ""
-echo "════════════════════════════════════════════════════════════════"
-echo "   ✅ EXPERIMENTO COMPLETADO"
-echo "════════════════════════════════════════════════════════════════"
-echo ""
