@@ -161,39 +161,71 @@ if [ "$SKIP_FIS" = false ]; then
             # Crear template de DynamoDB Throttling
             if [ -f "aws-fis/dynamodb-throttling.json" ]; then
                 echo "       → Creando template: dynamodb-throttling..."
-                TEMPLATE_ID=$(aws fis create-experiment-template \
+                
+                # Capturar tanto stdout como stderr
+                CREATE_OUTPUT=$(timeout 30s aws fis create-experiment-template \
                     --cli-input-json file://aws-fis/dynamodb-throttling.json \
-                    --region us-east-1 \
-                    --query 'experimentTemplate.id' \
-                    --output text 2>/dev/null)
+                    --region us-east-1 2>&1)
+                CREATE_EXIT_CODE=$?
                 
-                if [ -n "$TEMPLATE_ID" ]; then
-                    echo "       ✅ Template creado: $TEMPLATE_ID"
+                if [ $CREATE_EXIT_CODE -eq 0 ]; then
+                    TEMPLATE_ID=$(echo "$CREATE_OUTPUT" | grep -o '"id": "[^"]*"' | cut -d'"' -f4 | head -n1)
+                    if [ -n "$TEMPLATE_ID" ]; then
+                        echo "       ✅ Template creado: $TEMPLATE_ID"
+                    else
+                        echo "       ✅ Template creado exitosamente"
+                    fi
+                elif [ $CREATE_EXIT_CODE -eq 124 ]; then
+                    echo "       ⏱️  Timeout - La operación tardó más de 30s"
+                    echo "       💡 Puedes crear el template manualmente desde AWS Console"
+                    SKIP_FIS=true
                 else
-                    echo "       ❌ Error creando template dynamodb-throttling"
+                    echo "       ❌ Error creando template:"
+                    echo "$CREATE_OUTPUT" | grep -i "error\|denied\|exception" | head -n3
+                    
+                    # Si es error de permisos, saltar FIS
+                    if echo "$CREATE_OUTPUT" | grep -qi "AccessDenied\|not authorized"; then
+                        echo "       ⚠️  Sin permisos FIS - Saltando experimentos FIS"
+                        SKIP_FIS=true
+                    fi
                 fi
             fi
             
-            # Crear template de Lambda Error Injection
-            if [ -f "aws-fis/lambda-error-injection.json" ]; then
+            # Crear template de Lambda Error Injection (solo si el anterior funcionó)
+            if [ "$SKIP_FIS" = false ] && [ -f "aws-fis/lambda-error-injection.json" ]; then
                 echo "       → Creando template: lambda-error-injection..."
-                TEMPLATE_ID=$(aws fis create-experiment-template \
-                    --cli-input-json file://aws-fis/lambda-error-injection.json \
-                    --region us-east-1 \
-                    --query 'experimentTemplate.id' \
-                    --output text 2>/dev/null)
                 
-                if [ -n "$TEMPLATE_ID" ]; then
-                    echo "       ✅ Template creado: $TEMPLATE_ID"
+                CREATE_OUTPUT=$(timeout 30s aws fis create-experiment-template \
+                    --cli-input-json file://aws-fis/lambda-error-injection.json \
+                    --region us-east-1 2>&1)
+                CREATE_EXIT_CODE=$?
+                
+                if [ $CREATE_EXIT_CODE -eq 0 ]; then
+                    TEMPLATE_ID=$(echo "$CREATE_OUTPUT" | grep -o '"id": "[^"]*"' | cut -d'"' -f4 | head -n1)
+                    if [ -n "$TEMPLATE_ID" ]; then
+                        echo "       ✅ Template creado: $TEMPLATE_ID"
+                    else
+                        echo "       ✅ Template creado exitosamente"
+                    fi
+                elif [ $CREATE_EXIT_CODE -eq 124 ]; then
+                    echo "       ⏱️  Timeout - Saltando experimentos FIS"
+                    SKIP_FIS=true
                 else
-                    echo "       ❌ Error creando template lambda-error-injection"
+                    echo "       ❌ Error creando template"
+                    echo "$CREATE_OUTPUT" | grep -i "error\|denied\|exception" | head -n3
+                    SKIP_FIS=true
                 fi
             fi
             
-            # Re-verificar
-            TEMPLATE_COUNT=$(aws fis list-experiment-templates --query 'experimentTemplates | length(@)' --output text 2>/dev/null || echo "0")
-            if [ "$TEMPLATE_COUNT" != "0" ]; then
-                echo "    ✅ Templates FIS creados: $TEMPLATE_COUNT"
+            # Re-verificar solo si no hubo errores
+            if [ "$SKIP_FIS" = false ]; then
+                TEMPLATE_COUNT=$(aws fis list-experiment-templates --query 'experimentTemplates | length(@)' --output text 2>/dev/null || echo "0")
+                if [ "$TEMPLATE_COUNT" != "0" ]; then
+                    echo "    ✅ Templates FIS creados: $TEMPLATE_COUNT"
+                else
+                    echo "    ⚠️  No se pudieron crear templates - Saltando experimentos FIS"
+                    SKIP_FIS=true
+                fi
             fi
         else
             echo "    ✅ Templates FIS disponibles: $TEMPLATE_COUNT"
@@ -203,7 +235,15 @@ fi
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
-echo "   ✅ PRE-REQUISITOS VERIFICADOS"
+if [ "$SKIP_FIS" = true ]; then
+    echo "   ✅ PRE-REQUISITOS VERIFICADOS (FIS deshabilitado)"
+    echo "   📝 Se ejecutarán solo experimentos Bash (3/5)"
+else
+    echo "   ✅ PRE-REQUISITOS VERIFICADOS"
+    echo "   📝 Se ejecutarán todos los experimentos (5/5)"
+fi
+echo "════════════════════════════════════════════════════════════════"
+echo ""
 echo "════════════════════════════════════════════════════════════════"
 echo ""
 
