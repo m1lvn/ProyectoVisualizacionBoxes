@@ -18,13 +18,16 @@ resource "local_file" "ssh_private_key" {
 
 # --- VPC ---
 resource "aws_vpc" "main" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
 
-  tags = {
-    Name = "${var.project_name}-vpc"
-  }
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.project_name}-${var.environment}-vpc"
+    }
+  )
 }
 
 # --- Internet Gateway ---
@@ -39,13 +42,16 @@ resource "aws_internet_gateway" "gw" {
 # --- Public Subnet ---
 resource "aws_subnet" "public" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.1.0/24"
+  cidr_block              = var.public_subnet_cidr
   map_public_ip_on_launch = true
   availability_zone       = "${var.region}a"
 
-  tags = {
-    Name = "${var.project_name}-public-subnet"
-  }
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.project_name}-${var.environment}-public-subnet"
+    }
+  )
 }
 
 # --- Route Table Public ---
@@ -70,13 +76,16 @@ resource "aws_route_table_association" "public" {
 # --- Private Subnet (para VPC Endpoint) ---
 resource "aws_subnet" "private" {
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = "10.0.2.0/24"
+  cidr_block              = var.private_subnet_cidr
   map_public_ip_on_launch = false
   availability_zone       = "${var.region}a"
 
-  tags = {
-    Name = "${var.project_name}-private-subnet"
-  }
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.project_name}-${var.environment}-private-subnet"
+    }
+  )
 }
 
 # --- Route Table Private ---
@@ -94,15 +103,15 @@ resource "aws_route_table_association" "private" {
 
 # --- VPC Endpoint para DynamoDB ---
 resource "aws_vpc_endpoint" "dynamodb" {
-  vpc_id          = aws_vpc.main.id
-  service_name    = "com.amazonaws.${var.region}.dynamodb"
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.region}.dynamodb"
   vpc_endpoint_type = "Gateway"
-  route_table_ids = [aws_route_table.private.id, aws_route_table.public.id]
+  route_table_ids   = [aws_route_table.private.id, aws_route_table.public.id]
 }
 
 # --- Security Group: EC2 (HTTP + SSH) ---
 resource "aws_security_group" "ec2_sg" {
-  name        = "${var.project_name}-ec2-sg"
+  name        = "${var.project_name}-${var.environment}-ec2-sg"
   description = "Allow HTTP, HTTPS, and SSH"
   vpc_id      = aws_vpc.main.id
 
@@ -110,21 +119,24 @@ resource "aws_security_group" "ec2_sg" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.allowed_ssh_cidr
+    description = "SSH access"
   }
 
   ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.allowed_http_cidr
+    description = "HTTP access"
   }
 
   ingress {
-    from_port   = 8000
-    to_port     = 8000
+    from_port   = var.django_port
+    to_port     = var.django_port
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = var.allowed_http_cidr
+    description = "Django application access"
   }
 
   egress {
@@ -169,20 +181,12 @@ resource "aws_instance" "django_server" {
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
   iam_instance_profile   = aws_iam_instance_profile.lab_instance_profile.name
 
-  user_data = <<-EOF
-#!/bin/bash
-apt update -y
-apt install -y python3 python3-pip git
-
-cd /home/ubuntu
-git clone https://github.com/tuusuario/PROYECTOVISUALIZACIONBOXES.git
-cd PROYECTOVISUALIZACIONBOXES/ProyectoHospital
-pip3 install -r requirements_serverless.txt
-
-# DynamoDB se accede mediante credenciales de IAM (LabRole), no se necesitan variables de entorno.
-cd /home/ubuntu/PROYECTOVISUALIZACIONBOXES/ProyectoHospital
-nohup python3 manage.py runserver 0.0.0.0:8000 > django.log 2>&1 &
-EOF
+  user_data = templatefile("${path.module}/user-data.sh", {
+    github_repo_url = var.github_repo_url
+    django_port     = var.django_port
+    project_name    = var.project_name
+    environment     = var.environment
+  })
 
   tags = {
     Name = "${var.project_name}-django-server"
@@ -217,12 +221,12 @@ resource "aws_s3_object" "lambda_code" {
 
 # --- Función Lambda ---
 resource "aws_lambda_function" "api" {
-  function_name    = "${var.project_name}-api"
-  role             = data.aws_iam_role.lab_role.arn
-  handler          = "src/index.handler"
-  runtime          = "nodejs18.x"
-  timeout          = 30
-  memory_size      = 128
+  function_name = "${var.project_name}-${var.environment}-api"
+  role          = data.aws_iam_role.lab_role.arn
+  handler       = "src/index.handler"
+  runtime       = var.lambda_runtime
+  timeout       = var.lambda_timeout
+  memory_size   = var.lambda_memory
 
   s3_bucket        = aws_s3_bucket.lambda_bucket.id
   s3_key           = aws_s3_object.lambda_code.key
@@ -247,8 +251,8 @@ resource "aws_apigatewayv2_api" "http_api" {
 }
 
 resource "aws_apigatewayv2_stage" "default_stage" {
-  api_id = aws_apigatewayv2_api.http_api.id
-  name   = "$default"
+  api_id      = aws_apigatewayv2_api.http_api.id
+  name        = "$default"
   auto_deploy = true
 }
 
