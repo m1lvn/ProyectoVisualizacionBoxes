@@ -3,10 +3,10 @@ frameworkVersion: '3'
 
 provider:
   name: aws
-  runtime: nodejs18.x
-  region: us-east-1
+  runtime: ${env:LAMBDA_RUNTIME, 'nodejs18.x'}
+  region: ${env:AWS_DEFAULT_REGION, 'us-east-1'}
   environment:
-    DYNAMODB_TABLE: HospitalData
+    DYNAMODB_TABLE: ${env:DYNAMODB_TABLE, 'HospitalData'}
     STAGE: ${self:custom.stage}
     USER_POOL_ID: !Ref HospitalUserPool
     USER_POOL_CLIENT_ID: !Ref HospitalUserPoolClient
@@ -16,7 +16,7 @@ provider:
     NOTIFICATIONS_TOPIC_ARN: !Ref NotificationsTopic
     BOX_EVENTS_TOPIC_ARN: !Ref BoxEventsTopic
   # Usar rol existente de AWS Academy en lugar de crear uno nuevo
-  role: arn:aws:iam::891377117593:role/LabRole
+  role: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/${env:AWS_IAM_ROLE, 'LabRole'}
   logs:
     httpApi: true
   httpApi:
@@ -34,8 +34,8 @@ provider:
 custom:
   stage: ${opt:stage, self:provider.stage, 'dev'}
   serverless-offline:
-    httpPort: 3001
-    host: 0.0.0.0
+    httpPort: ${env:SERVERLESS_OFFLINE_PORT, '3001'}
+    host: ${env:SERVERLESS_OFFLINE_HOST, '0.0.0.0'}
 
 plugins:
   - serverless-offline
@@ -149,7 +149,7 @@ functions:
     events:
       - sns:
           arn: !Ref UserEventsTopic
-          topicName: ${self:custom.stage}-hospital-user-events
+          topicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-user-events
   
   # Handler para eventos de agenda
   agendaEventsHandler:
@@ -157,7 +157,7 @@ functions:
     events:
       - sns:
           arn: !Ref AgendaEventsTopic
-          topicName: ${self:custom.stage}-hospital-agenda-events
+          topicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-agenda-events
           
   # Handler para notificaciones
   notificationHandler:
@@ -165,7 +165,7 @@ functions:
     events:
       - sns:
           arn: !Ref NotificationsTopic
-          topicName: ${self:custom.stage}-hospital-notifications
+          topicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-notifications
 
   # ===========================
   # SETUP TEST USERS (Custom Resource)
@@ -173,7 +173,7 @@ functions:
   
   setupTestUsers:
     handler: src/handlers/setup-test-users.handler
-    timeout: 300  # 5 minutos para crear todos los usuarios
+    timeout: ${env:LAMBDA_TIMEOUT, '300'}
     environment:
       COGNITO_USER_POOL_ID: !Ref HospitalUserPool
 
@@ -182,7 +182,7 @@ resources:
     HospitalDataTable:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: HospitalData
+        TableName: ${env:DYNAMODB_TABLE, 'HospitalData'}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
           - AttributeName: PK
@@ -214,7 +214,7 @@ resources:
     HospitalUserPool:
       Type: AWS::Cognito::UserPool
       Properties:
-        UserPoolName: hospital-users-${self:custom.stage}
+        UserPoolName: ${env:COGNITO_USER_POOL_NAME, 'hospital-users'}-${self:custom.stage}
         AutoVerifiedAttributes:
           - email
         Policies:
@@ -258,7 +258,7 @@ resources:
     HospitalUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
       Properties:
-        ClientName: hospital-web-client-${self:custom.stage}
+        ClientName: ${env:COGNITO_CLIENT_NAME, 'hospital-web-client'}-${self:custom.stage}
         UserPoolId: !Ref HospitalUserPool
         GenerateSecret: false
         ExplicitAuthFlows:
@@ -271,9 +271,9 @@ resources:
           AccessToken: minutes
           IdToken: minutes
           RefreshToken: days
-        AccessTokenValidity: 60   # 60 minutes para chaos engineering tests
-        IdTokenValidity: 60       # 60 minutes para chaos engineering tests
-        RefreshTokenValidity: 30  # 30 days
+        AccessTokenValidity: ${env:ACCESS_TOKEN_VALIDITY, '60'}
+        IdTokenValidity: ${env:ID_TOKEN_VALIDITY, '60'}
+        RefreshTokenValidity: ${env:REFRESH_TOKEN_VALIDITY, '30'}
         
     # Cognito User Pool Groups
     AdminGroup:
@@ -307,25 +307,25 @@ resources:
     UserEventsTopic:
       Type: AWS::SNS::Topic
       Properties:
-        TopicName: ${self:custom.stage}-hospital-user-events
+        TopicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-user-events
         DisplayName: "Hospital User Events"
         
     AgendaEventsTopic:
       Type: AWS::SNS::Topic
       Properties:
-        TopicName: ${self:custom.stage}-hospital-agenda-events
+        TopicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-agenda-events
         DisplayName: "Hospital Agenda Events"
         
     NotificationsTopic:
       Type: AWS::SNS::Topic
       Properties:
-        TopicName: ${self:custom.stage}-hospital-notifications
+        TopicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-notifications
         DisplayName: "Hospital System Notifications"
         
     BoxEventsTopic:
       Type: AWS::SNS::Topic
       Properties:
-        TopicName: ${self:custom.stage}-hospital-box-events
+        TopicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-box-events
         DisplayName: "Hospital Box State Events"
 
     # ===========================
