@@ -95,49 +95,53 @@ fi
 echo "    ✅ AWS configurado - Account: $AWS_ACCOUNT_ID"
 
 # Verificar JWT Token
-echo "[✓] Verificando JWT Token..."
+echo "[✓] Verificando JWT Token (Cognito User Pool)..."
 
-if [ -f "get-jwt-from-secrets.sh" ]; then
-    # Intentar obtener token con modo verbose para debug
-    TOKEN_OUTPUT=$(./get-jwt-from-secrets.sh --verbose 2>&1)
-    TOKEN_EXIT_CODE=$?
-    TOKEN=$(echo "$TOKEN_OUTPUT" | tail -n1)
-    
-    if [ $TOKEN_EXIT_CODE -ne 0 ] || [ -z "$TOKEN" ] || [[ "$TOKEN" == *"ERROR"* ]]; then
-        echo "    ⚠️  JWT Token no disponible desde Secrets Manager"
-        echo ""
-        echo "    [DEBUG] Detalles del error:"
-        echo "$TOKEN_OUTPUT" | grep -E "\[ERROR\]|\[*\]|Secret:|Region:" | sed 's/^/    /'
-        echo ""
+# Primero intentar desde .env
+if [ -f ".env" ]; then
+    FALLBACK_TOKEN=$(grep "^JWT_TOKEN=" .env | cut -d'=' -f2- | xargs)
+    if [ -n "$FALLBACK_TOKEN" ]; then
+        echo "    ✅ JWT encontrado en .env"
+        TOKEN="$FALLBACK_TOKEN"
+        echo "    ⚠️  Verifica que sea un token válido de Cognito User Pool"
+    fi
+fi
+
+# Si no hay token en .env, obtener desde Cognito
+if [ -z "$TOKEN" ]; then
+    if [ -f "get-cognito-jwt.sh" ]; then
+        echo "    🔄 Obteniendo JWT desde Cognito User Pool..."
         
-        # Intentar leer directamente desde .env como alternativa
-        if [ -f ".env" ]; then
-            FALLBACK_TOKEN=$(grep "^JWT_TOKEN=" .env | cut -d'=' -f2- | xargs)
-            if [ -n "$FALLBACK_TOKEN" ]; then
-                echo "    ✅ JWT encontrado en .env (usando fallback)"
-                TOKEN="$FALLBACK_TOKEN"
-            else
-                echo "    ⚠️  JWT no encontrado en .env tampoco"
-                echo "    Ejecuta: ./setup-jwt-secrets-manager.sh"
-                
-                read -p "    ¿Continuar sin JWT? (algunos experimentos fallarán) (yes/no): " confirm
-                if [ "$confirm" != "yes" ]; then
-                    exit 1
-                fi
-            fi
-        else
-            echo "    Ejecuta: ./setup-jwt-secrets-manager.sh"
+        TOKEN_OUTPUT=$(./get-cognito-jwt.sh --verbose --user admin 2>&1)
+        TOKEN_EXIT_CODE=$?
+        TOKEN=$(echo "$TOKEN_OUTPUT" | tail -n1)
+        
+        if [ $TOKEN_EXIT_CODE -ne 0 ] || [ -z "$TOKEN" ]; then
+            echo "    ❌ Error obteniendo JWT desde Cognito"
+            echo ""
+            echo "    [DEBUG] Detalles del error:"
+            echo "$TOKEN_OUTPUT" | tail -10 | sed 's/^/    /'
+            echo ""
+            echo "    💡 Posibles soluciones:"
+            echo "       1. Verifica que el stack hospital-boxes-api-dev esté desplegado"
+            echo "       2. Asegúrate de que los usuarios de prueba existan en Cognito"
+            echo "       3. Crea un usuario manualmente con el comando mostrado arriba"
             
             read -p "    ¿Continuar sin JWT? (algunos experimentos fallarán) (yes/no): " confirm
             if [ "$confirm" != "yes" ]; then
                 exit 1
             fi
+        else
+            echo "    ✅ JWT obtenido desde Cognito User Pool"
         fi
     else
-        echo "    ✅ JWT Token disponible"
+        echo "    ⚠️  Script get-cognito-jwt.sh no encontrado"
+        
+        read -p "    ¿Continuar sin JWT? (algunos experimentos fallarán) (yes/no): " confirm
+        if [ "$confirm" != "yes" ]; then
+            exit 1
+        fi
     fi
-else
-    echo "    ⚠️  Script get-jwt-from-secrets.sh no encontrado"
 fi
 
 # ═══════════════════════════════════════════════════════════════

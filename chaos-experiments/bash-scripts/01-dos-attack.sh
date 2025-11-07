@@ -58,17 +58,36 @@ else
 fi
 echo ""
 
-# Obtener token de autenticación
+# Obtener token de autenticación desde Cognito User Pool
 if [ -z "$JWT_TOKEN" ]; then
     echo "⚠️  JWT_TOKEN no encontrado en .env"
     echo ""
-    echo "🔄 Obteniendo token automáticamente..."
+    echo "🔄 Obteniendo JWT desde Cognito User Pool..."
     cd "$SCRIPT_DIR/.."
-    source ./get-jwt.sh
-    cd "$SCRIPT_DIR"
     
-    # Recargar variables
-    export $(cat "$ENV_FILE" | grep -v '^#' | grep -v '^$' | xargs)
+    # Usar el nuevo script de Cognito
+    if [ -f "./get-cognito-jwt.sh" ]; then
+        JWT_TOKEN=$(./get-cognito-jwt.sh --verbose --user admin)
+        EXIT_CODE=$?
+        
+        if [ $EXIT_CODE -ne 0 ] || [ -z "$JWT_TOKEN" ]; then
+            echo "❌ Error obteniendo JWT desde Cognito"
+            echo "💡 Verifica que los usuarios de prueba existan en Cognito User Pool"
+            exit 1
+        fi
+        
+        # Actualizar variable de entorno
+        export JWT_TOKEN="$JWT_TOKEN"
+        echo "✅ JWT obtenido desde Cognito User Pool"
+    else
+        echo "❌ Error: get-cognito-jwt.sh no encontrado"
+        exit 1
+    fi
+    
+    cd "$SCRIPT_DIR"
+else
+    echo "ℹ️  Usando JWT_TOKEN desde .env"
+    echo "⚠️  NOTA: Verifica que sea un token válido de Cognito User Pool"
 fi
 
 TOKEN="$JWT_TOKEN"
