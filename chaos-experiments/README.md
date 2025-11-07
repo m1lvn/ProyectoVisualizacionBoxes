@@ -1,282 +1,561 @@
-# Chaos Engineering - Sistema Hospital Boxes# 🔥 Chaos Engineering - Guía de Ejecución
+# Chaos Engineering - Sistema Hospital Boxes# Chaos Engineering - Sistema Hospital Boxes# 🔥 Chaos Engineering - Guía de Ejecución
 
 
 
-Suite completa de experimentos de chaos engineering para validar la resiliencia del sistema.## � Diseñado para Linux/EC2
+Suite completa de experimentos de chaos engineering para validar la resiliencia del sistema serverless desplegado en AWS.
 
 
 
-## 🚀 Inicio RápidoTodos los scripts están optimizados para ejecutarse en **Linux** (Ubuntu/Amazon Linux).
+## 📋 ÍndiceSuite completa de experimentos de chaos engineering para validar la resiliencia del sistema.## � Diseñado para Linux/EC2
 
-Para Windows PowerShell, los scripts `.ps1` están disponibles pero los `.sh` son la opción principal.
 
-### 1. Configurar (solo una vez)
 
-## �🚀 Inicio Rápido (Completamente Automatizado)
+- [Inicio Rápido](#-inicio-rápido)
 
-```bash
+- [Arquitectura del Sistema](#️-arquitectura-del-sistema)
 
-./setup.shEste directorio contiene todos los experimentos de Chaos Engineering para validar la resiliencia del Sistema de Visualización de Boxes Hospitalarios.
+- [Experimentos Implementados](#-experimentos-implementados)## 🚀 Inicio RápidoTodos los scripts están optimizados para ejecutarse en **Linux** (Ubuntu/Amazon Linux).
 
-```
+- [Resultados y Análisis](#-resultados-y-análisis)
 
-### ✅ Setup en 3 Pasos
+- [Requisitos Previos](#️-requisitos-previos)Para Windows PowerShell, los scripts `.ps1` están disponibles pero los `.sh` son la opción principal.
 
-Este comando:
+- [Configuración del Sistema](#-configuración-del-sistema)
 
-- ✅ Obtiene JWT token de Cognito User Pool```bash
+- [Troubleshooting](#-troubleshooting)### 1. Configurar (solo una vez)
 
-- ✅ Detecta automáticamente el API Gateway endpoint# 1. Instalar dependencias (una sola vez)
+- [¿Implementar Gremlin?](#-implementar-gremlin)
 
-- ✅ Crea/actualiza archivo `.env` con la configuraciónchmod +x install-dependencies.sh
+- [Roadmap](#-roadmap)## �🚀 Inicio Rápido (Completamente Automatizado)
+
+
+
+---```bash
+
+
+
+## 🚀 Inicio Rápido./setup.shEste directorio contiene todos los experimentos de Chaos Engineering para validar la resiliencia del Sistema de Visualización de Boxes Hospitalarios.
+
+
+
+### 1️⃣ Configurar (solo primera vez o cuando expire token)```
+
+
+
+```bash### ✅ Setup en 3 Pasos
+
+./setup.sh
+
+```Este comando:
+
+
+
+**Qué hace:**- ✅ Obtiene JWT token de Cognito User Pool```bash
+
+- ✅ Consulta CloudFormation stack `hospital-boxes-api-dev`
+
+- ✅ Obtiene JWT token de Cognito User Pool (usuario: `admin@hospital.com`)- ✅ Detecta automáticamente el API Gateway endpoint# 1. Instalar dependencias (una sola vez)
+
+- ✅ Detecta automáticamente API Gateway HTTP API endpoint
+
+- ✅ Crea/actualiza archivo `.env` con configuración completa- ✅ Crea/actualiza archivo `.env` con la configuraciónchmod +x install-dependencies.sh
+
+- ✅ Valida token con request real al API
 
 - ✅ Valida que el token funcione./install-dependencies.sh
 
+**Token válido por:** 60 minutos
 
 
-**Duración del token:** 60 minutos# 2. Configurar credenciales (una sola vez)
 
-# Opción A: Variables de entorno (RECOMENDADO - Totalmente automático)
+**Salida esperada:**
+
+```**Duración del token:** 60 minutos# 2. Configurar credenciales (una sola vez)
+
+════════════════════════════════════════════════════════════════
+
+   🔧 SETUP DE CHAOS ENGINEERING# Opción A: Variables de entorno (RECOMENDADO - Totalmente automático)
+
+════════════════════════════════════════════════════════════════
 
 ### 2. Ejecutar experimentoscp .env.example .env
 
-nano .env  # Edita y agrega tus credenciales de Cognito
+[INFO] Verificando Python 3...
+
+[INFO] Obteniendo configuración de AWS...nano .env  # Edita y agrega tus credenciales de Cognito
+
+[SUCCESS] ✅ Token válido - API respondió correctamente
 
 ```bashexport $(cat .env | grep -v '^#' | xargs)
 
-./run-all-experiments.sh
+════════════════════════════════════════════════════════════════
+
+   ✅ CONFIGURACIÓN COMPLETADA./run-all-experiments.sh
+
+════════════════════════════════════════════════════════════════
 
 ```# Opción B: O usa el setup interactivo
 
-./setup-jwt-secrets-manager.sh  # Selecciona opción A con tus credenciales
+🔑 JWT Token: eyJraWQiOiJxxx...
 
-Este comando ejecuta automáticamente todos los experimentos:
+🌐 API Endpoint: https://44wvhl6j05.execute-api.us-east-1.amazonaws.com./setup-jwt-secrets-manager.sh  # Selecciona opción A con tus credenciales
 
-1. **DoS Attack** - 1000 requests con 50 concurrentes# 3. Ejecutar TODOS los experimentos automáticamente
+⏱️  Token válido por: 60 minutos
 
-2. **Lambda Latency** - 500 requests para medir degradaciónchmod +x run-all-chaos-experiments.sh
+```Este comando ejecuta automáticamente todos los experimentos:
 
-3. **SNS Resilience** - Test de mensajería asíncrona./run-all-chaos-experiments.sh
 
-4. **DynamoDB Throttling** - 800 requests para forzar límites```
 
-5. **Lambda Error Injection** - 300 requests con 30% errores inválidos
+### 2️⃣ Ejecutar suite completa1. **DoS Attack** - 1000 requests con 50 concurrentes# 3. Ejecutar TODOS los experimentos automáticamente
 
-**¡Eso es todo!** El sistema se encarga de:
+
+
+```bash2. **Lambda Latency** - 500 requests para medir degradaciónchmod +x run-all-chaos-experiments.sh
+
+./run-all-experiments.sh
+
+```3. **SNS Resilience** - Test de mensajería asíncrona./run-all-chaos-experiments.sh
+
+
+
+**Qué hace:**4. **DynamoDB Throttling** - 800 requests para forzar límites```
+
+- ✅ Carga configuración desde `.env`
+
+- ✅ Valida que el token siga válido5. **Lambda Error Injection** - 300 requests con 30% errores inválidos
+
+- ✅ Ejecuta 5 experimentos secuencialmente
+
+- ✅ Espera 30s entre cada experimento**¡Eso es todo!** El sistema se encarga de:
+
+- ✅ Genera reporte consolidado `SUITE-REPORT.md`
 
 ## 📊 Resultados- ✅ Obtener JWT automáticamente usando tus credenciales de Cognito
 
+**Duración total:** ~40-45 minutos
+
 - ✅ Guardar JWT en AWS Secrets Manager (reutilizable)
+
+---
 
 Los resultados se guardan en:- ✅ Auto-detectar AWS Account ID y región
 
+## 🏗️ Arquitectura del Sistema
+
 ```- ✅ Auto-detectar API Gateway URLs
+
+### Stack AWS (CloudFormation: `hospital-boxes-api-dev`)
 
 results/suite-YYYYMMDD-HHMMSS/- ✅ Ejecutar todos los experimentos secuencialmente
 
-├── SUITE-REPORT.md          # Reporte consolidado- ✅ Generar reportes automáticos
-
-├── 01-dos-attack.log        # Log experimento 1- ✅ Recopilar métricas de CloudWatch
-
-├── 02-lambda-latency.log    # Log experimento 2
-
-├── 03-sns-failure.log       # Log experimento 3---
-
-├── 04-dynamodb-throttling-sim.log  # Log experimento 4
-
-└── 05-lambda-errors-sim.log # Log experimento 5## 📋 Resumen de Herramientas
-
 ```
 
-| Herramienta | Experimentos | Costo | Estado |
+┌─────────────────────────────────────────────────────────────┐├── SUITE-REPORT.md          # Reporte consolidado- ✅ Generar reportes automáticos
 
-## 🔧 Estructura del Proyecto|-------------|--------------|-------|--------|
+│                    CLIENTE (Chaos Scripts)                  │
 
-| **Bash Scripts** | 5 | $0 | ✅ Automatizado |
+└────────────────────┬────────────────────────────────────────┘├── 01-dos-attack.log        # Log experimento 1- ✅ Recopilar métricas de CloudWatch
 
-```| **Suite Completa** | 5 | $0 | ✅ Automatizado |
+                     │ HTTP + JWT (Cognito)
 
-chaos-experiments/
+                     ▼├── 02-lambda-latency.log    # Log experimento 2
 
-├── setup.sh                    # ⭐ Configuración (obtiene JWT + API)**Total: 5 experimentos - Costo: $0 - Tiempo: ~40 minutos**
+┌─────────────────────────────────────────────────────────────┐
+
+│              API Gateway HTTP API v2                        │├── 03-sns-failure.log       # Log experimento 3---
+
+│  ID: 44wvhl6j05                                            │
+
+│  Endpoints: /api/boxes, /api/agendas, /api/pasillos       │├── 04-dynamodb-throttling-sim.log  # Log experimento 4
+
+└────────────────────┬────────────────────────────────────────┘
+
+                     │└── 05-lambda-errors-sim.log # Log experimento 5## 📋 Resumen de Herramientas
+
+        ┌────────────┼────────────┐
+
+        ▼            ▼            ▼```
+
+┌──────────┐  ┌──────────┐  ┌──────────┐
+
+│ Lambda   │  │ Lambda   │  │ Lambda   │| Herramienta | Experimentos | Costo | Estado |
+
+│ boxes.js │  │ agendas  │  │ pasillos │
+
+└────┬─────┘  └────┬─────┘  └────┬─────┘## 🔧 Estructura del Proyecto|-------------|--------------|-------|--------|
+
+     │             │             │
+
+     └─────────────┼─────────────┘| **Bash Scripts** | 5 | $0 | ✅ Automatizado |
+
+                   ▼
+
+        ┌──────────────────────┐```| **Suite Completa** | 5 | $0 | ✅ Automatizado |
+
+        │   DynamoDB Table     │
+
+        │   HospitalData       │chaos-experiments/
+
+        │   PAY_PER_REQUEST    │
+
+        └──────────────────────┘├── setup.sh                    # ⭐ Configuración (obtiene JWT + API)**Total: 5 experimentos - Costo: $0 - Tiempo: ~40 minutos**
+
+```
 
 ├── run-all-experiments.sh      # ⭐ Ejecuta todos los experimentos
 
+### Autenticación
+
 ├── get-cognito-jwt.py          # Script Python interno (usado por setup.sh)> ⚠️ **Nota sobre AWS FIS**: Los experimentos fueron implementados con Bash scripts 
 
-├── .env                        # Variables de entorno (generado)> debido a limitaciones de permisos en AWS Academy Learner Lab. Los scripts simulan 
+```
 
-├── .env.example                # Plantilla de variables> el comportamiento de AWS FIS sin requerir permisos especiales.
+Cognito User Pool├── .env                        # Variables de entorno (generado)> debido a limitaciones de permisos en AWS Academy Learner Lab. Los scripts simulan 
 
-├── bash-scripts/               # Scripts individuales de experimentos
+├── ID: us-east-1_uD6JDiKHn
+
+├── Client: HospitalBoxesUserPoolClient├── .env.example                # Plantilla de variables> el comportamiento de AWS FIS sin requerir permisos especiales.
+
+├── Usuarios: admin@hospital.com / Admin123!
+
+└── Token validity: 60 minutos├── bash-scripts/               # Scripts individuales de experimentos
+
+```
 
 │   ├── 01-dos-attack.sh---
 
+---
+
 │   ├── 02-lambda-latency.sh
+
+## 🧪 Experimentos Implementados
 
 │   ├── 03-sns-failure.sh## 📂 Estructura del Proyecto
 
-│   ├── 04-dynamodb-throttling-sim.sh
+### 1. DoS Attack (`01-dos-attack.sh`)
 
-│   └── 05-lambda-errors-sim.sh```
+- **Requests:** 1000 con 50 concurrentes│   ├── 04-dynamodb-throttling-sim.sh
 
-└── results/                    # Resultados de ejecucioneschaos-experiments/
+- **Valida:** Rate limiting, throttling Lambda
 
-```├── 📄 README.md                        # Esta guía
+- **Esperado:** >80% éxito│   └── 05-lambda-errors-sim.sh```
+
+
+
+### 2. Lambda Latency (`02-lambda-latency.sh`)└── results/                    # Resultados de ejecucioneschaos-experiments/
+
+- **Requests:** 500 con 30 concurrentes
+
+- **Valida:** Cold starts, degradación latencia```├── 📄 README.md                        # Esta guía
+
+- **Esperado:** 0.15s → 1.2-2.5s
 
 ├── 📄 Experiments.md                   # Plan detallado de experimentos
 
-## 🔐 Autenticación├── 📁 bash-scripts/                    # Scripts Bash (3 experimentos)
+### 3. SNS Resilience (`03-sns-failure.sh`)
 
-│   ├── 01-dos-attack.{sh,ps1}          ✅ DoS Attack Simulation
+- **Duración:** ~208s## 🔐 Autenticación├── 📁 bash-scripts/                    # Scripts Bash (3 experimentos)
 
-El sistema usa **Cognito User Pool JWT** con las siguientes credenciales:│   ├── 02-lambda-latency.sh            ✅ Lambda Latency Injection
+- **Valida:** Circuit breaker, DLQ
 
-│   ├── 03-sns-failure.sh               ✅ SNS Topic Failure
+- **Esperado:** API funciona aunque SNS falle│   ├── 01-dos-attack.{sh,ps1}          ✅ DoS Attack Simulation
+
+
+
+### 4. DynamoDB Throttling (`04-dynamodb-throttling-sim.sh`)El sistema usa **Cognito User Pool JWT** con las siguientes credenciales:│   ├── 02-lambda-latency.sh            ✅ Lambda Latency Injection
+
+- **Requests:** 800 con 50 concurrentes
+
+- **Valida:** Throttling 429, retry backoff│   ├── 03-sns-failure.sh               ✅ SNS Topic Failure
+
+- **Esperado:** >10% throttling, >70% éxito
 
 - **Usuario:** `admin@hospital.com`│   ├── 04-dynamodb-throttling-sim.sh   ✅ DynamoDB Throttling (Bash simulation)
 
-- **Contraseña:** `Admin123!`│   └── 05-lambda-errors-sim.sh         ✅ Lambda Error Injection (Bash simulation)
+### 5. Lambda Error Injection (`05-lambda-errors-sim.sh`)
 
-- **User Pool:** `us-east-1_uD6JDiKHn`├── 📁 aws-fis/                         # Templates FIS (referencia/futuro uso)
+- **Requests:** 300 (30% inválidos)- **Contraseña:** `Admin123!`│   └── 05-lambda-errors-sim.sh         ✅ Lambda Error Injection (Bash simulation)
 
-│   ├── dynamodb-throttling.json        📖 Template de referencia
+- **Valida:** Validación input, error handling
 
-El token se obtiene automáticamente al ejecutar `./setup.sh`.│   └── lambda-error-injection.json     📖 Template de referencia
+- **Esperado:** ~30% errores 400, 0% errores 500- **User Pool:** `us-east-1_uD6JDiKHn`├── 📁 aws-fis/                         # Templates FIS (referencia/futuro uso)
 
-├── 📁 gremlin/                         # Configuración Gremlin (no implementado)
 
-## ⚠️ Requisitos│   ├── setup-guide.md                  📖 Guía de setup
 
-│   └── experiments-config.yaml         ⚙️ Configuración
+---│   ├── dynamodb-throttling.json        📖 Template de referencia
 
-- AWS CLI configurado (`aws configure`)└── 📁 results/                         # Resultados de experimentos
 
-- Python 3 con boto3 (`pip3 install boto3`)    ├── REPORT_TEMPLATE.md              📝 Plantilla de reportes
+
+## 📊 Resultados y AnálisisEl token se obtiene automáticamente al ejecutar `./setup.sh`.│   └── lambda-error-injection.json     📖 Template de referencia
+
+
+
+Resultados guardados en: `results/suite-YYYYMMDD-HHMMSS/`├── 📁 gremlin/                         # Configuración Gremlin (no implementado)
+
+
+
+```## ⚠️ Requisitos│   ├── setup-guide.md                  📖 Guía de setup
+
+├── SUITE-REPORT.md           # Reporte consolidado
+
+├── 01-dos-attack.log│   └── experiments-config.yaml         ⚙️ Configuración
+
+├── 02-lambda-latency.log
+
+├── 03-sns-failure.log- AWS CLI configurado (`aws configure`)└── 📁 results/                         # Resultados de experimentos
+
+├── 04-dynamodb-throttling-sim.log
+
+└── 05-lambda-errors-sim.log- Python 3 con boto3 (`pip3 install boto3`)    ├── REPORT_TEMPLATE.md              📝 Plantilla de reportes
+
+```
 
 - Bash (Git Bash en Windows)    └── experiment-XX-*/                📊 Resultados individuales
 
+---
+
 - Stack CloudFormation `hospital-boxes-api-dev` desplegado```
 
-
-
-## 🔄 Renovar Token---
-
-
-
-Si el token expira (después de 60 minutos), simplemente ejecuta:## ⚙️ Prerequisitos
+## ⚙️ Requisitos Previos
 
 
 
-```bash### Software Required:
+1. **AWS CLI** configurado (`aws sts get-caller-identity`)
 
-./setup.sh```bash
+2. **Python 3** con boto3 (`pip3 install boto3`)## 🔄 Renovar Token---
 
-```# Verificar instalaciones
+3. **Bash** >= 4.0
 
-bash --version          # Bash 4.0+
+4. **Stack desplegado** (`aws cloudformation describe-stacks --stack-name hospital-boxes-api-dev`)
+
+
+
+---Si el token expira (después de 60 minutos), simplemente ejecuta:## ⚙️ Prerequisitos
+
+
+
+## 🔧 Configuración del Sistema
+
+
+
+### ¿Por qué 2 archivos .env en el proyecto?```bash### Software Required:
+
+
+
+El proyecto tiene **2 archivos .env separados** con propósitos diferentes:./setup.sh```bash
+
+
+
+| Archivo | Propósito | Variables | Editado por |```# Verificar instalaciones
+
+|---------|-----------|-----------|-------------|
+
+| `serverless-api/.env` | Backend development | DynamoDB, MySQL, config infraestructura | Manual |bash --version          # Bash 4.0+
+
+| `chaos-experiments/.env` | Testing | JWT token (60 min), API endpoint | `setup.sh` auto |
 
 ## 📝 Ejecutar Experimento Individualcurl --version          # curl 7.0+
 
-aws --version           # AWS CLI 2.0+
+**No se pueden unificar** porque:
 
-Si solo quieres ejecutar un experimento específico:node --version          # Node.js 18+ (opcional, para Serverless)
+- Contextos diferentes (backend vs testing)aws --version           # AWS CLI 2.0+
 
-```
+- Ciclos de vida diferentes (persistente vs temporal 60 min)
+
+- Uno es manual, otro auto-generadoSi solo quieres ejecutar un experimento específico:node --version          # Node.js 18+ (opcional, para Serverless)
+
+
+
+---```
+
+
+
+## 🐛 Troubleshooting```bash
+
+
+
+### Token inválido# Cargar configuración### AWS Configuration:
 
 ```bash
 
-# Cargar configuración### AWS Configuration:
+./setup.sh  # Obtiene nuevo tokenexport $(cat .env | grep -v '^#' | grep -v '^$' | xargs)```bash
 
-export $(cat .env | grep -v '^#' | grep -v '^$' | xargs)```bash
+```
 
 # Configurar AWS CLI
 
-# Ejecutar experimentoaws configure
+### API no responde
 
-bash bash-scripts/01-dos-attack.sh
+```bash# Ejecutar experimentoaws configure
+
+aws cloudformation describe-stacks --stack-name hospital-boxes-api-dev
+
+cd serverless-api && npx serverless deploybash bash-scripts/01-dos-attack.sh
+
+```
 
 ```# Verificar acceso
 
-aws sts get-caller-identity
+### Python boto3 no encontrado
 
-## 🎯 Interpretación de Resultados```
-
-
-
-El reporte incluye análisis automático:### Variables de Entorno:
-
-```bash
-
-- ✅ **Todos exitosos**: Sistema resiliente bajo todas las condiciones# Crear archivo .env en el directorio raíz
-
-- ⚠️ **Mayoría exitosos**: Sistema funcional con áreas de mejoracat > .env << EOF
-
-- ❌ **Múltiples fallas**: Requiere atención inmediata# API Configuration
-
-API_ENDPOINT=https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/dev/api
-
-Revisa `SUITE-REPORT.md` para recomendaciones específicas.JWT_TOKEN=your-jwt-token-here
-
-
-
-## 🐛 Troubleshooting# AWS Configuration
-
-AWS_REGION=us-east-1
-
-### Token inválidoAWS_ACCOUNT_ID=your-account-id
-
-```bash
-
-./setup.sh  # Obtener nuevo token# Gremlin Configuration (opcional, solo para experimentos #6 y #7)
-
-```GREMLIN_TEAM_ID=your-team-id
-
-GREMLIN_API_KEY=your-api-key
-
-### API no respondeGREMLIN_API_SECRET=your-api-secret
-
-Verifica que el stack esté desplegado:EOF
-
-```bash
-
-aws cloudformation describe-stacks --stack-name hospital-boxes-api-dev# Cargar variables
-
-```source .env
-
-```
-
-### Dependencias faltantes
-
-```bash---
+```bashaws sts get-caller-identity
 
 pip3 install boto3
 
-```## 🎯 Ejecutar Experimentos
+```## 🎯 Interpretación de Resultados```
 
 
-### 🔹 BASH SCRIPTS (Experimentos #1-3)
 
-#### Experimento #1: DoS Attack
+---
+
+
+
+## 🤔 ¿Implementar Gremlin?El reporte incluye análisis automático:### Variables de Entorno:
+
+
+
+### Comparación```bash
+
+
+
+| Aspecto | Scripts Bash | Gremlin | AWS FIS |- ✅ **Todos exitosos**: Sistema resiliente bajo todas las condiciones# Crear archivo .env en el directorio raíz
+
+|---------|--------------|---------|---------|
+
+| **Costo** | ✅ $0 | ❌ $199/mes | ⚠️ ~$0.10/exp |- ⚠️ **Mayoría exitosos**: Sistema funcional con áreas de mejoracat > .env << EOF
+
+| **Complejidad** | ✅ Simple | ⚠️ Requiere agente | ⚠️ Requiere IAM |
+
+| **Alcance** | ⚠️ Solo HTTP | ✅ Infraestructura | ✅ AWS nativo |- ❌ **Múltiples fallas**: Requiere atención inmediata# API Configuration
+
+| **Serverless** | ✅ Compatible | ❌ No hay donde instalar agente | ✅ Compatible |
+
+API_ENDPOINT=https://YOUR_API_ID.execute-api.us-east-1.amazonaws.com/dev/api
+
+### Recomendación: ❌ NO implementar Gremlin
+
+Revisa `SUITE-REPORT.md` para recomendaciones específicas.JWT_TOKEN=your-jwt-token-here
+
+**Razones:**
+
+
+
+1. **Arquitectura 100% serverless**
+
+   - No hay EC2 donde instalar agente Gremlin## 🐛 Troubleshooting# AWS Configuration
+
+   - Lambda no soporta agentes
+
+   - DynamoDB/API Gateway son managed servicesAWS_REGION=us-east-1
+
+
+
+2. **Scripts actuales suficientes**### Token inválidoAWS_ACCOUNT_ID=your-account-id
+
+   - Cubren todos los vectores relevantes
+
+   - Costo $0 vs $199/mes```bash
+
+   - Control total del código
+
+./setup.sh  # Obtener nuevo token# Gremlin Configuration (opcional, solo para experimentos #6 y #7)
+
+3. **Alternativa mejor: AWS FIS**
+
+   - Si necesitas chaos avanzado en el futuro```GREMLIN_TEAM_ID=your-team-id
+
+   - Pay-per-use (~$0.10/experimento)
+
+   - Integración nativa con serverlessGREMLIN_API_KEY=your-api-key
+
+
+
+**Cuándo considerar FIS:**### API no respondeGREMLIN_API_SECRET=your-api-secret
+
+- Simular caídas de AZ
+
+- Throttling controlado de DynamoDBVerifica que el stack esté desplegado:EOF
+
+- Inyección de errores en Lambda (sin modificar código)
+
 ```bash
-cd bash-scripts
 
-# Dar permisos de ejecución
-chmod +x 01-dos-attack.sh
+---
 
-# Ejecutar
-./01-dos-attack.sh
+aws cloudformation describe-stacks --stack-name hospital-boxes-api-dev# Cargar variables
 
-# Resultados en:
-# ../results/experiment-01-dos/
+## 📅 Roadmap
+
+```source .env
+
+### ✅ Completado
+
 ```
 
-#### Experimento #2: Lambda Latency
+- [x] 5 experimentos funcionando
+
+- [x] Autenticación Cognito JWT### Dependencias faltantes
+
+- [x] Detección automática API endpoint
+
+- [x] Token 60 minutos```bash---
+
+- [x] Suite runner con reporte
+
+- [x] Simplificación a 2 archivos (setup + run)pip3 install boto3
+
+
+
+### 🔄 En Progreso```## 🎯 Ejecutar Experimentos
+
+
+
+- [ ] Redesplegar API con token 60 min
+
+- [ ] Ejecución suite completa### 🔹 BASH SCRIPTS (Experimentos #1-3)
+
+- [ ] Documentación resultados reales
+
+#### Experimento #1: DoS Attack
+
+### 📋 Próximos Pasos```bash
+
+cd bash-scripts
+
+**Corto plazo:**
+
+1. Redesplegar API (`cd serverless-api && npx serverless deploy`)# Dar permisos de ejecución
+
+2. Ejecutar suite completachmod +x 01-dos-attack.sh
+
+3. Optimizar según resultados
+
+# Ejecutar
+
+**Mediano plazo:**./01-dos-attack.sh
+
+4. CloudWatch dashboards
+
+5. CI/CD automation (GitHub Actions)# Resultados en:
+
+6. Documentar hallazgos en informe final# ../results/experiment-01-dos/
+
+```
+
+**Largo plazo (opcional):**
+
+7. Considerar AWS FIS si se necesita chaos de infraestructura#### Experimento #2: Lambda Latency
+
 ```bash
-chmod +x 02-lambda-latency.sh
+
+---chmod +x 02-lambda-latency.sh
+
 ./02-lambda-latency.sh
 
-# Resultados en:
+**Última actualización:** 2025-11-07  
+
+**Versión:** 2.0 (refactorización simplificada)# Resultados en:
+
 # ../results/experiment-02-latency/
 ```
 
