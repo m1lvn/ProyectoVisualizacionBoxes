@@ -91,3 +91,6 @@ __pycache__/
 *.tfstate.*
 *.tfvars
 *.tfvars.*
+
+# Binarios de proveedores
+terraform-provider-*.exe
