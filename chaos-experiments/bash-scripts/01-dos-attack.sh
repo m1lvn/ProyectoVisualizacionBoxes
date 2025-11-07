@@ -15,8 +15,8 @@ if [ -f "$ENV_FILE" ]; then
 fi
 
 # Configuración
-API_ENDPOINT="${API_ENDPOINT:-https://rc3ltywoub.execute-api.us-east-1.amazonaws.com/dev/api}"
-ENDPOINT="/boxes"
+API_ENDPOINT="${API_ENDPOINT:-https://rc3ltywoub.execute-api.us-east-1.amazonaws.com}"
+ENDPOINT="/dev/api/boxes"
 REQUESTS=1000
 CONCURRENT=50
 

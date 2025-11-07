@@ -10,6 +10,39 @@ import sys
 import os
 from botocore.exceptions import ClientError
 
+def get_api_gateway_url(stack_name='hospital-boxes-api-dev'):
+    """Obtiene la URL del API Gateway desde los recursos del stack"""
+    try:
+        cfn = boto3.client('cloudformation', region_name='us-east-1')
+        apigw = boto3.client('apigatewayv2', region_name='us-east-1')
+        
+        # Obtener recursos del stack
+        response = cfn.describe_stack_resources(StackName=stack_name)
+        
+        # Buscar HttpApi resource
+        http_api_id = None
+        for resource in response['StackResources']:
+            if resource['ResourceType'] == 'AWS::ApiGatewayV2::Api':
+                http_api_id = resource['PhysicalResourceId']
+                break
+        
+        if not http_api_id:
+            print(f"⚠️  No se encontró HttpApi en el stack", file=sys.stderr)
+            return None
+        
+        # Obtener información del API
+        api_response = apigw.get_api(ApiId=http_api_id)
+        api_endpoint = api_response.get('ApiEndpoint')
+        
+        print(f"   [DEBUG] HttpApi ID: {http_api_id}", file=sys.stderr)
+        print(f"   [DEBUG] API Endpoint: {api_endpoint}", file=sys.stderr)
+        
+        return api_endpoint
+        
+    except ClientError as e:
+        print(f"❌ Error obteniendo API Gateway URL: {e}", file=sys.stderr)
+        return None
+
 def get_stack_outputs(stack_name='hospital-boxes-api-dev'):
     """Obtiene los outputs del stack de CloudFormation"""
     try:
@@ -36,18 +69,18 @@ def get_test_user_credentials():
     """
     users = {
         'admin': {
-            'username': 'admin@hospital.test',
+            'username': 'admin@hospital.com',
             'password': 'Admin123!',
             'description': 'Usuario administrador de prueba'
         },
         'personal': {
-            'username': 'personal@hospital.test', 
-            'password': 'Personal123!',
+            'username': 'medico1@hospital.com', 
+            'password': 'Medico123!',
             'description': 'Usuario personal médico de prueba'
         },
         'test': {
-            'username': 'test@hospital.test',
-            'password': 'Test123!',
+            'username': 'admin.staff@hospital.com',
+            'password': 'Staff123!',
             'description': 'Usuario genérico de prueba'
         }
     }
@@ -159,10 +192,18 @@ def main():
     
     user_pool_id = outputs.get('UserPoolId')
     client_id = outputs.get('UserPoolClientId')
+    
+    # Intentar obtener API endpoint desde outputs primero
     api_endpoint = outputs.get('ApiGatewayUrl')
     
+    # Si el output no existe o es incorrecto, obtener desde recursos del stack
+    if not api_endpoint or 'serverless-auth' in api_endpoint or '44wvhl6j05' in api_endpoint:
+        print("⚠️  ApiGatewayUrl del stack es incorrecto o no existe", file=sys.stderr)
+        print("🔍 Buscando API Gateway en recursos del stack...", file=sys.stderr)
+        api_endpoint = get_api_gateway_url()
+    
     if not all([user_pool_id, client_id, api_endpoint]):
-        print("❌ Faltan outputs requeridos del stack:", file=sys.stderr)
+        print("❌ Faltan datos requeridos:", file=sys.stderr)
         print(f"   UserPoolId: {user_pool_id}", file=sys.stderr)
         print(f"   UserPoolClientId: {client_id}", file=sys.stderr)
         print(f"   ApiGatewayUrl: {api_endpoint}", file=sys.stderr)
