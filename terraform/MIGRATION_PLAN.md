@@ -929,11 +929,11 @@ resource "aws_iam_role_policy_attachment" "lambda_cognito" {
 
 ---
 
-## 🗑️ Archivos a ELIMINAR después del Deploy
+## 🗑️ Archivos a ELIMINAR/MODIFICAR después del Deploy
 
-### ⚠️ CRÍTICO: Eliminar DESPUÉS de validar Terraform
+### ⚠️ CRÍTICO: Eliminar/Modificar DESPUÉS de validar Terraform
 
-**Orden de eliminación**:
+**Orden de eliminación/modificación**:
 
 1. **PRIMERO: Destruir stack CloudFormation de Serverless**
 ```bash
@@ -949,32 +949,78 @@ Esto eliminará:
 - ✅ SNS Topics
 - ✅ CloudFormation Stack completo
 
-2. **SEGUNDO: Archivos a eliminar del repo**
+2. **SEGUNDO: Archivos a ELIMINAR del repo**
 
 ```bash
 # Eliminar Serverless Framework config
 rm serverless-api/serverless.yml
 
-# Eliminar scripts obsoletos
-rm serverless-api/deploy.sh
-rm setup-local-dev.sh
-rm setup-local-dev.bat
-
-# Eliminar validación SaaS (ya ejecutada)
+# Eliminar scripts de validación obsoletos (ya ejecutados)
 rm validate_saas_migration.sh
 rm validate_saas_migration.bat
 rm PRUEBAS_MIGRACION_GUIA.md
 
-# Eliminar docs de migración antigua
-rm CHAOS_ENGINEERING_GUIA.md
-rm CHAOS_ENGINEERING_RESUMEN.md
+# Eliminar scripts de setup local obsoletos
+rm setup-local-dev.sh
+rm setup-local-dev.bat
 
 # Limpiar archivos temporales
 rm -rf serverless-api/.serverless/
-rm -rf serverless-api/node_modules/  # Reinstalar después
 ```
 
-3. **TERCERO: Actualizar .gitignore del proyecto**
+3. **TERCERO: Archivos a ACTUALIZAR (NO eliminar)**
+
+```bash
+# deploy.sh - ACTUALIZAR para usar Terraform en vez de Serverless
+# ANTES:
+#   cd serverless-api
+#   npm install
+#   npx serverless deploy
+#
+# DESPUÉS:
+#   cd terraform
+#   terraform init
+#   terraform plan -out=tfplan
+#   terraform apply tfplan
+```
+
+**Contenido sugerido para nuevo `deploy.sh`:**
+```bash
+#!/bin/bash
+# Deployment con Terraform
+set -e
+
+echo "🚀 Deploying with Terraform..."
+cd terraform
+
+terraform init
+terraform validate
+terraform fmt
+terraform plan -out=tfplan
+
+read -p "Apply? (yes/no): " confirm
+if [ "$confirm" = "yes" ]; then
+    terraform apply tfplan
+    echo "✅ Deployment complete!"
+    terraform output
+else
+    echo "❌ Cancelled"
+    rm tfplan
+fi
+```
+
+**O simplemente eliminarlo** ya que Terraform se usa directamente:
+```bash
+# Opción alternativa: eliminar deploy.sh
+rm deploy.sh
+
+# Y usar comandos Terraform directos (ver terraform/README.md)
+cd terraform
+terraform plan -out=tfplan
+terraform apply tfplan
+```
+
+4. **CUARTO: Actualizar .gitignore del proyecto**
 
 Agregar a `.gitignore` raíz:
 ```
@@ -992,26 +1038,42 @@ terraform/lambda-packages/
 terraform/layers/
 ```
 
-4. **CUARTO: Actualizar README.md del proyecto**
+5. **QUINTO: Actualizar README.md del proyecto raíz**
 
 Cambiar sección de deployment:
 ```markdown
 ## 🚀 Deployment
 
-### Con Terraform (ACTUAL)
+### Con Terraform (ACTUAL - desde Nov 2025)
 
-1. Configurar credenciales AWS
-2. Crear `terraform.tfvars` desde template
-3. Deploy:
-   ```bash
-   cd terraform
-   terraform init
-   terraform plan
-   terraform apply
-   ```
+Ver documentación completa en: [terraform/README.md](terraform/README.md)
+
+**Quick Start:**
+```bash
+# 1. Configurar credenciales AWS Academy
+aws configure
+
+# 2. Configurar variables
+cd terraform
+cp terraform.tfvars.example terraform.tfvars
+nano terraform.tfvars  # Editar valores
+
+# 3. Inicializar Terraform
+terraform init
+
+# 4. Ver plan
+terraform plan -out=tfplan
+
+# 5. Aplicar
+terraform apply tfplan
+
+# 6. Ver outputs
+terraform output
+```
 
 ### ~~Con Serverless Framework (OBSOLETO)~~
 ~~Migrado a Terraform el 7 Nov 2025~~
+~~Usar: `npx serverless deploy` (YA NO DISPONIBLE)~~
 ```
 
 ---
