@@ -13,9 +13,9 @@ resource "aws_lambda_function" "login" {
 
   environment {
     variables = {
-      USER_POOL_CLIENT_ID   = aws_cognito_user_pool_client.main.id
-      DYNAMODB_TABLE        = aws_dynamodb_table.main.name
-      HOSPITAL_DATA_TABLE   = aws_dynamodb_table.main.name
+      USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.main.id
+      DYNAMODB_TABLE      = aws_dynamodb_table.main.name
+      HOSPITAL_DATA_TABLE = aws_dynamodb_table.main.name
     }
   }
 }
@@ -34,7 +34,7 @@ resource "aws_lambda_function" "refresh" {
 
   environment {
     variables = {
-      USER_POOL_CLIENT_ID   = aws_cognito_user_pool_client.main.id
+      USER_POOL_CLIENT_ID = aws_cognito_user_pool_client.main.id
     }
   }
 }

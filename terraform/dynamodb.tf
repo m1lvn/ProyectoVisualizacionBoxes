@@ -1,6 +1,6 @@
 resource "aws_dynamodb_table" "main" {
-  name           = var.dynamodb_table_name
-  billing_mode   = var.dynamodb_billing_mode
+  name         = var.dynamodb_table_name
+  billing_mode = var.dynamodb_billing_mode
 
   # Keys
   hash_key  = "PK"

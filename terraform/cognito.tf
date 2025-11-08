@@ -1,7 +1,7 @@
 # --- Cognito User Pool ---
 resource "aws_cognito_user_pool" "main" {
   name = "${var.cognito_user_pool_name}-${var.environment}"
-  
+
   # Password policy
   password_policy {
     minimum_length    = var.password_minimum_length
@@ -10,11 +10,11 @@ resource "aws_cognito_user_pool" "main" {
     require_numbers   = true
     require_symbols   = false
   }
-  
+
   # Attributes
   auto_verified_attributes = ["email"]
   username_attributes      = ["email"]
-  
+
   # Schema
   schema {
     name                = "email"
@@ -22,21 +22,21 @@ resource "aws_cognito_user_pool" "main" {
     required            = true
     mutable             = true
   }
-  
+
   schema {
     name                = "given_name"
     attribute_data_type = "String"
     required            = true
     mutable             = true
   }
-  
+
   schema {
     name                = "family_name"
     attribute_data_type = "String"
     required            = true
     mutable             = true
   }
-  
+
   # Custom attributes
   schema {
     name                = "hospital_id"
@@ -44,26 +44,26 @@ resource "aws_cognito_user_pool" "main" {
     required            = false
     mutable             = true
   }
-  
+
   schema {
     name                = "pasillo_asignado"
     attribute_data_type = "String"
     required            = false
     mutable             = true
   }
-  
+
   schema {
     name                = "role"
     attribute_data_type = "String"
     required            = false
     mutable             = true
   }
-  
+
   # Admin config
   admin_create_user_config {
     allow_admin_create_user_only = false
   }
-  
+
   tags = merge(
     var.common_tags,
     {
@@ -83,25 +83,25 @@ resource "aws_cognito_user_pool" "main" {
 resource "aws_cognito_user_pool_client" "main" {
   name         = "${var.cognito_client_name}-${var.environment}"
   user_pool_id = aws_cognito_user_pool.main.id
-  
+
   generate_secret = false
-  
+
   explicit_auth_flows = [
     "ALLOW_ADMIN_USER_PASSWORD_AUTH",
     "ALLOW_USER_SRP_AUTH",
     "ALLOW_USER_PASSWORD_AUTH",
     "ALLOW_REFRESH_TOKEN_AUTH"
   ]
-  
+
   prevent_user_existence_errors = "ENABLED"
-  
+
   # Token validity
   token_validity_units {
     access_token  = "minutes"
     id_token      = "minutes"
     refresh_token = "days"
   }
-  
+
   access_token_validity  = var.access_token_validity
   id_token_validity      = var.id_token_validity
   refresh_token_validity = var.refresh_token_validity

@@ -15,9 +15,9 @@
 # Región de AWS donde desplegar
 region = "us-east-1"
 
-# ID de tu cuenta AWS (obtenerlo de AWS Console)
-# AWS Academy: Ir a "Account Details" en Learner Lab
-aws_account_id = "891377117593"
+# ID de cuenta AWS - NO NECESARIO (se obtiene automáticamente)
+# Terraform usa data.aws_caller_identity.current.account_id
+# Asegúrate de tener credenciales válidas en ~/.aws/credentials
 
 # Nombre del proyecto (prefijo para recursos)
 project_name = "hospital-boxes"

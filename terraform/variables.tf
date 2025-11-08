@@ -8,17 +8,14 @@ variable "region" {
   default     = "us-east-1"
 }
 
-variable "aws_account_id" {
-  description = "ID de la cuenta AWS (necesario para ARNs)"
-  type        = string
-  default     = "891377117593" # AWS Academy account
-}
+# NOTA: aws_account_id se obtiene automáticamente mediante data.aws_caller_identity.current.account_id
+# No es necesario configurarlo manualmente - se lee de las credenciales de ~/.aws/credentials
 
 variable "project_name" {
   description = "Nombre base del proyecto (usado como prefijo en recursos)"
   type        = string
   # Mantener el nombre histórico para evitar reemplazos de recursos existentes
-  default     = "proyecto-hospital"
+  default = "proyecto-hospital"
 }
 
 variable "environment" {
@@ -70,7 +67,7 @@ variable "ssh_key_name" {
   description = "Nombre del key pair SSH para acceder a EC2"
   type        = string
   # Nombre del keypair ya existente en la cuenta (evitar recrear/reemplazar)
-  default     = "my-ec2-key"
+  default = "my-ec2-key"
 }
 
 variable "github_repo_url" {

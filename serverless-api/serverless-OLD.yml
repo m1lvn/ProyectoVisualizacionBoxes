@@ -1,0 +1,393 @@
+service: hospital-boxes-api
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: ${env:LAMBDA_RUNTIME, 'nodejs18.x'}
+  region: ${env:AWS_DEFAULT_REGION, 'us-east-1'}
+  environment:
+    DYNAMODB_TABLE: ${env:DYNAMODB_TABLE, 'HospitalData'}
+    STAGE: ${self:custom.stage}
+    USER_POOL_ID: !Ref HospitalUserPool
+    USER_POOL_CLIENT_ID: !Ref HospitalUserPoolClient
+    # SNS Topics ARNs
+    USER_EVENTS_TOPIC_ARN: !Ref UserEventsTopic
+    AGENDA_EVENTS_TOPIC_ARN: !Ref AgendaEventsTopic
+    NOTIFICATIONS_TOPIC_ARN: !Ref NotificationsTopic
+    BOX_EVENTS_TOPIC_ARN: !Ref BoxEventsTopic
+  # Usar rol existente de AWS Academy en lugar de crear uno nuevo
+<<<<<<< HEAD
+  role: arn:aws:iam::${env:AWS_ACCOUNT_ID}:role/${env:AWS_IAM_ROLE, 'LabRole'}
+=======
+<<<<<<< Updated upstream
+  role: arn:aws:iam::891377117593:role/LabRole
+=======
+  role: ${env:AWS_ROLE_ARN}
+>>>>>>> Stashed changes
+>>>>>>> origin/Joaco
+  logs:
+    httpApi: true
+  httpApi:
+    authorizers:
+      cognitoJwt:
+        type: jwt
+        identitySource: $request.header.Authorization
+        issuerUrl:
+          Fn::Sub:
+            - https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPoolId}
+            - { UserPoolId: { Ref: HospitalUserPool } }
+        audience:
+          - { Ref: HospitalUserPoolClient }
+
+custom:
+  stage: ${opt:stage, self:provider.stage, 'dev'}
+  serverless-offline:
+    httpPort: ${env:SERVERLESS_OFFLINE_PORT, '3001'}
+    host: ${env:SERVERLESS_OFFLINE_HOST, '0.0.0.0'}
+
+plugins:
+  - serverless-offline
+
+functions:
+  # Endpoints de Autenticación
+  login:
+    handler: src/handlers/auth.login
+    events:
+      - httpApi:
+          method: POST
+          path: /auth/login
+          
+  refresh:
+    handler: src/handlers/auth.refresh
+    events:
+      - httpApi:
+          method: POST
+          path: /auth/refresh
+          
+  me:
+    handler: src/handlers/auth.me
+    events:
+      - httpApi:
+          method: GET
+          path: /me
+          authorizer:
+            name: cognitoJwt
+  
+  # JWT Authorizer (mantenemos para casos avanzados)
+  jwtAuthorizer:
+    handler: src/middleware/jwtAuth.authorize
+    
+  # Obtener boxes por pasillo
+  getBoxes:
+    handler: src/handlers/boxes.getBoxes
+    events:
+      - httpApi:
+          path: /api/boxes
+          method: get
+          authorizer:
+            name: cognitoJwt
+  
+  # Obtener agendas
+  getAgendas:
+    handler: src/handlers/agendas.getAgendas
+    events:
+      - httpApi:
+          path: /api/agendas
+          method: get
+          authorizer:
+            name: cognitoJwt
+          
+  # Crear agenda
+  createAgenda:
+    handler: src/handlers/agendas.createAgenda
+    events:
+      - httpApi:
+          path: /api/agendas
+          method: post
+          authorizer:
+            name: cognitoJwt
+
+  # Obtener pasillos
+  getPasillos:
+    handler: src/handlers/pasillos.getPasillos
+    events:
+      - httpApi:
+          path: /api/pasillos
+          method: get
+          authorizer:
+            name: cognitoJwt
+
+  # Listar clientes (solo Admin)
+  listClients:
+    handler: src/handlers/personalization.listClients
+    events:
+      - httpApi:
+          path: /api/config
+          method: get
+          authorizer:
+            name: cognitoJwt
+
+  # Obtener configuración de cliente
+  getClientConfig:
+    handler: src/handlers/personalization.getClientConfig
+    events:
+      - httpApi:
+          path: /api/config/{clientId}
+          method: get
+          authorizer:
+            name: cognitoJwt
+
+  # Actualizar configuración de cliente (solo Admin)
+  updateClientConfig:
+    handler: src/handlers/personalization.updateClientConfig
+    events:
+      - httpApi:
+          path: /api/config/{clientId}
+          method: put
+          authorizer:
+            name: cognitoJwt
+
+  # ===========================
+  # EVENT HANDLERS (SNS SUBSCRIBERS)
+  # ===========================
+  
+  # Handler para eventos de usuario
+  userEventsHandler:
+    handler: src/handlers/user-events-handler.handleUserEvents
+    events:
+      - sns:
+          arn: !Ref UserEventsTopic
+          topicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-user-events
+  
+  # Handler para eventos de agenda
+  agendaEventsHandler:
+    handler: src/handlers/agenda-events-handler.handleAgendaEvents
+    events:
+      - sns:
+          arn: !Ref AgendaEventsTopic
+          topicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-agenda-events
+          
+  # Handler para notificaciones
+  notificationHandler:
+    handler: src/handlers/notification-handler.handleNotifications
+    events:
+      - sns:
+          arn: !Ref NotificationsTopic
+          topicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-notifications
+
+  # ===========================
+  # SETUP TEST USERS (Custom Resource)
+  # ===========================
+  
+  setupTestUsers:
+    handler: src/handlers/setup-test-users.handler
+    timeout: ${env:LAMBDA_TIMEOUT, '300'}
+    environment:
+      COGNITO_USER_POOL_ID: !Ref HospitalUserPool
+
+resources:
+  Resources:
+    HospitalDataTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${env:DYNAMODB_TABLE, 'HospitalData'}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: GSI1PK
+            AttributeType: S
+          - AttributeName: GSI1SK
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI1
+            KeySchema:
+              - AttributeName: GSI1PK
+                KeyType: HASH
+              - AttributeName: GSI1SK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+
+    # Cognito User Pool
+    HospitalUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: ${env:COGNITO_USER_POOL_NAME, 'hospital-users'}-${self:custom.stage}
+        AutoVerifiedAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireUppercase: true
+            RequireLowercase: true
+            RequireNumbers: true
+            RequireSymbols: false
+        Schema:
+          - Name: email
+            AttributeDataType: String
+            Required: true
+            Mutable: true
+          - Name: given_name
+            AttributeDataType: String
+            Required: true
+            Mutable: true
+          - Name: family_name
+            AttributeDataType: String
+            Required: true
+            Mutable: true
+          - Name: hospital_id
+            AttributeDataType: String
+            Required: false
+            Mutable: true
+          - Name: pasillo_asignado
+            AttributeDataType: String
+            Required: false
+            Mutable: true
+          - Name: role
+            AttributeDataType: String
+            Required: false
+            Mutable: true
+        UsernameAttributes:
+          - email
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: false
+          
+    # Cognito App Client
+    HospitalUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: ${env:COGNITO_CLIENT_NAME, 'hospital-web-client'}-${self:custom.stage}
+        UserPoolId: !Ref HospitalUserPool
+        GenerateSecret: false
+        ExplicitAuthFlows:
+          - ALLOW_ADMIN_USER_PASSWORD_AUTH
+          - ALLOW_USER_SRP_AUTH
+          - ALLOW_USER_PASSWORD_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+        PreventUserExistenceErrors: ENABLED
+        TokenValidityUnits:
+          AccessToken: minutes
+          IdToken: minutes
+          RefreshToken: days
+        AccessTokenValidity: ${env:ACCESS_TOKEN_VALIDITY, '60'}
+        IdTokenValidity: ${env:ID_TOKEN_VALIDITY, '60'}
+        RefreshTokenValidity: ${env:REFRESH_TOKEN_VALIDITY, '30'}
+        
+    # Cognito User Pool Groups
+    AdminGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Admin
+        Description: "Administrators with full system access and management capabilities"
+        UserPoolId: !Ref HospitalUserPool
+        Precedence: 1
+        
+    PersonalGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: Personal
+        Description: "Medical and nursing staff with access to assigned corridor only"
+        UserPoolId: !Ref HospitalUserPool
+        Precedence: 2
+        
+    PersonalAdministrativoGroup:
+      Type: AWS::Cognito::UserPoolGroup
+      Properties:
+        GroupName: PersonalAdministrativo
+        Description: "Administrative staff with booking and reporting access to all corridors"
+        UserPoolId: !Ref HospitalUserPool
+        Precedence: 3
+
+    # ===========================
+    # SNS TOPICS FOR DECOUPLED COMMUNICATION
+    # ===========================
+    
+    UserEventsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-user-events
+        DisplayName: "Hospital User Events"
+        
+    AgendaEventsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-agenda-events
+        DisplayName: "Hospital Agenda Events"
+        
+    NotificationsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-notifications
+        DisplayName: "Hospital System Notifications"
+        
+    BoxEventsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:custom.stage}-${env:SNS_TOPICS_PREFIX, 'hospital'}-box-events
+        DisplayName: "Hospital Box State Events"
+
+    # ===========================
+    # CUSTOM RESOURCE PARA CREAR USUARIOS DE PRUEBA
+    # ===========================
+    
+    TestUsersInitializer:
+      Type: AWS::CloudFormation::CustomResource
+      DependsOn:
+        - HospitalUserPool
+        - HospitalUserPoolClient
+        - AdminGroup
+        - PersonalGroup
+        - PersonalAdministrativoGroup
+      Properties:
+        ServiceToken: !GetAtt SetupTestUsersLambdaFunction.Arn
+        UserPoolId: !Ref HospitalUserPool
+        # Trigger update when any of these change
+        Version: "1.0"
+
+  Outputs:
+    # API Gateway URL
+    ApiGatewayUrl:
+      Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+      Export:
+        Name: ${self:custom.stage}-ApiGatewayUrl
+        
+    UserPoolId:
+      Value: !Ref HospitalUserPool
+      Export:
+        Name: ${self:custom.stage}-UserPoolId
+        
+    UserPoolClientId:
+      Value: !Ref HospitalUserPoolClient  
+      Export:
+        Name: ${self:custom.stage}-UserPoolClientId
+        
+    # SNS Topics Outputs
+    UserEventsTopicArn:
+      Value: !Ref UserEventsTopic
+      Export:
+        Name: ${self:custom.stage}-UserEventsTopicArn
+        
+    AgendaEventsTopicArn:
+      Value: !Ref AgendaEventsTopic
+      Export:
+        Name: ${self:custom.stage}-AgendaEventsTopicArn
+        
+    NotificationsTopicArn:
+      Value: !Ref NotificationsTopic
+      Export:
+        Name: ${self:custom.stage}-NotificationsTopicArn
+        
+    BoxEventsTopicArn:
+      Value: !Ref BoxEventsTopic
+      Export:
+        Name: ${self:custom.stage}-BoxEventsTopicArn

@@ -1,3 +1,26 @@
+# ============================================
+# AWS ACCOUNT INFORMATION
+# ============================================
+
+output "aws_account_id" {
+  description = "ID de la cuenta AWS (obtenido automáticamente de credenciales)"
+  value       = data.aws_caller_identity.current.account_id
+}
+
+output "aws_caller_arn" {
+  description = "ARN del usuario/rol que ejecuta Terraform"
+  value       = data.aws_caller_identity.current.arn
+}
+
+output "aws_region" {
+  description = "Región AWS utilizada"
+  value       = var.region
+}
+
+# ============================================
+# DJANGO SERVER OUTPUTS
+# ============================================
+
 output "django_server_public_ip" {
   description = "IP pública del servidor EC2 que corre Django"
   value       = aws_instance.django_server.public_ip

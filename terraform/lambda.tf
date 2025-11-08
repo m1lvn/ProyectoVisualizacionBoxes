@@ -13,11 +13,11 @@ resource "aws_lambda_function" "user_events_handler" {
 
   environment {
     variables = {
-      DYNAMODB_TABLE           = aws_dynamodb_table.main.name
-      USER_EVENTS_TOPIC_ARN    = aws_sns_topic.user_events.arn
-      AGENDA_EVENTS_TOPIC_ARN  = aws_sns_topic.agenda_events.arn
-      NOTIFICATIONS_TOPIC_ARN  = aws_sns_topic.notifications.arn
-      BOX_EVENTS_TOPIC_ARN     = aws_sns_topic.box_events.arn
+      DYNAMODB_TABLE          = aws_dynamodb_table.main.name
+      USER_EVENTS_TOPIC_ARN   = aws_sns_topic.user_events.arn
+      AGENDA_EVENTS_TOPIC_ARN = aws_sns_topic.agenda_events.arn
+      NOTIFICATIONS_TOPIC_ARN = aws_sns_topic.notifications.arn
+      BOX_EVENTS_TOPIC_ARN    = aws_sns_topic.box_events.arn
     }
   }
 
@@ -39,9 +39,9 @@ resource "aws_lambda_function" "agenda_events_handler" {
 
   environment {
     variables = {
-      DYNAMODB_TABLE           = aws_dynamodb_table.main.name
-      NOTIFICATIONS_TOPIC_ARN  = aws_sns_topic.notifications.arn
-      BOX_EVENTS_TOPIC_ARN     = aws_sns_topic.box_events.arn
+      DYNAMODB_TABLE          = aws_dynamodb_table.main.name
+      NOTIFICATIONS_TOPIC_ARN = aws_sns_topic.notifications.arn
+      BOX_EVENTS_TOPIC_ARN    = aws_sns_topic.box_events.arn
     }
   }
 
