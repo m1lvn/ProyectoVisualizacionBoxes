@@ -101,17 +101,75 @@ resource "aws_route_table_association" "private" {
   route_table_id = aws_route_table.private.id
 }
 
+# --- EIP para NAT Gateway ---
+resource "aws_eip" "nat" {
+  tags = {
+    Name = "${var.project_name}-nat-eip"
+  }
+}
+
+# --- NAT Gateway en la subnet pública ---
+resource "aws_nat_gateway" "nat" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public.id
+
+  tags = {
+    Name = "${var.project_name}-nat"
+  }
+}
+
+# --- Custom Subnet ---
+resource "aws_subnet" "custom" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = var.custom_subnet_cidr
+  map_public_ip_on_launch = false
+  availability_zone       = "${var.region}a"
+
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.project_name}-${var.environment}-custom-subnet"
+    }
+  )
+}
+
+# --- Route Table Custom ---
+resource "aws_route_table" "custom" {
+  vpc_id = aws_vpc.main.id
+  tags = {
+    Name = "${var.project_name}-custom-rt"
+  }
+}
+
+resource "aws_route_table_association" "custom" {
+  subnet_id      = aws_subnet.custom.id
+  route_table_id = aws_route_table.custom.id
+}
+
+# --- Rutas para subnets privadas/custom vía NAT Gateway---
+resource "aws_route" "private_nat" {
+  route_table_id         = aws_route_table.private.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.nat.id
+}
+
+resource "aws_route" "custom_nat" {
+  route_table_id         = aws_route_table.custom.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.nat.id
+}
+
 # --- VPC Endpoint para DynamoDB ---
 resource "aws_vpc_endpoint" "dynamodb" {
   vpc_id            = aws_vpc.main.id
   service_name      = "com.amazonaws.${var.region}.dynamodb"
   vpc_endpoint_type = "Gateway"
-  route_table_ids   = [aws_route_table.private.id, aws_route_table.public.id]
+  route_table_ids   = [aws_route_table.private.id, aws_route_table.public.id, aws_route_table.custom.id]
 }
 
 # --- Security Group: EC2 (HTTP + SSH) ---
 resource "aws_security_group" "ec2_sg" {
-  name        = "${var.project_name}-${var.environment}-ec2-sg"
+  name        = "${var.project_name}-ec2-sg"
   description = "Allow HTTP, HTTPS, and SSH"
   vpc_id      = aws_vpc.main.id
 
@@ -221,7 +279,7 @@ resource "aws_s3_object" "lambda_code" {
 
 # --- Función Lambda ---
 resource "aws_lambda_function" "api" {
-  function_name = "${var.project_name}-${var.environment}-api"
+  function_name = "${var.project_name}-api"
   role          = data.aws_iam_role.lab_role.arn
   handler       = "src/index.handler"
   runtime       = var.lambda_runtime

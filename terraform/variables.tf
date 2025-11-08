@@ -1,10 +1,4 @@
 # ============================================
-# VARIABLES DE CONFIGURACIÓN - TERRAFORM
-# ============================================
-# Este archivo define todas las variables configurables del proyecto
-# Los valores por defecto están aquí, pero puedes sobrescribirlos en terraform.tfvars
-
-# ============================================
 # AWS CONFIGURATION
 # ============================================
 
@@ -23,7 +17,8 @@ variable "aws_account_id" {
 variable "project_name" {
   description = "Nombre base del proyecto (usado como prefijo en recursos)"
   type        = string
-  default     = "hospital-boxes"
+  # Mantener el nombre histórico para evitar reemplazos de recursos existentes
+  default     = "proyecto-hospital"
 }
 
 variable "environment" {
@@ -54,6 +49,13 @@ variable "private_subnet_cidr" {
   default     = "10.0.2.0/24"
 }
 
+# Subnet adicional personalizada (FASE 1)
+variable "custom_subnet_cidr" {
+  description = "CIDR block para la subnet personalizada (tercera subnet)"
+  type        = string
+  default     = "10.0.3.0/24"
+}
+
 # ============================================
 # EC2 CONFIGURATION (Django Frontend)
 # ============================================
@@ -67,13 +69,14 @@ variable "django_instance_type" {
 variable "ssh_key_name" {
   description = "Nombre del key pair SSH para acceder a EC2"
   type        = string
-  default     = "hospital-ec2-key"
+  # Nombre del keypair ya existente en la cuenta (evitar recrear/reemplazar)
+  default     = "my-ec2-key"
 }
 
 variable "github_repo_url" {
   description = "URL del repositorio GitHub del proyecto"
   type        = string
-  default     = "https://github.com/m1lvn/ProyectoVisualizacionBoxes.git"
+  default     = "https://github.com/m1lvn/ProyectoVisualizacionBoxes.git  "
 }
 
 variable "django_port" {
@@ -117,37 +120,37 @@ variable "lambda_setup_users_timeout" {
 variable "cognito_user_pool_name" {
   description = "Nombre del Cognito User Pool"
   type        = string
-  default     = "hospital-users"
+  default     = "hospital-user-pool"
 }
 
 variable "cognito_client_name" {
   description = "Nombre del Cognito User Pool Client"
   type        = string
-  default     = "hospital-web-client"
+  default     = "hospital-client"
+}
+
+variable "password_minimum_length" {
+  description = "Longitud mínima de contraseña"
+  type        = number
+  default     = 8
 }
 
 variable "access_token_validity" {
-  description = "Validez del Access Token de Cognito (minutos)"
+  description = "Validez del access token en minutos"
   type        = number
-  default     = 60 # Para chaos engineering tests
+  default     = 60
 }
 
 variable "id_token_validity" {
-  description = "Validez del ID Token de Cognito (minutos)"
+  description = "Validez del ID token en minutos"
   type        = number
   default     = 60
 }
 
 variable "refresh_token_validity" {
-  description = "Validez del Refresh Token de Cognito (días)"
+  description = "Validez del refresh token en días"
   type        = number
   default     = 30
-}
-
-variable "password_minimum_length" {
-  description = "Longitud mínima de contraseña en Cognito"
-  type        = number
-  default     = 8
 }
 
 # ============================================
@@ -251,6 +254,12 @@ variable "create_test_users" {
   description = "Crear usuarios de prueba automáticamente en Cognito"
   type        = bool
   default     = true
+}
+
+variable "create_iam_resources" {
+  description = "Create dedicated IAM roles/policies for Lambdas when true"
+  type        = bool
+  default     = false
 }
 
 # ============================================
