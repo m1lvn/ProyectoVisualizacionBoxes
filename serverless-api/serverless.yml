@@ -8,12 +8,24 @@ provider:
   environment:
     DYNAMODB_TABLE: HospitalData
     STAGE: ${self:custom.stage}
-     # Cognito
-    COGNITO_USER_POOL_ID: us-east-1_0VcouMoQ8      
-    COGNITO_CLIENT_ID: 555d9ec5lslpogerru5t2oh3hi 
+    # Cognito
+    COGNITO_USER_POOL_ID: us-east-1_0VcouMoQ8
+    COGNITO_CLIENT_ID: 555d9ec5lslpogerru5t2oh3hi
     COGNITO_REGION: us-east-1
-  
+
   role: arn:aws:iam::891377117593:role/LabRole
+
+  httpApi:
+    # habilita CORS global y setea el authorizer por defecto
+    cors: true
+    defaultAuthorizer: cognitoJwt
+    authorizers:
+      cognitoJwt:
+        type: jwt
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.${self:provider.region}.amazonaws.com/${self:provider.environment.COGNITO_USER_POOL_ID}
+        audience:
+          - ${self:provider.environment.COGNITO_CLIENT_ID}
 
 custom:
   stage: ${opt:stage, self:provider.stage, 'dev'}
@@ -29,48 +41,42 @@ functions:
   getBoxes:
     handler: src/handlers/boxes.getBoxes
     events:
-      - http:
+      - httpApi:
           path: /api/boxes
-          method: get
-          cors: true
-  
+          method: GET
+
   # Obtener agendas
   getAgendas:
     handler: src/handlers/agendas.getAgendas
     events:
-      - http:
+      - httpApi:
           path: /api/agendas
-          method: get
-          cors: true
-          
+          method: GET
+
   # Crear agenda
   createAgenda:
     handler: src/handlers/agendas.createAgenda
     events:
-      - http:
+      - httpApi:
           path: /api/agendas
-          method: post
-          cors: true
+          method: POST
 
   # Obtener pasillos
   getPasillos:
     handler: src/handlers/pasillos.getPasillos
     events:
-      - http:
+      - httpApi:
           path: /api/pasillos
-          method: get
-          cors: true
+          method: GET
 
   # Migrar datos desde MySQL
   migrateData:
     handler: src/handlers/migrate.migrateFromMySQL
     timeout: 300
     events:
-      - http:
+      - httpApi:
           path: /api/migrate
-          method: post
-          cors: true
-
+          method: POST
 resources:
   Resources:
     HospitalDataTable:
@@ -103,3 +109,6 @@ resources:
               ProjectionType: ALL
         StreamSpecification:
           StreamViewType: NEW_AND_OLD_IMAGES
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true

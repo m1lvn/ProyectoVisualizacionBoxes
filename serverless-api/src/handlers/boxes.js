@@ -1,6 +1,6 @@
 const AWS = require('aws-sdk');
 
-// Configurar DynamoDB
+// Configurar DynamoDB :
 const dynamodb = new AWS.DynamoDB.DocumentClient({
   region: process.env.AWS_DEFAULT_REGION || 'us-east-1'
 });

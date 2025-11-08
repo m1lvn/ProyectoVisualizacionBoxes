@@ -17,7 +17,9 @@
     "express": "^4.21.1",
     "express-session": "^1.18.1",
     "ejs": "^3.1.10",
-    "openid-client": "^5.7.0"
+    "openid-client": "^5.7.0",
+    "@aws-sdk/client-dynamodb": "^3.372.0",
+    "@aws-sdk/lib-dynamodb": "^3.372.0"
   },
   "devDependencies": {
     "serverless": "^3.38.0",

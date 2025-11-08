@@ -8,7 +8,7 @@ const dynamodb = new AWS.DynamoDB.DocumentClient({
 const TABLE_NAME = process.env.DYNAMODB_TABLE || 'HospitalData';
 
 /**
- * Obtener agendas con filtros
+ * Obtener agendas con filtros :
  */
 module.exports.getAgendas = async (event) => {
   try {
